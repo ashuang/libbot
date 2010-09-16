@@ -1,0 +1,21 @@
+<pod>
+    <!-- The presence of this file (pod.xml) indicates that this software
+         probably adheres to the pods software building conventions.  
+         
+         For more information about pods, see: TODO -->
+
+    <name>bot2-lidar</name>
+
+    <!-- A short (at most one line / sentence) summary of the pod -->
+    <summary>
+    </summary>
+
+    <!-- A longer (as long as you like) description of the pod -->
+    <description>
+    </description>
+
+    <!-- A list of pods needed by this pod, one per line.  Blank lines 
+         and lines starting with a '#' are ignored -->
+    <depends_pods>
+    </depends_pods>
+</pod>

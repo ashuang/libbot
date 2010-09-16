@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# change directories to where the script is, so that `pwd` returns the
+# absolute directory containing the compile script
+cd `dirname $0`
+
+# figure out where to place files
+
+# if the environment variable BUILD_PREFIX is set, then use that
+if [ "$BUILD_PREFIX" = "" ]; then
+    # if not...
+    if [ -d ../../build ]; then
+        # use ../../build if it exists
+        echo "\nBUILD_PREFIX: ../../build\n\n"
+        BUILD_PREFIX=`pwd`/../../build
+    else
+        # otherwise, keep things in this directory
+        echo "\nBUILD_PREFIX: ./build\n\n"
+        BUILD_PREFIX=`pwd`/build
+    fi
+else
+    echo "\nBUILD_PREFIX: $BUILD_PREFIX\n\n"
+    BUILD_PREFIX=`cd $BUILD_PREFIX && pwd`
+fi
+
+# create the build directories if necessary
+[ -d ${BUILD_PREFIX} ] || mkdir ${BUILD_PREFIX} || exit 1
+[ -d cmake-build ] || mkdir cmake-build || exit 1
+cd cmake-build || exit 1
+
+# run CMake to generate and configure the build scripts
+cmake -DCMAKE_INSTALL_PREFIX=$BUILD_PREFIX $* ..
