@@ -18,5 +18,4 @@ pkg_check_modules(BOT2_CORE REQUIRED bot2-core)
 add_definitions(-std=gnu99)
 
 add_subdirectory(bot2-vis)
-add_subdirectory(lcmgl-viewer)
 add_subdirectory(testers)

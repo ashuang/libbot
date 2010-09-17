@@ -4,9 +4,10 @@
 #include <bot2-vis/viewer.h>
 #include <bot2-vis/gl_util.h>
 #include <bot2-vis/gtk_util.h>
-#include <lcmtypes/lcmtypes_bot2-core.h>
+#include <lcmtypes/lcmtypes_lcmgl.h>
 
-#include "globals.h"
+#include "lcmgl-decode.h"
+#include "lcmgl-bot-renderer.h"
 
 typedef struct
 {
@@ -15,7 +16,7 @@ typedef struct
     int enabled;
 } lcmgl_channel_t;
 
-typedef struct _BotRendererLcmgl {
+typedef struct _LcmglBotRenderer {
     BotRenderer renderer;
     BotGtkParamWidget *pw;
     BotViewer   *viewer;
@@ -23,18 +24,18 @@ typedef struct _BotRendererLcmgl {
 
     GHashTable *channels;
 
-} BotRendererLcmgl;
+} LcmglBotRenderer;
 
 static void my_free( BotRenderer *renderer )
 {
-    BotRendererLcmgl *self = (BotRendererLcmgl*) renderer;
+    LcmglBotRenderer *self = (LcmglBotRenderer*) renderer;
 
     free( self );
 }
 
 static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 {
-    BotRendererLcmgl *self = (BotRendererLcmgl*) renderer->user;
+    LcmglBotRenderer *self = (LcmglBotRenderer*) renderer->user;
 
     // iterate over each channel
     GList *keys = bot_g_hash_table_get_keys(self->channels);
@@ -48,10 +49,10 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
         if (chan->enabled) {
             // iterate over all the messages received for this channel
             for (int i = 0; i < chan->frontbuffer->len; i++) {
-                botlcm_lcmgl_data_t *data =
+                lcmgl_data_t *data =
                     g_ptr_array_index(chan->frontbuffer, i);
 
-                bot_lcmgl_decode(data->data, data->datalen);
+                lcmgl_decode(data->data, data->datalen);
             }
         }
         glPopAttrib ();
@@ -61,9 +62,9 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 }
 
 static void on_lcmgl_data (const lcm_recv_buf_t *rbuf, const char *channel,
-        const botlcm_lcmgl_data_t *_msg, void *user_data )
+        const lcmgl_data_t *_msg, void *user_data )
 {
-    BotRendererLcmgl *self = (BotRendererLcmgl*) user_data;
+    LcmglBotRenderer *self = (LcmglBotRenderer*) user_data;
 
     lcmgl_channel_t *chan = g_hash_table_lookup(self->channels, _msg->name);
 
@@ -80,7 +81,7 @@ static void on_lcmgl_data (const lcm_recv_buf_t *rbuf, const char *channel,
 #if 0
     int current_scene = -1;
     if (chan->backbuffer->len > 0) {
-        botlcm_lcmgl_data_t *ld = g_ptr_array_index(chan->backbuffer, 0);
+        lcmgl_data_t *ld = g_ptr_array_index(chan->backbuffer, 0);
         current_scene = ld->scene;
     }
 
@@ -89,7 +90,7 @@ static void on_lcmgl_data (const lcm_recv_buf_t *rbuf, const char *channel,
 
         // free objects in foreground buffer
         for (int i = 0; i < chan->frontbuffer->len; i++)
-            botlcm_lcmgl_data_t_destroy(g_ptr_array_index(chan->frontbuffer, i));
+            lcmgl_data_t_destroy(g_ptr_array_index(chan->frontbuffer, i));
         g_ptr_array_set_size(chan->frontbuffer, 0);
 
         // swap front and back buffers
@@ -102,15 +103,15 @@ static void on_lcmgl_data (const lcm_recv_buf_t *rbuf, const char *channel,
 #endif
 
     for (int i = 0; i < chan->frontbuffer->len; i++)
-        botlcm_lcmgl_data_t_destroy(g_ptr_array_index(chan->frontbuffer, i));
+        lcmgl_data_t_destroy(g_ptr_array_index(chan->frontbuffer, i));
     g_ptr_array_set_size (chan->frontbuffer, 0);
-    g_ptr_array_add(chan->frontbuffer, botlcm_lcmgl_data_t_copy(_msg));
+    g_ptr_array_add(chan->frontbuffer, lcmgl_data_t_copy(_msg));
     bot_viewer_request_redraw( self->viewer );
 }
 
 static void on_param_widget_changed (BotGtkParamWidget *pw, const char *name, void *user)
 {
-    BotRendererLcmgl *self = (BotRendererLcmgl*) user;
+    LcmglBotRenderer *self = (LcmglBotRenderer*) user;
 
     // iterate over each channel
     GList *keys = bot_g_hash_table_get_keys(self->channels);
@@ -126,7 +127,7 @@ static void on_param_widget_changed (BotGtkParamWidget *pw, const char *name, vo
     bot_viewer_request_redraw(self->viewer);
 }
 
-static void on_clear_button(GtkWidget *button, BotRendererLcmgl *self)
+static void on_clear_button(GtkWidget *button, LcmglBotRenderer *self)
 {
     if (!self->viewer)
         return;
@@ -137,7 +138,7 @@ static void on_clear_button(GtkWidget *button, BotRendererLcmgl *self)
         lcmgl_channel_t *chan = g_hash_table_lookup(self->channels, kiter->data);
         // iterate over all the messages received for this channel
         for (int i = 0; i < chan->frontbuffer->len; i++)
-            botlcm_lcmgl_data_t_destroy(g_ptr_array_index(chan->frontbuffer, i));
+            lcmgl_data_t_destroy(g_ptr_array_index(chan->frontbuffer, i));
         g_ptr_array_set_size(chan->frontbuffer, 0);
 
     }
@@ -146,15 +147,15 @@ static void on_clear_button(GtkWidget *button, BotRendererLcmgl *self)
     bot_viewer_request_redraw(self->viewer);
 }
 
-void setup_renderer_lcmgl(BotViewer *viewer, int priority);
-void setup_renderer_lcmgl(BotViewer *viewer, int priority)
+void 
+lcmgl_add_renderer_to_bot_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
 {
-    BotRendererLcmgl *self =
-        (BotRendererLcmgl*) calloc(1, sizeof(BotRendererLcmgl));
+    LcmglBotRenderer *self =
+        (LcmglBotRenderer*) calloc(1, sizeof(LcmglBotRenderer));
 
     BotRenderer *renderer = &self->renderer;
 
-    self->lcm = globals_get_lcm();
+    self->lcm = lcm;
     self->viewer = viewer;
     self->pw = BOT_GTK_PARAM_WIDGET(bot_gtk_param_widget_new());
 
@@ -170,7 +171,7 @@ void setup_renderer_lcmgl(BotViewer *viewer, int priority)
     g_signal_connect (G_OBJECT (self->pw), "changed",
                       G_CALLBACK (on_param_widget_changed), self);
 
-    botlcm_lcmgl_data_t_subscribe(self->lcm, "LCMGL.*", on_lcmgl_data, self);
+    lcmgl_data_t_subscribe(self->lcm, "LCMGL.*", on_lcmgl_data, self);
 
     bot_viewer_add_renderer(viewer, renderer, priority);
 

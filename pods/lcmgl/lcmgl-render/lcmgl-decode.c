@@ -1,5 +1,5 @@
 /*
- * decodes and renders LCGL data
+ * decodes and renders LCMGL data
  */
 
 #include <stdio.h>
@@ -8,12 +8,11 @@
 #include <math.h>
 
 #include <bot2-core/fasttrig.h>
-#include <bot2-core/lcmgl.h>
-#include "gl_util.h"
-#include "texture.h"
-#include <lcmtypes/lcmtypes_bot2-core.h>
+#include <bot2-vis/bot2-vis.h>
 
-#include "lcmgl_decode.h"
+#include <lcmtypes/lcmtypes_lcmgl.h>
+#include "../lcmgl-client/lcmgl.h"
+#include "lcmgl-decode.h"
 
 union fu32
 {
@@ -27,8 +26,8 @@ union du64
     uint64_t u64;
 };
 
-typedef struct lcgl_decoder lcgl_decoder_t;
-struct lcgl_decoder
+typedef struct lcmgl_decoder lcmgl_decoder_t;
+struct lcmgl_decoder
 {
     uint8_t *data;
     int      datalen;
@@ -36,12 +35,12 @@ struct lcgl_decoder
 };
 
 
-static inline uint8_t lcgl_decode_u8(lcgl_decoder_t *ldec)
+static inline uint8_t lcmgl_decode_u8(lcmgl_decoder_t *ldec)
 {
     return ldec->data[ldec->datapos++];
 }
 
-static inline uint32_t lcgl_decode_u32(lcgl_decoder_t *ldec)
+static inline uint32_t lcmgl_decode_u32(lcmgl_decoder_t *ldec)
 {
     uint32_t v = 0;
     v += ldec->data[ldec->datapos++]<<24;
@@ -51,7 +50,7 @@ static inline uint32_t lcgl_decode_u32(lcgl_decoder_t *ldec)
     return v;
 }
 
-static inline uint64_t lcgl_decode_u64(lcgl_decoder_t *ldec)
+static inline uint64_t lcmgl_decode_u64(lcmgl_decoder_t *ldec)
 {
     uint64_t v = 0;
     v += (uint64_t)(ldec->data[ldec->datapos++])<<56;
@@ -65,23 +64,23 @@ static inline uint64_t lcgl_decode_u64(lcgl_decoder_t *ldec)
     return v;
 }
 
-//static inline void lcgl_decode_raw(lcgl_decoder_t *ldec, int datalen, void *result)
+//static inline void lcmgl_decode_raw(lcmgl_decoder_t *ldec, int datalen, void *result)
 //{
 //    memcpy(result, ldec->datapos, datalen);
 //    ldec->datapos += datalen;
 //}
 
-static inline float lcgl_decode_float(lcgl_decoder_t *ldec)
+static inline float lcmgl_decode_float(lcmgl_decoder_t *ldec)
 {
     union fu32 u;
-    u.u32 = lcgl_decode_u32(ldec);
+    u.u32 = lcmgl_decode_u32(ldec);
     return u.f;
 }
 
-static inline double lcgl_decode_double(lcgl_decoder_t *ldec)
+static inline double lcmgl_decode_double(lcmgl_decoder_t *ldec)
 {
     union du64 u;
-    u.u64 = lcgl_decode_u64(ldec);
+    u.u64 = lcmgl_decode_u64(ldec);
     return u.d;
 }
 
@@ -133,9 +132,9 @@ typedef struct {
     BotGlTexture *tex;
 } _lcmgl_texture_t;
 
-void bot_lcmgl_decode(uint8_t *data, int datalen)
+void lcmgl_decode(uint8_t *data, int datalen)
 {
-    lcgl_decoder_t ldec;
+    lcmgl_decoder_t ldec;
     ldec.data = data;
     ldec.datalen = datalen;
     ldec.datapos = 0;
@@ -145,222 +144,222 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
 
     while (ldec.datapos < ldec.datalen) {
 
-        uint8_t opcode = lcgl_decode_u8(&ldec);
+        uint8_t opcode = lcmgl_decode_u8(&ldec);
         switch (opcode) {
 
-        case BOT_LCMGL_BEGIN:
+        case LCMGL_BEGIN:
         {
-            uint32_t v = lcgl_decode_u32(&ldec);
+            uint32_t v = lcmgl_decode_u32(&ldec);
             glBegin(v);
             break;
         }
 
-        case BOT_LCMGL_END:
+        case LCMGL_END:
             glEnd();
             break;
 
-        case BOT_LCMGL_VERTEX2D:
+        case LCMGL_VERTEX2D:
         {
             double v[2];
             for (int i = 0; i < 2; i++)
-                v[i] = lcgl_decode_double(&ldec);
+                v[i] = lcmgl_decode_double(&ldec);
 
             glVertex2dv(v);
             break;
         }
 
-        case BOT_LCMGL_VERTEX2F:
+        case LCMGL_VERTEX2F:
         {
             float v[2];
             for (int i = 0; i < 2; i++)
-                v[i] = lcgl_decode_float(&ldec);
+                v[i] = lcmgl_decode_float(&ldec);
 
             glVertex2fv(v);
             break;
         }
 
-        case BOT_LCMGL_VERTEX3F:
+        case LCMGL_VERTEX3F:
         {
             float v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_float(&ldec);
+                v[i] = lcmgl_decode_float(&ldec);
 
             glVertex3fv(v);
             break;
         }
 
-        case BOT_LCMGL_VERTEX3D:
+        case LCMGL_VERTEX3D:
         {
             double v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_double(&ldec);
+                v[i] = lcmgl_decode_double(&ldec);
 
             glVertex3dv(v);
             break;
         }
 
-        case BOT_LCMGL_NORMAL3F:
+        case LCMGL_NORMAL3F:
         {
             float v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_float(&ldec);
+                v[i] = lcmgl_decode_float(&ldec);
 
             glNormal3fv(v);
             break;
         }
 
-        case BOT_LCMGL_TRANSLATED:
+        case LCMGL_TRANSLATED:
         {
             double v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_double(&ldec);
+                v[i] = lcmgl_decode_double(&ldec);
 
             glTranslated(v[0], v[1], v[2]);
             break;
         }
 
-        case BOT_LCMGL_ROTATED:
+        case LCMGL_ROTATED:
         {
-            double theta = lcgl_decode_double(&ldec);
+            double theta = lcmgl_decode_double(&ldec);
 
             double v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_double(&ldec);
+                v[i] = lcmgl_decode_double(&ldec);
 
             glRotated(theta, v[0], v[1], v[2]);
             break;
         }
 
-        case BOT_LCMGL_LOAD_IDENTITY:
+        case LCMGL_LOAD_IDENTITY:
         {
             glLoadIdentity();
             break;
         }
 
-        case BOT_LCMGL_PUSH_MATRIX:
+        case LCMGL_PUSH_MATRIX:
         {
             glPushMatrix ();
             break;
         }
 
-        case BOT_LCMGL_POP_MATRIX:
+        case LCMGL_POP_MATRIX:
         {
             glPopMatrix ();
             break;
         }
 
-        case BOT_LCMGL_MULT_MATRIXF:
+        case LCMGL_MULT_MATRIXF:
         {
             float m[16];
             for (int i = 0; i < 16; i++)
-                m[i] = lcgl_decode_float(&ldec);
+                m[i] = lcmgl_decode_float(&ldec);
 
             glMultMatrixf(m);
             break;
         }
-        case BOT_LCMGL_MULT_MATRIXD:
+        case LCMGL_MULT_MATRIXD:
         {
             double m[16];
             for (int i = 0; i < 16; i++)
-                m[i] = lcgl_decode_double(&ldec);
+                m[i] = lcmgl_decode_double(&ldec);
 
             glMultMatrixd(m);
             break;
         }
 
-        case BOT_LCMGL_SCALEF:
+        case LCMGL_SCALEF:
         {
             float v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_float(&ldec);
+                v[i] = lcmgl_decode_float(&ldec);
 
             glScalef(v[0],v[1],v[2]);
             break;
         }
 
-        case BOT_LCMGL_COLOR3F:
+        case LCMGL_COLOR3F:
         {
             float v[3];
             for (int i = 0; i < 3; i++)
-                v[i] = lcgl_decode_float(&ldec);
+                v[i] = lcmgl_decode_float(&ldec);
 
             glColor3fv(v);
             break;
         }
 
-        case BOT_LCMGL_COLOR4F:
+        case LCMGL_COLOR4F:
         {
             float v[4];
             for (int i = 0; i < 4; i++)
-                v[i] = lcgl_decode_float(&ldec);
+                v[i] = lcmgl_decode_float(&ldec);
 
             glColor4fv(v);
             break;
         }
 
-        case BOT_LCMGL_POINTSIZE:
-            glPointSize(lcgl_decode_float(&ldec));
+        case LCMGL_POINTSIZE:
+            glPointSize(lcmgl_decode_float(&ldec));
             break;
 
-        case BOT_LCMGL_LINE_WIDTH:
-            glLineWidth(lcgl_decode_float(&ldec));
+        case LCMGL_LINE_WIDTH:
+            glLineWidth(lcmgl_decode_float(&ldec));
             break;
 
-        case BOT_LCMGL_ENABLE:
-            glEnable(lcgl_decode_u32(&ldec));
+        case LCMGL_ENABLE:
+            glEnable(lcmgl_decode_u32(&ldec));
             break;
 
-        case BOT_LCMGL_DISABLE:
-            glDisable(lcgl_decode_u32(&ldec));
+        case LCMGL_DISABLE:
+            glDisable(lcmgl_decode_u32(&ldec));
             break;
 
-        case BOT_LCMGL_NOP:
+        case LCMGL_NOP:
             break;
 
-        case BOT_LCMGL_PUSH_ATTRIB:
+        case LCMGL_PUSH_ATTRIB:
         {
-          uint32_t v = lcgl_decode_u32(&ldec);
+          uint32_t v = lcmgl_decode_u32(&ldec);
           glPushAttrib(v);
           break;
         }
 
-        case BOT_LCMGL_POP_ATTRIB:
+        case LCMGL_POP_ATTRIB:
         {
           glPopAttrib();
           break;
         }
 
-        case BOT_LCMGL_DEPTH_FUNC:
+        case LCMGL_DEPTH_FUNC:
         {
-          uint32_t v = lcgl_decode_u32(&ldec);
+          uint32_t v = lcmgl_decode_u32(&ldec);
           glDepthFunc(v);
 
           break;
         }
 
 
-        case BOT_LCMGL_BOX:
+        case LCMGL_BOX:
         {
             double xyz[3];
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
             double dim[3];
             for (int i = 0; i < 3; i++)
-                dim[i] = lcgl_decode_float(&ldec);
+                dim[i] = lcmgl_decode_float(&ldec);
 
             gl_box(xyz, dim);
             break;
         }
 
-        case BOT_LCMGL_RECT:
+        case LCMGL_RECT:
         {
             double xyz[3], size[2];
 
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
             for (int i = 0; i < 2; i++)
-                size[i] = lcgl_decode_double(&ldec);
-            int filled = lcgl_decode_u8(&ldec);
+                size[i] = lcmgl_decode_double(&ldec);
+            int filled = lcmgl_decode_u8(&ldec);
 
             glPushMatrix();
             glTranslated(xyz[0], xyz[1], xyz[2]);
@@ -377,13 +376,13 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
 
-        case BOT_LCMGL_CIRCLE:
+        case LCMGL_CIRCLE:
         {
             double xyz[3];
 
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
-            float radius = lcgl_decode_float(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
+            float radius = lcmgl_decode_float(&ldec);
 
             glBegin(GL_LINE_STRIP);
             int segments = 40;
@@ -398,14 +397,14 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
 
-        case BOT_LCMGL_SPHERE:
+        case LCMGL_SPHERE:
         {
             double xyz[3];
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
-            double radius = lcgl_decode_double(&ldec);
-            int slices = lcgl_decode_u32(&ldec);
-            int stacks = lcgl_decode_u32(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
+            double radius = lcmgl_decode_double(&ldec);
+            int slices = lcmgl_decode_u32(&ldec);
+            int stacks = lcmgl_decode_u32(&ldec);
 
             glPushAttrib(GL_ENABLE_BIT);
             glEnable(GL_DEPTH_TEST);
@@ -419,14 +418,14 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
 
-        case BOT_LCMGL_DISK:
+        case LCMGL_DISK:
         {
             double xyz[3];
 
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
-            float r_in = lcgl_decode_float(&ldec);
-            float r_out = lcgl_decode_float(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
+            float r_in = lcmgl_decode_float(&ldec);
+            float r_out = lcmgl_decode_float(&ldec);
 
             GLUquadricObj *q = gluNewQuadric();
             glPushMatrix();
@@ -437,16 +436,16 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
 
-        case BOT_LCMGL_CYLINDER:
+        case LCMGL_CYLINDER:
         {
             double base_xyz[3];
             for (int i = 0; i < 3; i++)
-                base_xyz[i] = lcgl_decode_double(&ldec);
-            double r_base = lcgl_decode_double(&ldec);
-            double r_top = lcgl_decode_double(&ldec);
-            double height = lcgl_decode_double(&ldec);
-            int slices = lcgl_decode_u32(&ldec);
-            int stacks = lcgl_decode_u32(&ldec);
+                base_xyz[i] = lcmgl_decode_double(&ldec);
+            double r_base = lcmgl_decode_double(&ldec);
+            double r_top = lcmgl_decode_double(&ldec);
+            double height = lcmgl_decode_double(&ldec);
+            int slices = lcmgl_decode_u32(&ldec);
+            int stacks = lcmgl_decode_u32(&ldec);
 
             glPushAttrib(GL_ENABLE_BIT);
             glEnable(GL_DEPTH_TEST);
@@ -460,67 +459,67 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
 
-        case BOT_LCMGL_TEXT:
+        case LCMGL_TEXT:
         {
-            int font = lcgl_decode_u8(&ldec);
-            int flags = lcgl_decode_u8(&ldec);
+            int font = lcmgl_decode_u8(&ldec);
+            int flags = lcmgl_decode_u8(&ldec);
 
             (void) font; (void) flags;
             double xyz[3];
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
 
-            int len = lcgl_decode_u32(&ldec);
+            int len = lcmgl_decode_u32(&ldec);
             char buf[len+1];
             for (int i = 0; i < len; i++)
-                buf[i] = lcgl_decode_u8(&ldec);
+                buf[i] = lcmgl_decode_u8(&ldec);
             buf[len] = 0;
 
             bot_gl_draw_text(xyz, NULL, buf, 0);
             break;
         }
 
-        case BOT_LCMGL_TEXT_LONG:
+        case LCMGL_TEXT_LONG:
         {
-            uint32_t font = lcgl_decode_u32(&ldec);
-            uint32_t flags = lcgl_decode_u32(&ldec);
+            uint32_t font = lcmgl_decode_u32(&ldec);
+            uint32_t flags = lcmgl_decode_u32(&ldec);
 
             (void) font;
 
             double xyz[3];
             for (int i = 0; i < 3; i++)
-                xyz[i] = lcgl_decode_double(&ldec);
+                xyz[i] = lcmgl_decode_double(&ldec);
 
-            int len = lcgl_decode_u32(&ldec);
+            int len = lcmgl_decode_u32(&ldec);
             char buf[len+1];
             for (int i = 0; i < len; i++)
-                buf[i] = lcgl_decode_u8(&ldec);
+                buf[i] = lcmgl_decode_u8(&ldec);
             buf[len] = 0;
 
             bot_gl_draw_text(xyz, NULL, buf, flags);
             break;
         }
-        case BOT_LCMGL_MATERIALF:
+        case LCMGL_MATERIALF:
         {
-            int face = lcgl_decode_u32(&ldec);
-            int name = lcgl_decode_u32(&ldec);
+            int face = lcmgl_decode_u32(&ldec);
+            int name = lcmgl_decode_u32(&ldec);
             float c[4];
             for (int i = 0; i < 4; i++)
-                c[i] = lcgl_decode_float(&ldec);
+                c[i] = lcmgl_decode_float(&ldec);
             glMaterialfv(face,name,c);
             break;
         }
-        case BOT_LCMGL_TEX_2D:
+        case LCMGL_TEX_2D:
         {
-            int id = lcgl_decode_u32(&ldec);
-            int width = lcgl_decode_u32(&ldec);
-            int height = lcgl_decode_u32(&ldec);
-            int format = lcgl_decode_u32(&ldec);
-            int compression = lcgl_decode_u32(&ldec);
+            int id = lcmgl_decode_u32(&ldec);
+            int width = lcmgl_decode_u32(&ldec);
+            int height = lcmgl_decode_u32(&ldec);
+            int format = lcmgl_decode_u32(&ldec);
+            int compression = lcmgl_decode_u32(&ldec);
 
-            int raw_datalen = lcgl_decode_u32(&ldec);
+            int raw_datalen = lcmgl_decode_u32(&ldec);
             void *data_uncopressed = NULL;
-            if(BOT_LCMGL_COMPRESS_NONE == compression) {
+            if(LCMGL_COMPRESS_NONE == compression) {
                 data_uncopressed = &ldec.data[ldec.datapos];
                 ldec.datapos += raw_datalen;
             }
@@ -528,15 +527,15 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             int bytes_per_pixel = 1;
             GLenum gl_format = GL_LUMINANCE;
             switch(format) {
-                case BOT_LCMGL_LUMINANCE:
+                case LCMGL_LUMINANCE:
                     bytes_per_pixel = 1;
                     gl_format = GL_LUMINANCE;
                     break;
-                case BOT_LCMGL_RGB:
+                case LCMGL_RGB:
                     bytes_per_pixel = 3;
                     gl_format = GL_RGB;
                     break;
-                case BOT_LCMGL_RGBA:
+                case LCMGL_RGBA:
                     bytes_per_pixel = 4;
                     gl_format = GL_RGBA;
                     break;
@@ -560,25 +559,25 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             }
             break;
         }
-        case BOT_LCMGL_TEX_DRAW_QUAD:
+        case LCMGL_TEX_DRAW_QUAD:
         {
-            int id = lcgl_decode_u32(&ldec);
+            int id = lcmgl_decode_u32(&ldec);
 
-            double x_top_left = lcgl_decode_double(&ldec);
-            double y_top_left = lcgl_decode_double(&ldec);
-            double z_top_left = lcgl_decode_double(&ldec);
+            double x_top_left = lcmgl_decode_double(&ldec);
+            double y_top_left = lcmgl_decode_double(&ldec);
+            double z_top_left = lcmgl_decode_double(&ldec);
 
-            double x_top_right = lcgl_decode_double(&ldec);
-            double y_top_right = lcgl_decode_double(&ldec);
-            double z_top_right = lcgl_decode_double(&ldec);
+            double x_top_right = lcmgl_decode_double(&ldec);
+            double y_top_right = lcmgl_decode_double(&ldec);
+            double z_top_right = lcmgl_decode_double(&ldec);
 
-            double x_bot_right = lcgl_decode_double(&ldec);
-            double y_bot_right = lcgl_decode_double(&ldec);
-            double z_bot_right = lcgl_decode_double(&ldec);
+            double x_bot_right = lcmgl_decode_double(&ldec);
+            double y_bot_right = lcmgl_decode_double(&ldec);
+            double z_bot_right = lcmgl_decode_double(&ldec);
 
-            double x_bot_left = lcgl_decode_double(&ldec);
-            double y_bot_left = lcgl_decode_double(&ldec);
-            double z_bot_left = lcgl_decode_double(&ldec);
+            double x_bot_left = lcmgl_decode_double(&ldec);
+            double y_bot_left = lcmgl_decode_double(&ldec);
+            double z_bot_left = lcmgl_decode_double(&ldec);
 
             if(id <= ntextures) {
                 _lcmgl_texture_t *tex = textures[id - 1];
@@ -591,7 +590,7 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
         default:
-            printf("lcgl unknown opcode %d\n", opcode);
+            printf("lcmgl unknown opcode %d\n", opcode);
             break;
         }
     }

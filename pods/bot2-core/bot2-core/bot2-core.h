@@ -9,7 +9,6 @@
 #include "fileutils.h"
 #include "glib_util.h"
 #include "gps_linearize.h"
-#include "lcmgl.h"
 #include "lcm_util.h"
 #include "math_util.h"
 #include "minheap.h"

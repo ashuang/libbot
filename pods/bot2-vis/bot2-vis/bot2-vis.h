@@ -9,7 +9,6 @@
 #include "gl_image_area.h"
 #include "gl_util.h"
 #include "gtk_util.h"
-#include "lcmgl_decode.h"
 #include "param_widget.h"
 #include "rwx.h"
 #include "scrollplot2d.h"

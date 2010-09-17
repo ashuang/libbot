@@ -1,5 +1,5 @@
-#ifndef _BOT_LCMGL_DECODE_H
-#define _BOT_LCMGL_DECODE_H
+#ifndef _LCMGL_DECODE_H
+#define _LCMGL_DECODE_H
 
 #include <inttypes.h>
 
@@ -7,11 +7,11 @@
  * SECTION:lcmgl_decode
  * @title: LCMGL decoding
  * @short_description: Executing OpenGL commands received via LCMGL
- * @include: bot2-vis/bot2-vis.h
+ * @include: lcmgl/lcmgl-decode.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: -llcmgl-render
  */
 
 #ifdef __cplusplus
@@ -24,7 +24,7 @@ extern "C" {
  * Decodes a block of LCMGL data, and executes the OpenGL commands with 
  * the current OpenGL context.
  */
-void bot_lcmgl_decode(uint8_t *data, int datalen);
+void lcmgl_decode(uint8_t *data, int datalen);
 
 #ifdef __cplusplus
 }

@@ -6,6 +6,7 @@
 #include <bot2-vis/gl_util.h>
 #include <bot2-vis/viewer.h>
 
+#include "../lcmgl-render/lcmgl-bot-renderer.h"
 #include "udp_util.h"
 #include "globals.h"
 
@@ -56,7 +57,6 @@ logplayer_remote_on_key_press(BotViewer *viewer, BotEventHandler *ehandler,
 void setup_view_menu(BotViewer *viewer);
 
 void setup_renderer_grid(BotViewer *viewer, int render_priority);
-void setup_renderer_lcmgl(BotViewer *viewer, int render_priority);
 
 int main(int argc, char *argv[])
 {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
     // setup renderers
     setup_renderer_grid(viewer, 1);
-    setup_renderer_lcmgl(viewer, 0);
+    lcmgl_add_renderer_to_bot_viewer(viewer, app.lcm, 0);
 
     // logplayer controls
     BotEventHandler *ehandler = (BotEventHandler*) calloc(1, sizeof(BotEventHandler));
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     // load saved preferences
     char *fname = g_build_filename(g_get_user_config_dir(), 
-            ".bot-lcmgl-viewerrc", NULL);
+            ".lcmgl-viewerrc", NULL);
     bot_viewer_load_preferences(viewer, fname);
 
     // run the main loop

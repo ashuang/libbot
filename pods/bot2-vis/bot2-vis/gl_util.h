@@ -16,7 +16,6 @@
 #include "texture.h"
 #include "scrollplot2d.h"
 #include "console.h"
-#include "lcmgl_decode.h"
 #include "batch_gl.h"
 
 /**
