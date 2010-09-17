@@ -5,5 +5,3 @@ bot2-core
 bot2-vis
 bot2-lidar
 bot2-procman
-bot2-procman
-bot2-procman
