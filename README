@@ -1,0 +1,70 @@
+This is the code base for libbot2
+
+Overview
+========
+
+libbot2 is comprised of several individual pieces of software (pods).  You can
+build and install all or some of the pods, based on what functionality you
+require.  Some of the pods depend on others for correct functionality.  They are:
+
+  bot2-core
+  bot2-vis
+  bot2-lidar
+  bot2-procman    # NYI
+  bot2-scanmatch  # NYI
+
+Requirements
+============
+
+  These packages are required.
+    GLib 2.0+
+    CMake
+    LCM   (http://lcm.googlecode.com)
+
+  These packages are strongly recommended.  In other words, you should install
+  them unless doing so is impossible.
+    Java (Sun JDK or OpenJDK strongly preferred, gcj probably will not work)
+    Python
+    GTK+2.0   (required by bot2-vis)
+    OpenGL    (required by bot2-vis)
+
+
+  On a Debian/Ubuntu system, the following packages should be sufficient:
+    libglib2.0-dev
+    cmake
+    sun-java6-jdk | default-jdk | openjdk-6-jdk
+    python-dev
+    libgtk2.0-dev
+    mesa-common-dev
+    libgl1-mesa-dev
+    libglu1-mesa-dev
+    freeglut3-dev
+
+    Additionally, you'll need to install LCM from http://lcm.googlecode.com
+
+  On OS X, the recommended procedure is to use MacPorts and install:
+    # TODO
+
+Installation
+============
+
+  By default, this software does not require installation.  Instead, it builds
+  and runs from within the build/ subdirectory.
+
+  To compile, run: 
+
+  $ make
+
+  If you want, you can also install it to your system by running:
+
+  $ sudo make BUILD_PREFIX=/usr/local
+
+Uninstallation
+==============
+
+  TODO
+
+Documentation
+=============
+
+  TODO
