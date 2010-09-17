@@ -1,0 +1,16 @@
+package botlcm;
+
+/*
+   message sent by the procman commander to provide instructions for a procman
+   deputy.  As long as the deputy reports a status inconsistent with the
+   orders, the orders will periodically be transmitted
+*/
+
+struct procman_orders_t {
+    int64_t utime;
+    string host;
+    string sheriff_name;
+
+    int32_t ncmds;
+    procman_sheriff_cmd_t cmds[ncmds];
+}
