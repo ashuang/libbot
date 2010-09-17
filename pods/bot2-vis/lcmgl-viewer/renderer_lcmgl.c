@@ -4,7 +4,7 @@
 #include <bot2-vis/viewer.h>
 #include <bot2-vis/gl_util.h>
 #include <bot2-vis/gtk_util.h>
-#include <lcmtypes/botlcm_lcmgl_data_t.h>
+#include <lcmtypes/lcmtypes_bot2-core.h>
 
 #include "globals.h"
 

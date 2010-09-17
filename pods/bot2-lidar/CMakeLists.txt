@@ -5,6 +5,11 @@ project(bot2-lidar)
 include(cmake/pods.cmake)
 pods_config_search_paths()
 
-add_executable(hello src/hello.c)
+find_package(PkgConfig REQUIRED)
 
-install(TARGETS hello RUNTIME DESTINATION bin)
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+pkg_check_modules(LCM REQUIRED lcm)
+pkg_check_modules(BOT2_CORE REQUIRED bot2-core)
+
+add_subdirectory(sick)
+add_subdirectory(hokuyo)

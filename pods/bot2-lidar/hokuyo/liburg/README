@@ -1,0 +1,10 @@
+Source code derived from urg-0.8.11, supplied by Hokuyo.  
+All code in this directory is now LGPL (it used to be GPL).
+
+The code for the driver was initially split into 3 subdirectories (and libraries)
+urg-0.8.11/src/c/connection
+urg-0.8.11/src/c/system
+urg-0.8.11/src/c/urg
+
+All the .c and .h files from these folders got merged into the single liburg folder.
+Hopefully this is all that will be required if a future update is required. 

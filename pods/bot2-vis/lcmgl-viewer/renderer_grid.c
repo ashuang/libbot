@@ -7,7 +7,7 @@
 #include <bot2-core/bot2-core.h>
 #include <bot2-vis/gl_util.h>
 #include <bot2-vis/viewer.h>
-#include <lcmtypes/botlcm_pose_t.h>
+#include <lcmtypes/lcmtypes_bot2-core.h>
 
 #include "globals.h"
 

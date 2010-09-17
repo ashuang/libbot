@@ -13,7 +13,7 @@ target_link_libraries(bot2-core
     ${GLIB2_LDFLAGS}
     ${LCM_LDFLAGS}
     ${LCMTYPES_LIBS}
-    )
+    m)
 
 # set the library API version.  Increment this every time the public API
 # changes.

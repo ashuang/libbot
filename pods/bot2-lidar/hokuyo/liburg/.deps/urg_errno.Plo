@@ -1,0 +1,3 @@
+urg_errno.lo: urg_errno.c urg_errno.h
+
+urg_errno.h:

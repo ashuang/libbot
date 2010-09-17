@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4.6)
+cmake_minimum_required(VERSION 2.6.0)
 
 project(bot2-vis)
 
@@ -19,3 +19,4 @@ add_definitions(-std=gnu99)
 
 add_subdirectory(bot2-vis)
 add_subdirectory(lcmgl-viewer)
+add_subdirectory(testers)

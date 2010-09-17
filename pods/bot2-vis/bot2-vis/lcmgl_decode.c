@@ -11,7 +11,7 @@
 #include <bot2-core/lcmgl.h>
 #include "gl_util.h"
 #include "texture.h"
-#include <lcmtypes/botlcm_lcmgl_data_t.h>
+#include <lcmtypes/lcmtypes_bot2-core.h>
 
 #include "lcmgl_decode.h"
 

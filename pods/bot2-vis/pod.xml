@@ -17,5 +17,6 @@
     <!-- A list of pods needed by this pod, one per line.  Blank lines 
          and lines starting with a '#' are ignored -->
     <depends_pods>
+        bot2-core
     </depends_pods>
 </pod>
