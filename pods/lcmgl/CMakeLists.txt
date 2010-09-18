@@ -6,7 +6,8 @@ include(cmake/pods.cmake)
 pods_config_search_paths()
 
 include(cmake/lcmtypes.cmake)
-lcmtypes_build()
+lcmtypes_build(JAVA_DEST_DIR ${PROJECT_SOURCE_DIR}/java/src
+    PY_DEST_DIR ${PROJECT_SOURCE_DIR}/python)
 
 find_package(PkgConfig REQUIRED)
 find_package(GTK2 REQUIRED)
@@ -20,3 +21,5 @@ add_definitions(-std=gnu99)
 add_subdirectory(lcmgl-client)
 add_subdirectory(lcmgl-render)
 add_subdirectory(lcmgl-viewer)
+
+add_subdirectory(java)

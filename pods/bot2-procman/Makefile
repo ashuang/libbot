@@ -2,14 +2,14 @@ default_target: all
 
 $(VERBOSE).SILENT:
 
-all: cmake-build/Makefile
-	$(MAKE) -C cmake-build all install
+all: pod-build/Makefile
+	$(MAKE) -C pod-build all install
 
-cmake-build/Makefile:
+pod-build/Makefile:
 	./configure
 
 clean:
-	$(MAKE) -C cmake-build clean
+	$(MAKE) -C pod-build clean
 
 distclean:
-	rm -rf cmake-build
+	rm -rf pod-build

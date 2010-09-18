@@ -20,16 +20,7 @@ macro(pods_config_search_paths)
 endmacro(pods_config_search_paths)
 
 
-# usage: 
-# pods_create_pkg_config_file(pc_name 
-#            [ LIBS -lfoo -lbar ... ]
-#            [ CFLAGS ... ]
-#            [ REQUIRES ... ]
-#            [ VERSION version ]
-#            [ DESCRIPTION "description in a single string" ])
-#  
-# Creates a .pc pkg-config file, and marks it for installation to
-# lib/pkg-config
+# TODO document this
 function(pods_create_pkg_config_file)
     list(GET ARGV 0 pc_name)
     # TODO error check
