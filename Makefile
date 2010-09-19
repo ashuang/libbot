@@ -7,7 +7,7 @@ PODS:=$(shell grep -v "^\#" pods/tobuild.txt)
 $(VERBOSE).SILENT:
 
 all: 
-	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod || exit 2; done
+	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod all ||exit 2; done
 
 	@# Place additional commands here if you have any
 
