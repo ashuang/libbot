@@ -131,6 +131,8 @@ function(pods_install_python_packages py_src_dir)
             install(FILES ${py_absname} "${py_absname}c" 
                 DESTINATION "${python_install_dir}/${py_dirname}")
         endforeach()
+        string(REGEX REPLACE "[^a-zA-Z0-9]" "_" san_src_dir "${py_src_dir}")
+        add_custom_target("pyc_${san_src_dir}" ALL DEPENDS ${pyc_files})
     endif()
 endfunction()
 
