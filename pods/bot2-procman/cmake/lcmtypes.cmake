@@ -209,6 +209,8 @@ function(lcmtypes_build_java)
 endfunction()
 
 function(lcmtypes_build_python)
+    find_package(PythonInterp REQUIRED)
+
     lcmtypes_get_types(_lcmtypes)
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
@@ -250,10 +252,21 @@ function(lcmtypes_build_python)
 
     # get a list of all generated .py files
     file(GLOB_RECURSE _lcmtypes_python_files RELATIVE ${_lcmtypes_python_dir} ${_lcmtypes_python_dir}/*.py )
-    message("py files: ${_lcmtypes_python_files}")
 
-    # create a distutils setup.py file
-    # TODO
+    # add rules for byte-compiling .py --> .pyc
+    foreach(py_file ${_lcmtypes_python_files})
+        set(full_py_fname ${_lcmtypes_python_dir}/${py_file})
+        add_custom_command(OUTPUT "${full_py_fname}c" COMMAND 
+            ${PYTHON_EXECUTABLE} -m compileall ${full_py_fname} DEPENDS ${full_py_fname} VERBATIM)
+        list(APPEND pyc_files "${full_py_fname}c")
+    endforeach()
+    add_custom_target(pyc_files ALL DEPENDS ${pyc_files})
+
+    # install python files
+    execute_process(COMMAND 
+        ${PYTHON_EXECUTABLE} -c "import sys; sys.stdout.write(sys.version[:3])"
+        OUTPUT_VARIABLE pyversion)
+    install(DIRECTORY ${_lcmtypes_python_dir}/ DESTINATION lib/python${pyversion}/site-packages)
 
     lcmtypes_add_clean_dir(${_lcmtypes_python_dir})
 endfunction()

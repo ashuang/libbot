@@ -64,7 +64,13 @@ function(lcmtypes_add_clean_dir clean_dir)
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${acfiles}")
 endfunction()
 
-macro(lcmtypes_build_c)
+function(lcmtypes_build_c)
+    lcmtypes_get_types(_lcmtypes)
+    list(LENGTH _lcmtypes _num_lcmtypes)
+    if(_num_lcmtypes EQUAL 0)
+        return()
+    endif()
+
     # generate C bindings for LCM types
     set(_lcmtypes_c_dir ${PROJECT_SOURCE_DIR}/lcmtypes/c/lcmtypes)
 
@@ -119,18 +125,40 @@ macro(lcmtypes_build_c)
     install(FILES ${_lcmtypes_h_files} DESTINATION include/lcmtypes)
 
     # set some compilation variables
-    set(LCMTYPES_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lcmtypes/c)
-    set(LCMTYPES_LIBS "lcmtypes_${PROJECT_NAME}")
+    set(LCMTYPES_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lcmtypes/c PARENT_SCOPE)
+    set(LCMTYPES_LIBS "lcmtypes_${PROJECT_NAME}" PARENT_SCOPE)
 
     lcmtypes_add_clean_dir("${PROJECT_SOURCE_DIR}/lcmtypes/c")
-endmacro()
+endfunction()
 
-macro(lcmtypes_build_java)
+function(lcmtypes_build_java)
+    lcmtypes_get_types(_lcmtypes)
+    list(LENGTH _lcmtypes _num_lcmtypes)
+    if(_num_lcmtypes EQUAL 0)
+        return()
+    endif()
+
     # generate Java bindings for LCM types
     set(_lcmtypes_java_dir ${PROJECT_SOURCE_DIR}/lcmtypes/java)
+    set(auto_manage_files YES)
 
-    # blow away any existing auto-generated files.
-    file(REMOVE_RECURSE ${_lcmtypes_java_dir})
+    set(modewords JAVA_DEST_DIR)
+    set(curmode "")
+    foreach(word ${ARGV})
+        list(FIND modewords ${word} mode_index)
+        if(${mode_index} GREATER -1)
+            set(curmode ${word})
+        elseif(curmode STREQUAL JAVA_DEST_DIR)
+            set(_lcmtypes_java_dir "${word}")
+            set(auto_manage_files NO)
+            set(curmode "")
+        endif()
+    endforeach()
+
+    # blow away any existing auto-generated files?
+    if(auto_manage_files)
+        file(REMOVE_RECURSE ${_lcmtypes_java_dir})
+    endif()
 
     # run lcm-gen now
     execute_process(COMMAND mkdir -p ${_lcmtypes_java_dir})
@@ -141,6 +169,10 @@ macro(lcmtypes_build_java)
         COMMAND sh -c '[ -d ${_lcmtypes_java_dir} ] || mkdir -p ${_lcmtypes_java_dir}'
         COMMAND sh -c 'lcm-gen --lazy -j ${_lcmtypes} --jpath ${_lcmtypes_java_dir}')
 
+    if(NOT auto_manage_files)
+        return()
+    endif()
+
     # get a list of all generated .java files
     file(GLOB_RECURSE _lcmtypes_java_files ${_lcmtypes_java_dir}/*.java)
 
@@ -148,7 +180,7 @@ macro(lcmtypes_build_java)
     find_package(Java REQUIRED)
     execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE)
     string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
-    set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar)
+    set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar PARENT_SCOPE)
 
     # convert the list of .java filenames to a list of .class filenames
     foreach(javafile ${_lcmtypes_java_files})
@@ -174,11 +206,39 @@ macro(lcmtypes_build_java)
     install(FILES ${LCMTYPES_JAR} DESTINATION share/java)
 
     lcmtypes_add_clean_dir(${_lcmtypes_java_dir})
-endmacro(lcmtypes_build_java)
+endfunction()
 
-macro(lcmtypes_build_python)
-    # generate Python bindings for LCM types
+function(lcmtypes_build_python)
+    find_package(PythonInterp REQUIRED)
+
+    lcmtypes_get_types(_lcmtypes)
+    list(LENGTH _lcmtypes _num_lcmtypes)
+    if(_num_lcmtypes EQUAL 0)
+        return()
+    endif()
+
     set(_lcmtypes_python_dir ${PROJECT_SOURCE_DIR}/lcmtypes/python)
+    set(auto_manage_files YES)
+
+    set(modewords PY_DEST_DIR)
+    set(curmode "")
+    foreach(word ${ARGV})
+        list(FIND modewords ${word} mode_index)
+        if(${mode_index} GREATER -1)
+            set(curmode ${word})
+        elseif(curmode STREQUAL PY_DEST_DIR)
+            set(_lcmtypes_python_dir "${word}")
+            set(auto_manage_files NO)
+            set(curmode "")
+        endif()
+    endforeach()
+
+    # purge existing files?
+    if(auto_manage_files)
+        file(REMOVE_RECURSE ${_lcmtypes_python_dir})
+    endif()
+
+    # generate Python bindings for LCM types
     execute_process(COMMAND mkdir -p ${_lcmtypes_python_dir})
     execute_process(COMMAND lcm-gen --lazy -p ${_lcmtypes} --ppath ${_lcmtypes_python_dir})
 
@@ -186,17 +246,33 @@ macro(lcmtypes_build_python)
     add_custom_target(lcmgen_python ALL
         COMMAND sh -c 'lcm-gen --lazy -p ${_lcmtypes} --ppath ${_lcmtypes_python_dir}')
 
-    # create a distutils setup.py file
+    if(NOT auto_manage_files)
+        return()
+    endif()
+
+    # get a list of all generated .py files
+    file(GLOB_RECURSE _lcmtypes_python_files RELATIVE ${_lcmtypes_python_dir} ${_lcmtypes_python_dir}/*.py )
+
+    # add rules for byte-compiling .py --> .pyc
+    foreach(py_file ${_lcmtypes_python_files})
+        set(full_py_fname ${_lcmtypes_python_dir}/${py_file})
+        add_custom_command(OUTPUT "${full_py_fname}c" COMMAND 
+            ${PYTHON_EXECUTABLE} -m compileall ${full_py_fname} DEPENDS ${full_py_fname} VERBATIM)
+        list(APPEND pyc_files "${full_py_fname}c")
+    endforeach()
+    add_custom_target(pyc_files ALL DEPENDS ${pyc_files})
+
+    # install python files
+    execute_process(COMMAND 
+        ${PYTHON_EXECUTABLE} -c "import sys; sys.stdout.write(sys.version[:3])"
+        OUTPUT_VARIABLE pyversion)
+    install(DIRECTORY ${_lcmtypes_python_dir}/ DESTINATION lib/python${pyversion}/site-packages)
 
     lcmtypes_add_clean_dir(${_lcmtypes_python_dir})
-endmacro()
+endfunction()
 
 macro(lcmtypes_build)
-    lcmtypes_get_types(_lcmtypes)
-    list(LENGTH _lcmtypes _num_lcmtypes)
-    if(_num_lcmtypes GREATER 0)
-        lcmtypes_build_c(_lcmtypes)
-        lcmtypes_build_java(_lcmtypes)
-        lcmtypes_build_python(_lcmtypes)
-    endif()
+    lcmtypes_build_c(${ARGV})
+    lcmtypes_build_java(${ARGV})
+    lcmtypes_build_python(${ARGV})
 endmacro()
