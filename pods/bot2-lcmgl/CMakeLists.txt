@@ -7,7 +7,7 @@ pods_config_search_paths()
 
 include(cmake/lcmtypes.cmake)
 lcmtypes_build(JAVA_DEST_DIR ${PROJECT_SOURCE_DIR}/java/src
-    PY_DEST_DIR ${PROJECT_SOURCE_DIR}/python)
+    PY_DEST_DIR ${PROJECT_SOURCE_DIR}/python/src)
 
 find_package(PkgConfig REQUIRED)
 find_package(GTK2 REQUIRED)

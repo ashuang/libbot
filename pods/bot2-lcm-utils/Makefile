@@ -1,0 +1,15 @@
+default_target: all
+
+$(VERBOSE).SILENT:
+
+all: pod-build/Makefile
+	$(MAKE) -C pod-build all install
+
+pod-build/Makefile:
+	./configure
+
+clean:
+	$(MAKE) -C pod-build clean
+
+distclean:
+	rm -rf pod-build

@@ -5,12 +5,27 @@ Overview
 
 libbot2 is comprised of several individual pieces of software (pods).  You can
 build and install all or some of the pods, based on what functionality you
-require.  Some of the pods depend on others for correct functionality.  They are:
+require.  Some of the pods depend on others for correct functionality.  The
+current list of pods is:
 
-  bot2-core
-  bot2-vis
-  bot2-lidar
-  bot2-procman    # NYI
+  bot2-core       Provides a C library with some simple but useful routines,
+                  and defines a set of core LCM types.
+
+  bot2-vis        Provides a C library with some classes and functions useful
+                  for visualizing data with OpenGL and GTK2.
+
+  bot2-lcmgl      Libraries for transmitting and rendering OpenGL commands over
+                  LCM.
+
+  bot2-procman    Process management tools for controlling many processes 
+                  on one or many workstations.
+
+  bot2-hokuyo     Hokuyo URG/UTM LIDAR driver.
+
+  bot2-sick       SICK LIDAR driver.
+
+  bot2-lcm-utils  LCM utilities.
+
   bot2-scanmatch  # NYI
 
 Requirements

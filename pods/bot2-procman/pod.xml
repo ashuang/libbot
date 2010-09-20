@@ -7,6 +7,5 @@
     <description>
     </description>
 
-    <depends_pods>
-    </depends_pods>
+    <depends_pods></depends_pods>
 </pod>

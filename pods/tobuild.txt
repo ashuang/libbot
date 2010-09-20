@@ -7,3 +7,4 @@ bot2-sick
 bot2-hokuyo
 bot2-procman
 bot2-lcmgl
+bot2-lcm-utils

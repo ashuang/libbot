@@ -1,12 +1,10 @@
 <pod>
     <name>bot2-sick</name>
 
-    <summary>
-    </summary>
+    <summary>SICK LIDAR driver</summary>
 
     <description>
     </description>
 
-    <depends_pods>
-    </depends_pods>
+    <depends_pods>bot2-core</depends_pods>
 </pod>
