@@ -9,8 +9,7 @@
 
 #include <lcm/lcm.h>
 
-#include <bot2-core/bot2-core.h>
-#include <lcmtypes/lcmtypes_bot2-core.h>
+#include <bot_core/bot_core.h>
 
 #include "sick.h"
 #include "moxa.h"
@@ -83,7 +82,7 @@ static void my_scan_callback(sick_t *sick, void *user, int64_t ts,
                       float rad0, float radstep, int nranges, float *ranges, float *intensities)
 {
     state_t *state = (state_t*) user;
-    bot_planar_lidar_t laser;
+    bot_core_planar_lidar_t laser;
 
     laser.utime = ts;
     laser.rad0 = rad0;
@@ -110,7 +109,7 @@ static void my_scan_callback(sick_t *sick, void *user, int64_t ts,
     laser.intensities = NULL;
     // XXXXX
 
-    bot_planar_lidar_t_publish(state->lcm, state->lcm_channel, &laser);
+    bot_core_planar_lidar_t_publish(state->lcm, state->lcm_channel, &laser);
 
     int64_t now = bot_timestamp_now();
     //pthread_mutex_lock(&state->report_mutex);

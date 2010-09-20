@@ -16,8 +16,7 @@
 
 #define MAX_ACM_DEVS 20
 
-#include <bot2-core/bot2-core.h>
-#include <lcmtypes/lcmtypes_bot2-core.h>
+#include <bot_core/bot_core.h>
 
 #define TO_DEGREES(rad) ((rad)*180/M_PI)
 
@@ -361,7 +360,7 @@ int main(int argc, char *argv[])
         goto done;
     }
 
-    bot_planar_lidar_t msg;
+    bot_core_planar_lidar_t msg;
     int max_nranges = urg_param.area_max_ - urg_param.area_min_ + 1;
     msg.ranges = (float*) malloc(sizeof(float) * max_nranges);
     msg.nintensities = 0;
@@ -465,7 +464,7 @@ int main(int argc, char *argv[])
           for(int i=0; i<nranges; i+=skipbeams)
             msg.ranges[c++] = data[i] * 1e-3;
         }
-        bot_planar_lidar_t_publish(lcm, channel, &msg);
+        bot_core_planar_lidar_t_publish(lcm, channel, &msg);
 
         scancount_since_last_report++;
 

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <glib.h>
 
-#include <bot2-core/bot2-core.h>
+#include <bot_core/bot_core.h>
 
 #define SICK_PARAMS_LENGTH 34
 

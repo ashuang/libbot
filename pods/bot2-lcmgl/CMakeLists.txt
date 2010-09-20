@@ -23,3 +23,4 @@ add_subdirectory(bot_lcmgl_render)
 add_subdirectory(lcmgl-viewer)
 
 add_subdirectory(java)
+add_subdirectory(python)

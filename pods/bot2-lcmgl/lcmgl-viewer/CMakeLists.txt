@@ -6,14 +6,14 @@ include_directories(${GLIB2_INCLUDE_DIRS}
     ${LCM_INCLUE_DIRS}
     ${BOT2_VIS_INCLUDE_DIRS})
 
-add_executable(lcmgl-viewer
+add_executable(bot-lcmgl-viewer
     globals.c
     main.c
     renderer_grid.c
     udp_util.c
     view_menu.c)
 
-target_link_libraries(lcmgl-viewer
+target_link_libraries(bot-lcmgl-viewer
     ${GLIB2_LDFLAGS}
     ${GTK2_LIBRARIES}
     ${OPENGL_LIBRARIES}
@@ -22,4 +22,4 @@ target_link_libraries(lcmgl-viewer
     bot2-lcmgl-render
     -lglut)
 
-install(TARGETS lcmgl-viewer RUNTIME DESTINATION bin)
+install(TARGETS bot-lcmgl-viewer RUNTIME DESTINATION bin)

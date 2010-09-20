@@ -14,8 +14,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include <bot2-core/bot2-core.h>
-#include <lcmtypes/lcmtypes_bot2-core.h>
+#include <bot_core/bot_core.h>
 
 #ifndef PI
 #define PI 3.14159265358979323

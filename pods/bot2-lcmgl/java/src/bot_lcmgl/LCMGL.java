@@ -134,7 +134,7 @@ public class LCMGL
     public synchronized void switchBuffers()
     {
         byte[] b = _bouts.toByteArray();
-        lcmgl.data_t msg = new lcmgl.data_t();
+        bot_lcmgl.data_t msg = new bot_lcmgl.data_t();
         msg.name = _name;
         msg.scene = _scene;
         msg.sequence = _sequence;

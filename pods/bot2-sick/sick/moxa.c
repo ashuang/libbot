@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <bot2-core/bot2-core.h>
+#include <bot_core/bot_core.h>
 
 #include "sick.h"
 
