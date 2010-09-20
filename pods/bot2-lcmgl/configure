@@ -27,6 +27,7 @@ echo "\nBUILD_PREFIX: $BUILD_PREFIX\n\n"
 [ -d pod-build ] || mkdir pod-build || exit 1
 cd pod-build || exit 1
 
+# write the build prefix to a file, in case anybody else needs it
 echo ${BUILD_PREFIX} > build_prefix
 
 # run CMake to generate and configure the build scripts

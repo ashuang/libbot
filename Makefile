@@ -25,3 +25,6 @@ distclean:
 	rm -rf build/share
 
 	@# Place additional commands here if you have any
+
+uninstall:
+	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod uninstall; done

@@ -13,3 +13,8 @@ clean:
 
 distclean:
 	rm -rf pod-build
+
+uninstall:
+	@echo removing...
+	@cat pod-build/install_manifest.txt
+	@rm -f `cat pod-build/install_manifest.txt`
