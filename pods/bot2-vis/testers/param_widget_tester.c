@@ -5,7 +5,7 @@
 
 #include <gtk/gtk.h>
 
-#include <bot2-vis/bot2-vis.h>
+#include <bot_vis/bot_vis.h>
 
 enum {
     MENU_1,

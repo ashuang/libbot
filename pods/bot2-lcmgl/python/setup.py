@@ -7,6 +7,6 @@ from distutils.debug import DEBUG
 setup(name='LCMGL',
         version='0.0.1',
         description='LCMGL',
-        packages = [ 'lcmgl' ],
+        packages = [ 'bot_lcmgl' ],
         )
 

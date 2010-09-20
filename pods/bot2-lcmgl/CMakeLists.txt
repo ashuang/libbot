@@ -18,8 +18,8 @@ pkg_check_modules(BOT2_VIS REQUIRED bot2-vis)
 
 add_definitions(-std=gnu99)
 
-add_subdirectory(lcmgl-client)
-add_subdirectory(lcmgl-render)
+add_subdirectory(bot_lcmgl_client)
+add_subdirectory(bot_lcmgl_render)
 add_subdirectory(lcmgl-viewer)
 
 add_subdirectory(java)

@@ -7,7 +7,7 @@
 
 #include <glib.h>
 
-#include <bot2-vis/bot2-vis.h>
+#include <bot_vis/bot_vis.h>
 
 typedef struct _app_params_t
 { 

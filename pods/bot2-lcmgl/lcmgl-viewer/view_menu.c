@@ -1,17 +1,16 @@
 #include <gtk/gtk.h>
 
-#include <bot/gl/gl_util.h>
-#include <bot/bot_core.h>
-#include <bot/viewer/viewer.h>
+#include <bot_core/bot_core.h>
+#include <bot_vis/bot_vis.h>
 
-void setup_view_menu(Viewer *viewer);
+void setup_view_menu(BotViewer *viewer);
 
 static void 
 on_perspective_item(GtkMenuItem *mi, void *user)
 {
     if(! gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(mi)))
         return;
-    Viewer *viewer = (Viewer*)user;
+    BotViewer *viewer = (BotViewer*)user;
     if(viewer->view_handler)
         viewer->view_handler->set_camera_perspective(viewer->view_handler, 60);
 }
@@ -20,7 +19,7 @@ static void on_orthographic_item(GtkMenuItem *mi, void *user)
 {
     if(! gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(mi)))
         return;
-    Viewer *viewer = (Viewer*)user;
+    BotViewer *viewer = (BotViewer*)user;
     if(viewer->view_handler)
         viewer->view_handler->set_camera_orthographic(viewer->view_handler);
 }
@@ -28,7 +27,7 @@ static void on_orthographic_item(GtkMenuItem *mi, void *user)
 static void
 on_setview_y_up_item(GtkMenuItem *mi, void *user)
 {
-    Viewer *viewer = (Viewer*)user;
+    BotViewer *viewer = (BotViewer*)user;
     double eye[] = { 0, 0, 50 };
     double lookat[] = { 0, 0, 0 };
     double up[] = { 0, 1, 0 };
@@ -39,7 +38,7 @@ on_setview_y_up_item(GtkMenuItem *mi, void *user)
 static void
 on_setview_x_up_item(GtkMenuItem *mi, void *user)
 {
-    Viewer *viewer = (Viewer*)user;
+    BotViewer *viewer = (BotViewer*)user;
     double eye[] = { 0, 0, 50 };
     double lookat[] = { 0, 0, 0 };
     double up[] = { 1, 0, 0 };
@@ -48,7 +47,7 @@ on_setview_x_up_item(GtkMenuItem *mi, void *user)
 }
 
 void
-setup_view_menu(Viewer *viewer)
+setup_view_menu(BotViewer *viewer)
 {
     // create the View menu
     GtkWidget *view_menuitem = gtk_menu_item_new_with_mnemonic("_View");

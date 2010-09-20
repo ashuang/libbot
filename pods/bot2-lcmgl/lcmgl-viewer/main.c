@@ -2,11 +2,10 @@
 
 #include <gtk/gtk.h>
 
-#include <bot2-core/bot2-core.h>
-#include <bot2-vis/gl_util.h>
-#include <bot2-vis/viewer.h>
+#include <bot_core/bot_core.h>
+#include <bot_vis/bot_vis.h>
 
-#include "../lcmgl-render/lcmgl-bot-renderer.h"
+#include "../bot_lcmgl_render/lcmgl_bot_renderer.h"
 #include "udp_util.h"
 #include "globals.h"
 
@@ -78,7 +77,7 @@ int main(int argc, char *argv[])
 
     // setup renderers
     setup_renderer_grid(viewer, 1);
-    lcmgl_add_renderer_to_bot_viewer(viewer, app.lcm, 0);
+    bot_lcmgl_add_renderer_to_viewer(viewer, app.lcm, 0);
 
     // logplayer controls
     BotEventHandler *ehandler = (BotEventHandler*) calloc(1, sizeof(BotEventHandler));

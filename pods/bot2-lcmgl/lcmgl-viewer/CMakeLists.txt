@@ -4,7 +4,7 @@ include_directories(${GLIB2_INCLUDE_DIRS}
     ${GTK2_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
     ${LCM_INCLUE_DIRS}
-    ${BOT2_CORE_INCLUDE_DIRS})
+    ${BOT2_VIS_INCLUDE_DIRS})
 
 add_executable(lcmgl-viewer
     globals.c
@@ -18,9 +18,8 @@ target_link_libraries(lcmgl-viewer
     ${GTK2_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${LCM_LDFLAGS}
-    ${BOT2_CORE_LDFLAGS}
-    bot2-vis
-    lcmgl-render
+    ${BOT2_VIS_LDFLAGS}
+    bot2-lcmgl-render
     -lglut)
 
 install(TARGETS lcmgl-viewer RUNTIME DESTINATION bin)

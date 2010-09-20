@@ -4,10 +4,8 @@
 
 #include <gtk/gtk.h>
 
-#include <bot2-core/bot2-core.h>
-#include <bot2-vis/gl_util.h>
-#include <bot2-vis/viewer.h>
-#include <lcmtypes/lcmtypes_bot2-core.h>
+#include <bot_core/bot_core.h>
+#include <bot_vis/bot_vis.h>
 
 #include "globals.h"
 
@@ -23,8 +21,8 @@ struct _BotRendererGrid {
     BotRenderer renderer;
 
     lcm_t *lcm;
-    bot_pose_t      *last_pose;
-    bot_pose_t_subscription_t *pose_subscription;
+    bot_core_pose_t      *last_pose;
+    bot_core_pose_t_subscription_t *pose_subscription;
 
     BotGtkParamWidget *pw;
     double             last_meters_per_grid;
@@ -155,20 +153,20 @@ static void
 grid_free (BotRenderer *renderer) 
 {
     BotRendererGrid *self = (BotRendererGrid*) renderer;
-    bot_pose_t_unsubscribe(self->lcm, self->pose_subscription);
+    bot_core_pose_t_unsubscribe(self->lcm, self->pose_subscription);
     if(self->last_pose)
-        bot_pose_t_destroy(self->last_pose);
+        bot_core_pose_t_destroy(self->last_pose);
     free (renderer);
 }
 
 static void
 on_pose(const lcm_recv_buf_t *rbuf, const char *channel, 
-        const bot_pose_t *msg, void *user_data)
+        const bot_core_pose_t *msg, void *user_data)
 {
     BotRendererGrid *self = (BotRendererGrid*) user_data;
     if(self->last_pose)
-        bot_pose_t_destroy(self->last_pose);
-    self->last_pose = bot_pose_t_copy(msg);
+        bot_core_pose_t_destroy(self->last_pose);
+    self->last_pose = bot_core_pose_t_copy(msg);
 }
 
 static void 
@@ -205,7 +203,7 @@ static BotRenderer *renderer_grid_new (BotViewer *viewer)
     self->renderer.enabled = 1;
     self->lcm = globals_get_lcm();
 
-    self->pose_subscription = bot_pose_t_subscribe(self->lcm, "POSE",
+    self->pose_subscription = bot_core_pose_t_subscribe(self->lcm, "POSE",
             on_pose, self);
 
     self->renderer.widget = gtk_alignment_new (0, 0.5, 1.0, 0);
