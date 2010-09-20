@@ -3,6 +3,7 @@
 
 bot2-core
 bot2-vis
-bot2-lidar
+bot2-sick
+bot2-hokuyo
 bot2-procman
-lcmgl
+bot2-lcmgl

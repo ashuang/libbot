@@ -8,7 +8,7 @@ pods_config_search_paths()
 # automatically build LCM types.  This also defines a number of CMake
 # variables, see cmake/lcmtypes.cmake for details
 include(cmake/lcmtypes.cmake)
-lcmtypes_build()
+lcmtypes_build(PY_DEST_DIR ${PROJECT_SOURCE_DIR}/python)
 
 find_package(PkgConfig REQUIRED)
 

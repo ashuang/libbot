@@ -36,7 +36,9 @@
 
 #include <lcm/lcm.h>
 
-#include <bot/bot_core.h>
+#include <lcmtypes/bot_procman_printf_t.h>
+#include <lcmtypes/bot_procman_info_t.h>
+#include <lcmtypes/bot_procman_orders_t.h>
 #include "procman.h"
 #include "procinfo.h"
 #include "signal_pipe.h"
@@ -84,9 +86,9 @@ typedef struct _procman_deputy {
 
     GMainLoop * mainloop;
 
-    int norders_slm;       // total botlcm_procman_orders_t observed Since Last MARK
-    int norders_forme_slm; // total botlcm_procman_orders_t for this deputy slm
-    int nstale_orders_slm; // total stale botlcm_procman_orders_t for this deputy slm
+    int norders_slm;       // total bot_procman_orders_t observed Since Last MARK
+    int norders_forme_slm; // total bot_procman_orders_t for this deputy slm
+    int nstale_orders_slm; // total stale bot_procman_orders_t for this deputy slm
 
     GList *observed_sheriffs_slm; // names of observed sheriffs slm
     char *last_sheriff_name;      // name of the most recently observed sheriff
@@ -124,12 +126,12 @@ transmit_proc_info (procman_deputy_t *s);
 static void
 transmit_str (procman_deputy_t *pmd, int sid, char * str)
 {
-    botlcm_procman_printf_t msg;
+    bot_procman_printf_t msg;
     msg.deputy_name = pmd->hostname;
     msg.sheriff_id = sid;
     msg.text = str;
     msg.utime = timestamp_now ();
-    botlcm_procman_printf_t_publish (pmd->lcm, "PMD_PRINTF", &msg);
+    bot_procman_printf_t_publish (pmd->lcm, "PMD_PRINTF", &msg);
 }
 
 static void
@@ -144,12 +146,12 @@ printf_and_transmit (procman_deputy_t *pmd, int sid, char *fmt, ...) {
         fputs (buf, stderr);
 
     if (len) {
-        botlcm_procman_printf_t msg;
+        bot_procman_printf_t msg;
         msg.deputy_name = pmd->hostname;
         msg.sheriff_id = sid;
         msg.text = buf;
         msg.utime = timestamp_now ();
-        botlcm_procman_printf_t_publish (pmd->lcm, "PMD_PRINTF", &msg);
+        bot_procman_printf_t_publish (pmd->lcm, "PMD_PRINTF", &msg);
     } else {
         dbgt ("uh oh.  printf_and_transmit printed zero bytes\n");
     }
@@ -389,7 +391,7 @@ static void
 transmit_proc_info (procman_deputy_t *s)
 {
     int i;
-    botlcm_procman_info_t msg;
+    bot_procman_info_t msg;
 
     // build a deputy info message
     memset (&msg, 0, sizeof (msg));
@@ -406,7 +408,7 @@ transmit_proc_info (procman_deputy_t *s)
 
     msg.ncmds = g_list_length ((GList*) allcmds);
     msg.cmds = 
-        (botlcm_procman_deputy_cmd_t *) calloc (msg.ncmds, sizeof (botlcm_procman_deputy_cmd_t));
+        (bot_procman_deputy_cmd_t *) calloc (msg.ncmds, sizeof (bot_procman_deputy_cmd_t));
 
     const GList *iter = allcmds;
     for (i=0; i<msg.ncmds; i++) {
@@ -428,7 +430,7 @@ transmit_proc_info (procman_deputy_t *s)
     }
 
     if (s->verbose) printf ("transmitting deputy info!\n");
-    botlcm_procman_info_t_publish (s->lcm, "PMD_INFO", &msg);
+    bot_procman_info_t_publish (s->lcm, "PMD_INFO", &msg);
 
     // release memory
     free (msg.cmds);
@@ -549,8 +551,8 @@ introspection_timeout (procman_deputy_t *s)
     return TRUE;
 }
 
-static botlcm_procman_sheriff_cmd_t *
-procmd_orders_find_cmd (const botlcm_procman_orders_t *a, int32_t sheriff_id)
+static bot_procman_sheriff_cmd_t *
+procmd_orders_find_cmd (const bot_procman_orders_t *a, int32_t sheriff_id)
 {
     int i;
     for (i=0; i<a->ncmds; i++) {
@@ -593,7 +595,7 @@ _set_command_nickname (procman_cmd_t *p, const char *nickname)
 
 static void
 procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel, 
-        const botlcm_procman_orders_t *orders, void *user_data)
+        const bot_procman_orders_t *orders, void *user_data)
 {
     procman_deputy_t *s = user_data;
     const GList *iter = NULL;
@@ -644,7 +646,7 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
         printf ("orders for me received with %d commands\n", orders->ncmds);
     for (i=0; i<orders->ncmds; i++) {
 
-        botlcm_procman_sheriff_cmd_t *cmd = &orders->cmds[i];
+        bot_procman_sheriff_cmd_t *cmd = &orders->cmds[i];
 
         if (s->verbose)
             printf ("order %d: %s (%d, %d)\n", 
@@ -720,7 +722,7 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
     for (iter=procman_get_cmds (s->pm); iter; iter=iter->next) {
         procman_cmd_t *p = (procman_cmd_t*)iter->data;
         pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)p->user;
-        botlcm_procman_sheriff_cmd_t *cmd = 
+        bot_procman_sheriff_cmd_t *cmd = 
             procmd_orders_find_cmd (orders, mi->sheriff_id);
 
         if (! cmd) {
@@ -890,8 +892,8 @@ int main (int argc, char **argv)
      // setup LCM handler
      lcmu_glib_mainloop_attach_lcm (pmd->lcm);
 
-     botlcm_procman_orders_t_subscription_t *subs = 
-         botlcm_procman_orders_t_subscribe (pmd->lcm, "PMD_ORDERS",
+     bot_procman_orders_t_subscription_t *subs = 
+         bot_procman_orders_t_subscribe (pmd->lcm, "PMD_ORDERS",
              procman_deputy_order_received, pmd);
 
      // setup a timer to periodically transmit status information
@@ -912,7 +914,7 @@ int main (int argc, char **argv)
 
      g_main_loop_unref (pmd->mainloop);
 
-     botlcm_procman_orders_t_unsubscribe(pmd->lcm, subs);
+     bot_procman_orders_t_unsubscribe(pmd->lcm, subs);
 
      for (GList *siter=pmd->observed_sheriffs_slm; siter; siter=siter->next) {
          free(siter->data);
