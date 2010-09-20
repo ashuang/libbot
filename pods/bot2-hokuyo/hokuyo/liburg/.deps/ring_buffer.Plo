@@ -1,3 +1,0 @@
-ring_buffer.lo: ring_buffer.c ring_buffer.h
-
-ring_buffer.h:

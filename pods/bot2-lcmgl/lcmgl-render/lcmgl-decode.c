@@ -10,7 +10,7 @@
 #include <bot2-core/fasttrig.h>
 #include <bot2-vis/bot2-vis.h>
 
-#include <lcmtypes/lcmtypes_lcmgl.h>
+#include <lcmtypes/lcmgl_data_t.h>
 #include "../lcmgl-client/lcmgl.h"
 #include "lcmgl-decode.h"
 

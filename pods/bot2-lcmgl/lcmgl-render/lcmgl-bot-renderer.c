@@ -4,7 +4,7 @@
 #include <bot2-vis/viewer.h>
 #include <bot2-vis/gl_util.h>
 #include <bot2-vis/gtk_util.h>
-#include <lcmtypes/lcmtypes_lcmgl.h>
+#include <lcmtypes/lcmgl_data_t.h>
 
 #include "lcmgl-decode.h"
 #include "lcmgl-bot-renderer.h"
