@@ -3,28 +3,31 @@ This is the code base for libbot2
 Overview
 ========
 
-libbot2 is comprised of several individual pieces of software (pods).  You can
-build and install all or some of the pods, based on what functionality you
-require.  Some of the pods depend on others for correct functionality.  The
-current list of pods is:
+libbot2 is composed of several pieces of software (pods).  You can build and
+install all or some of the pods, based on what functionality you require.  Some
+of the pods depend on others for correct functionality.  The current list of
+pods is:
 
-  bot2-core       Provides a C library with some simple but useful routines,
-                  and defines a set of core LCM types.
+  bot2-core       C library with some simple but useful routines,
+                  and a set of core message types (LCM types).
 
-  bot2-vis        Provides a C library with some classes and functions useful
-                  for visualizing data with OpenGL and GTK2.
+  bot2-vis        C library of classes and functions for visualizing data
+                  with OpenGL and GTK2.
 
-  bot2-lcmgl      Libraries for transmitting and rendering OpenGL commands over
-                  LCM.
+  bot2-lcmgl      Transmitting and rendering OpenGL commands over LCM.
 
   bot2-procman    Process management tools for controlling many processes 
                   on one or many workstations.
 
+  bot2-lcm-utils  LCM utility programs (tunnel LCM over TCP, chop or splice log
+                  files, etc.)
+
+
+  DEPRECATED -- will be moved out of libbot soon:
+
   bot2-hokuyo     Hokuyo URG/UTM LIDAR driver.
 
   bot2-sick       SICK LIDAR driver.
-
-  bot2-lcm-utils  LCM utilities.
 
   bot2-scanmatch  # NYI
 
