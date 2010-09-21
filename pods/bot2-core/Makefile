@@ -23,10 +23,10 @@ pod-build/Makefile:
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) $* ..
 
 clean:
-	$(MAKE) -C pod-build clean
+	[ -d pod-build ] && $(MAKE) -C pod-build clean
 
 distclean:
-	rm -rf pod-build
+	[ -d pod-build ] && rm -rf pod-build
 
 uninstall:
 	@echo removing...
