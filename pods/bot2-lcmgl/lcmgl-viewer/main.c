@@ -5,9 +5,8 @@
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
 
-#include "../bot_lcmgl_render/lcmgl_bot_renderer.h"
+#include <bot_lcmgl_render/lcmgl_bot_renderer.h>
 #include "udp_util.h"
-#include "globals.h"
 
 typedef struct {
     BotViewer *viewer;
@@ -55,8 +54,6 @@ logplayer_remote_on_key_press(BotViewer *viewer, BotEventHandler *ehandler,
 
 void setup_view_menu(BotViewer *viewer);
 
-void setup_renderer_grid(BotViewer *viewer, int render_priority);
-
 int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv);
@@ -70,13 +67,13 @@ int main(int argc, char *argv[])
 
     BotViewer *viewer = bot_viewer_new("Viewer");
     app.viewer = viewer;
-    app.lcm = globals_get_lcm();
+    app.lcm = lcm_create(NULL);
     bot_glib_mainloop_attach_lcm(app.lcm);
 
     setup_view_menu(viewer);
 
     // setup renderers
-    setup_renderer_grid(viewer, 1);
+    bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
     bot_lcmgl_add_renderer_to_viewer(viewer, app.lcm, 0);
 
     // logplayer controls

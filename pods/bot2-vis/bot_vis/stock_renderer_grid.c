@@ -2,12 +2,8 @@
  * renders a grid
  */
 
-#include <gtk/gtk.h>
-
 #include <bot_core/bot_core.h>
-#include <bot_vis/bot_vis.h>
-
-#include "globals.h"
+#include "viewer.h"
 
 #define PARAM_AZIMUTH "Rotation"
 #define PARAM_BGLIGHT "Light"
@@ -15,14 +11,10 @@
 
 #define RENDERER_NAME "Grid"
 
-typedef struct _BotRendererGrid BotRendererGrid;
+typedef struct _RendererGrid RendererGrid;
 
-struct _BotRendererGrid {
+struct _RendererGrid {
     BotRenderer renderer;
-
-    lcm_t *lcm;
-    bot_core_pose_t      *last_pose;
-    bot_core_pose_t_subscription_t *pose_subscription;
 
     BotGtkParamWidget *pw;
     double             last_meters_per_grid;
@@ -51,7 +43,7 @@ static double round_to_125(double in)
 static void
 grid_draw (BotViewer *viewer, BotRenderer *renderer)
 {
-    BotRendererGrid *self = (BotRendererGrid*) renderer;
+    RendererGrid *self = (RendererGrid*) renderer;
 
     double eye[3];
     double look[3];
@@ -84,9 +76,6 @@ grid_draw (BotViewer *viewer, BotRenderer *renderer)
     double grid_oy = ceil (look[1] / meters_per_grid) * meters_per_grid;
     double grid_oz = look[2];
 
-    if(self->last_pose) {
-        grid_oz = self->last_pose->pos[2];
-    }
     int num_lines = 300;
 
     glTranslatef (grid_ox, grid_oy, grid_oz);
@@ -152,59 +141,40 @@ grid_draw (BotViewer *viewer, BotRenderer *renderer)
 static void
 grid_free (BotRenderer *renderer) 
 {
-    BotRendererGrid *self = (BotRendererGrid*) renderer;
-    bot_core_pose_t_unsubscribe(self->lcm, self->pose_subscription);
-    if(self->last_pose)
-        bot_core_pose_t_destroy(self->last_pose);
     free (renderer);
-}
-
-static void
-on_pose(const lcm_recv_buf_t *rbuf, const char *channel, 
-        const bot_core_pose_t *msg, void *user_data)
-{
-    BotRendererGrid *self = (BotRendererGrid*) user_data;
-    if(self->last_pose)
-        bot_core_pose_t_destroy(self->last_pose);
-    self->last_pose = bot_core_pose_t_copy(msg);
 }
 
 static void 
 on_param_widget_changed (BotGtkParamWidget *pw, const char *param,
         void *user_data)
 {
-    BotRendererGrid *self = (BotRendererGrid*) user_data;
-
+    RendererGrid *self = (RendererGrid*) user_data;
     bot_viewer_request_redraw (self->viewer);
 }
 
 static void
 on_load_preferences (BotViewer *viewer, GKeyFile *keyfile, void *user_data)
 {
-    BotRendererGrid *self = user_data;
+    RendererGrid *self = user_data;
     bot_gtk_param_widget_load_from_key_file (self->pw, keyfile, RENDERER_NAME);
 }
 
 static void
 on_save_preferences (BotViewer *viewer, GKeyFile *keyfile, void *user_data)
 {
-    BotRendererGrid *self = user_data;
+    RendererGrid *self = user_data;
     bot_gtk_param_widget_save_to_key_file (self->pw, keyfile, RENDERER_NAME);
 }
 
 static BotRenderer *renderer_grid_new (BotViewer *viewer)
 {
-    BotRendererGrid *self = (BotRendererGrid*) calloc (1, sizeof (BotRendererGrid));
+    RendererGrid *self = (RendererGrid*) calloc (1, sizeof (RendererGrid));
     self->viewer = viewer;
     self->renderer.draw = grid_draw;
     self->renderer.destroy = grid_free;
     self->renderer.name = RENDERER_NAME;
     self->renderer.user = self;
     self->renderer.enabled = 1;
-    self->lcm = globals_get_lcm();
-
-    self->pose_subscription = bot_core_pose_t_subscribe(self->lcm, "POSE",
-            on_pose, self);
 
     self->renderer.widget = gtk_alignment_new (0, 0.5, 1.0, 0);
 
@@ -238,8 +208,8 @@ static BotRenderer *renderer_grid_new (BotViewer *viewer)
     return &self->renderer;
 }
 
-void setup_renderer_grid(BotViewer *viewer, int render_priority);
-void setup_renderer_grid(BotViewer *viewer, int render_priority)
+void bot_viewer_add_stock_renderer_grid(BotViewer* viewer, int priority);
+void bot_viewer_add_stock_renderer_grid(BotViewer* viewer, int priority)
 {
-    bot_viewer_add_renderer(viewer, renderer_grid_new(viewer), render_priority);
+    bot_viewer_add_renderer(viewer, renderer_grid_new(viewer), priority);
 }

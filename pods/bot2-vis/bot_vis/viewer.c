@@ -1436,3 +1436,17 @@ int bot_viewer_request_pick(BotViewer *viewer, BotEventHandler *ehandler)
     return 0;
 }
 
+void bot_viewer_add_stock_renderer_grid(BotViewer* viewer, int priority);
+
+void 
+bot_viewer_add_stock_renderer(BotViewer* viewer, int stock_renderer_id, int priority)
+{
+    switch(stock_renderer_id) {
+        case BOT_VIEWER_STOCK_RENDERER_GRID:
+            bot_viewer_add_stock_renderer_grid(viewer, priority);
+            break;
+        default:
+            fprintf(stderr, "%s: Unrecognized stock renderer id %d.\n", __FUNCTION__, stock_renderer_id);
+            break;
+    }
+}

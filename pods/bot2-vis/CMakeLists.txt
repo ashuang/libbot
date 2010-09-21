@@ -19,3 +19,4 @@ add_definitions(-std=gnu99)
 
 add_subdirectory(bot_vis)
 add_subdirectory(testers)
+add_subdirectory(rwx-viewer)

@@ -459,6 +459,13 @@ void bot_viewer_load_preferences (BotViewer *viewer, const char *fname);
 
 void bot_viewer_save_preferences (BotViewer *viewer, const char *fname);
 
+typedef enum {
+    BOT_VIEWER_STOCK_RENDERER_GRID
+} BotViewerStockRendererId;
+
+void bot_viewer_add_stock_renderer(BotViewer* viewer, int stock_renderer_id, int priority);
+
+
 #ifdef __cplusplus
 }
 #endif
