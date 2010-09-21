@@ -116,19 +116,18 @@ function(pods_install_python_packages py_src_dir)
         message(FATAL_ERROR "NYI")
     else()
         # get a list of all .py files
-        file(GLOB_RECURSE py_files RELATIVE ${py_src_dir} ${py_src_dir}/*.py)
+        file(GLOB_RECURSE py_files ${py_src_dir}/*.py)
 
         # add rules for byte-compiling .py --> .pyc
         foreach(py_file ${py_files})
             get_filename_component(py_dirname ${py_file} PATH)
-            set(py_absname "${py_src_dir}/${py_file}")
-            add_custom_command(OUTPUT "${py_absname}c" 
-                COMMAND ${PYTHON_EXECUTABLE} -m compileall ${py_absname} 
-                DEPENDS ${py_absname})
-            list(APPEND pyc_files "${py_absname}c")
+            add_custom_command(OUTPUT "${py_file}c" 
+                COMMAND ${PYTHON_EXECUTABLE} -m py_compile ${py_file} 
+                DEPENDS ${py_file})
+            list(APPEND pyc_files "${py_file}c")
 
             # install python file and byte-compiled file
-            install(FILES ${py_absname} "${py_absname}c" 
+            install(FILES ${py_file} "${py_file}c" 
                 DESTINATION "${python_install_dir}/${py_dirname}")
         endforeach()
         string(REGEX REPLACE "[^a-zA-Z0-9]" "_" san_src_dir "${py_src_dir}")

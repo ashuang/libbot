@@ -77,3 +77,61 @@ function(pods_create_pkg_config_file)
     install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
 endfunction(pods_create_pkg_config_file)
 
+
+# TODO document this
+function(pods_install_python_script script_name py_module)
+    find_package(PythonInterp REQUIRED)
+
+    # which python version?
+    execute_process(COMMAND 
+        ${PYTHON_EXECUTABLE} -c "import sys; sys.stdout.write(sys.version[:3])"
+        OUTPUT_VARIABLE pyversion)
+
+    # where do we install .py files to?
+    set(python_install_dir 
+        ${CMAKE_INSTALL_PREFIX}/lib/python${pyversion}/site-packages)
+
+    # write the script file
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${script_name} "#!/bin/sh\n"
+        "export PYTHONPATH=${python_install_dir}:\${PYTHONPATH}\n"
+        "exec python -m ${py_module}\n")
+
+    # install it...
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${script_name} DESTINATION bin)
+endfunction()
+
+function(pods_install_python_packages py_src_dir)
+    find_package(PythonInterp REQUIRED)
+
+    # which python version?
+    execute_process(COMMAND 
+        ${PYTHON_EXECUTABLE} -c "import sys; sys.stdout.write(sys.version[:3])"
+        OUTPUT_VARIABLE pyversion)
+
+    # where do we install .py files to?
+    set(python_install_dir 
+        ${CMAKE_INSTALL_PREFIX}/lib/python${pyversion}/site-packages)
+
+    if(ARGC GREATER 1)
+        message(FATAL_ERROR "NYI")
+    else()
+        # get a list of all .py files
+        file(GLOB_RECURSE py_files ${py_src_dir}/*.py)
+
+        # add rules for byte-compiling .py --> .pyc
+        foreach(py_file ${py_files})
+            get_filename_component(py_dirname ${py_file} PATH)
+            add_custom_command(OUTPUT "${py_file}c" 
+                COMMAND ${PYTHON_EXECUTABLE} -m py_compile ${py_file} 
+                DEPENDS ${py_file})
+            list(APPEND pyc_files "${py_file}c")
+
+            # install python file and byte-compiled file
+            install(FILES ${py_file} "${py_file}c" 
+                DESTINATION "${python_install_dir}/${py_dirname}")
+        endforeach()
+        string(REGEX REPLACE "[^a-zA-Z0-9]" "_" san_src_dir "${py_src_dir}")
+        add_custom_target("pyc_${san_src_dir}" ALL DEPENDS ${pyc_files})
+    endif()
+endfunction()
+
