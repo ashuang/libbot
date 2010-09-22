@@ -2,8 +2,8 @@ default_target: all
 
 $(VERBOSE).SILENT:
 
-# Figure out where to build the pod.  If BUILD_PREFIX was passed in, then use
-# that.  Otherwise, use ../../build if it exists, and ./build otherwise.
+# Figure out where to build the pod. Use BUILD_PREFIX if it was passed in.
+# Otherwise, use ../../build if it exists, and ./build if not.
 ifeq "$(BUILD_PREFIX)" ""
 BUILD_PREFIX=$(shell [ -d ../../build ] && echo `pwd`/../../build || \
 			   echo `pwd`/build)
@@ -23,10 +23,10 @@ pod-build/Makefile:
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) $* ..
 
 clean:
-	[ -d pod-build ] && $(MAKE) -C pod-build clean
+	if [ -d pod-build ]; then $(MAKE) -C pod-build clean; else exit 0; fi
 
 distclean:
-	[ -d pod-build ] && rm -rf pod-build
+	rm -rf pod-build
 
 uninstall:
 	@echo removing...
