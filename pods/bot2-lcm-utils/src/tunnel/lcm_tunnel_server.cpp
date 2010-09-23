@@ -11,7 +11,7 @@
 
 #include <lcm/lcm.h>
 
-#include <bot/bot_core.h>
+#include <bot_core/bot_core.h>
 
 #include "lcm_tunnel_server.h"
 #include "ssocket.h"

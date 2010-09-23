@@ -11,4 +11,4 @@ pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 pkg_check_modules(LCM REQUIRED lcm)
 pkg_check_modules(BOT2_CORE REQUIRED bot2-core)
 
-add_subdirectory(hokuyo)
+add_subdirectory(src/hokuyo)

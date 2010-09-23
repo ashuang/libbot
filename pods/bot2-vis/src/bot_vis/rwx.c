@@ -18,7 +18,7 @@
 #include <glib.h>
 #include <math.h>
 
-#include <bot/bot_core.h>
+#include <bot_core/bot_core.h>
 
 #include "tokenize.h"
 #include "rwx.h"

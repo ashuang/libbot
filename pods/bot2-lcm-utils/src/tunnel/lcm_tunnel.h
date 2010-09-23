@@ -2,13 +2,16 @@
 #define __lcm_tunnel_h__
 
 #include <inttypes.h>
-#include "ldpc/ldpc_wrapper.h"
-#include "lcm_tunnel_params_t.h"
-#include "ssocket.h"
-#include "introspect.h"
 #include <deque>
 #include <pthread.h>
 #include <regex.h>
+#include <glib.h>
+
+#include "ldpc/ldpc_wrapper.h"
+#include "lcm_tunnel_params_t.h"
+
+#include "ssocket.h"
+#include "introspect.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,6 +1,6 @@
 add_definitions(-std=gnu99)
 
-include_directories(${PROJECT_SOURCE_DIR}
+include_directories(${PROJECT_SOURCE_DIR}/src
     ${GTK2_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
     ${LCM_INCLUE_DIRS}
