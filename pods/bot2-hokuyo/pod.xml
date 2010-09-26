@@ -1,10 +1,18 @@
 <pod>
-    <name>bot2-hokuyo</name>
+<name>
+    bot2-hokuyo
+</name>
 
-    <summary>Hokuyo URG/UTM drivers</summary>
+<summary>
+    Hokuyo URG/UTM drivers
+</summary>
 
-    <description>
-    </description>
+<description>
+</description>
 
-    <depends_pods>bot2-core</depends_pods>
+<requirements>
+    Requires the following pods, which are distributed as part of libbot2:
+
+    bot2-core
+</requirements>
 </pod>

@@ -1,11 +1,17 @@
 <pod>
-    <name>bot2-procman</name>
+<name>
+    bot2-procman
+</name>
 
-    <summary>
-    </summary>
+<summary>
+    Tools to manage many processes distributed over several workstations.
+</summary>
 
-    <description>
-    </description>
+<description>
+</description>
 
-    <depends_pods></depends_pods>
+<requirements>
+    GLib (>= 2.0)
+    LCM  (http://lcm.googlecode.com)
+</requirements>
 </pod>
