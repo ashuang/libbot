@@ -1,7 +1,7 @@
 add_definitions(-std=gnu99)
 
-include_directories(${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUE_DIRS}
+include_directories(${GLIB2_INCLUDE_DIRS}
+    ${LCM_INCLUDE_DIRS}
     ${BOT2_CORE_INCLUDE_DIRS})
 
 add_executable(bot-hokuyo
@@ -10,7 +10,7 @@ add_executable(bot-hokuyo
     liburg/serial_utils.c
     liburg/ring_buffer.c
     liburg/serial_errno.h
-    liburg/delay.c 
+    liburg/delay.c
     liburg/ticks.c
     liburg/urg_ctrl.c
     liburg/scip_handler.c
