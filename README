@@ -3,10 +3,8 @@ This is the code base for libbot2
 Overview
 ========
 
-libbot2 is composed of several pieces of software (pods).  You can build and
-install all or some of the pods, based on what functionality you require.  Some
-of the pods depend on others for correct functionality.  The current list of
-pods is:
+libbot2 is a collection of several pieces of software (pods).  Some pods
+may depend on others.  The current list of pods is:
 
   bot2-core       C library with some simple but useful routines,
                   and a set of core message types (LCM types).
@@ -19,8 +17,8 @@ pods is:
   bot2-procman    Process management tools for controlling many processes 
                   on one or many workstations.
 
-  bot2-lcm-utils  LCM utility programs (tunnel LCM over TCP, chop or splice log
-                  files, etc.)
+  bot2-lcm-utils  LCM utility programs (tunnel LCM over TCP, chop or splice
+                  log files, etc.)
 
 
   DEPRECATED -- will be moved out of libbot soon:
@@ -39,8 +37,8 @@ Requirements
     CMake
     LCM   (http://lcm.googlecode.com)
 
-  These packages are strongly recommended.  In other words, you should install
-  them unless doing so is impossible.
+  These packages are strongly recommended.  In other words, you should
+  install them unless doing so is impossible.
     Java (Sun JDK or OpenJDK strongly preferred, gcj probably will not work)
     Python
     GTK+2.0   (required by bot2-vis)
@@ -66,8 +64,8 @@ Requirements
 Installation
 ============
 
-  By default, this software does not require installation.  Instead, it builds
-  and runs from within the build/ subdirectory.
+  By default, this software does not require installation.  Instead, it
+  builds and runs from within the build/ subdirectory.
 
   To compile, run: 
 

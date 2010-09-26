@@ -94,7 +94,7 @@ function(pods_install_python_script script_name py_module)
     # write the script file
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${script_name} "#!/bin/sh\n"
         "export PYTHONPATH=${python_install_dir}:\${PYTHONPATH}\n"
-        "exec python -m ${py_module}\n")
+        "exec python -m ${py_module} $*\n")
 
     # install it...
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${script_name} DESTINATION bin)
@@ -116,19 +116,20 @@ function(pods_install_python_packages py_src_dir)
         message(FATAL_ERROR "NYI")
     else()
         # get a list of all .py files
-        file(GLOB_RECURSE py_files ${py_src_dir}/*.py)
+        file(GLOB_RECURSE py_files RELATIVE ${py_src_dir} ${py_src_dir}/*.py)
 
         # add rules for byte-compiling .py --> .pyc
         foreach(py_file ${py_files})
             get_filename_component(py_dirname ${py_file} PATH)
-            add_custom_command(OUTPUT "${py_file}c" 
-                COMMAND ${PYTHON_EXECUTABLE} -m py_compile ${py_file} 
-                DEPENDS ${py_file})
-            list(APPEND pyc_files "${py_file}c")
+            add_custom_command(OUTPUT "${py_src_dir}/${py_file}c" 
+                COMMAND ${PYTHON_EXECUTABLE} -m py_compile ${py_src_dir}/${py_file} 
+                DEPENDS ${py_src_dir}/${py_file})
+            list(APPEND pyc_files "${py_src_dir}/${py_file}c")
 
             # install python file and byte-compiled file
-            install(FILES ${py_file} "${py_file}c" 
+            install(FILES ${py_src_dir}/${py_file} ${py_src_dir}/${py_file}c
                 DESTINATION "${python_install_dir}/${py_dirname}")
+#            message("${py_src_dir}/${py_file} -> ${python_install_dir}/${py_dirname}")
         endforeach()
         string(REGEX REPLACE "[^a-zA-Z0-9]" "_" san_src_dir "${py_src_dir}")
         add_custom_target("pyc_${san_src_dir}" ALL DEPENDS ${pyc_files})
