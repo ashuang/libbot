@@ -3,7 +3,7 @@ add_definitions(-std=gnu99)
 include_directories(${PROJECT_SOURCE_DIR}/src
     ${GTK2_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
-    ${LCM_INCLUE_DIRS}
+    ${LCM_INCLUDE_DIRS}
     ${BOT2_VIS_INCLUDE_DIRS})
 
 add_executable(bot-lcmgl-viewer

@@ -1,7 +1,7 @@
 add_definitions(-std=gnu99)
 
 include_directories(${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUE_DIRS}
+    ${LCM_INCLUDE_DIRS}
     ${LCMTYPES_INCLUDE_DIRS})
 
 add_executable(bot-procman-deputy

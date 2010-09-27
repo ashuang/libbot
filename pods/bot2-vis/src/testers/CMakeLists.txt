@@ -3,7 +3,7 @@ add_definitions(-std=gnu99)
 include_directories(${GLIB2_INCLUDE_DIRS} 
     ${GTK2_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
-    ${LCM_INCLUE_DIRS}
+    ${LCM_INCLUDE_DIRS}
     ${BOT2_CORE_INCLUDE_DIRS})
 
 set(link_libraries 

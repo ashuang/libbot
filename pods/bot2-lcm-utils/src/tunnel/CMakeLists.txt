@@ -1,5 +1,5 @@
 include_directories(${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUE_DIRS}
+    ${LCM_INCLUDE_DIRS}
     ${BOT2_CORE_INCLUDE_DIRS})
 
 set(ldpc_sources 
