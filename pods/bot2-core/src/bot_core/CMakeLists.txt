@@ -25,4 +25,5 @@ install(FILES ${h_files} DESTINATION include/bot_core)
 
 pods_create_pkg_config_file(${PROJECT_NAME}
     LIBS -lbot2-core -llcmtypes_bot2-core
+    REQUIRES glib-2.0 lcm
     VERSION 0.0.1)
