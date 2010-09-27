@@ -67,7 +67,6 @@ class deputy_cmd_t(object):
     _hash = None
     def _get_hash_recursive(parents):
         if deputy_cmd_t in parents: return 0
-        newparents = parents + [deputy_cmd_t]
         tmphash = (0xa73b90ddf937e9f6) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff)  + (tmphash>>63)) & 0xffffffffffffffff 
         return tmphash

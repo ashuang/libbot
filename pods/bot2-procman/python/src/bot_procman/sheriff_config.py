@@ -170,7 +170,7 @@ class ConfigNode:
 
         return val + "\n" + \
                 "\n".join ([str (group) for group in self.groups.values () \
-                if group.name is not "" ])
+                if group.name != "" ])
 
 class ParseError (Exception):
     def __init__ (self, tokenizer, token, msg):

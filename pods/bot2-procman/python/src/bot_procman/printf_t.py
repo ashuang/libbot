@@ -57,7 +57,6 @@ class printf_t(object):
     _hash = None
     def _get_hash_recursive(parents):
         if printf_t in parents: return 0
-        newparents = parents + [printf_t]
         tmphash = (0x855d6226c71d3dd6) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff)  + (tmphash>>63)) & 0xffffffffffffffff 
         return tmphash

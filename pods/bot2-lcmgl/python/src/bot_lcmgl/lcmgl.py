@@ -99,6 +99,24 @@ GL_SPECULAR = 0x1202
 GL_SHININESS = 0x1601
 GL_EMISSION = 0x1600
 
+for n in range(1, 9):
+    args = ", ".join(["a%d" % i for i in range(n)])
+    exec """
+def _lcmgl_make_encode_%d(cmd, fmt):
+    st = struct.Struct(">B%%s" %% fmt)
+    def encode(self, %s):
+        self.data.write(st.pack(cmd, %s))
+        self.datalen += st.size
+    return encode
+""" % (n, args, args)
+
+def _lcmgl_make_encode_0(cmd):
+    data = struct.pack("B", cmd)
+    def encode(self):
+        self.data.write(data)
+        self.datalen += 1
+    return encode
+    
 class lcmgl:
     def __init__(self, name, lcm):
         self.lcm = lcm
@@ -108,24 +126,6 @@ class lcmgl:
         self.name = name
         self.ntextures = 0
 
-    for n in range(1, 9):
-        args = ", ".join(["a%d" % i for i in range(n)])
-        exec """
-def _make_encode_%d(cmd, fmt):
-    st = struct.Struct(">B%%s" %% fmt)
-    def encode(self, %s):
-        self.data.write(st.pack(cmd, %s))
-        self.datalen += st.size
-    return encode
-""" % (n, args, args)
-
-    def _make_encode_0(cmd):
-        data = struct.pack("B", cmd)
-        def encode(self):
-            self.data.write(data)
-            self.datalen += 1
-        return encode
-    
     def switch_buffer(self):
         d = self.data.getvalue()
 
@@ -141,42 +141,42 @@ def _make_encode_%d(cmd, fmt):
         self.data = StringIO.StringIO()
         self.scene += 1
 
-    glBegin        = _make_encode_1(LCMGL_GL_BEGIN, "I")
-    glEnd          = _make_encode_0(LCMGL_GL_END)
+    glBegin        = _lcmgl_make_encode_1(LCMGL_GL_BEGIN, "I")
+    glEnd          = _lcmgl_make_encode_0(LCMGL_GL_END)
 
-    glVertex2f     = _make_encode_2(LCMGL_GL_VERTEX2F, "ff")
-    glVertex2d     = _make_encode_2(LCMGL_GL_VERTEX2D, "dd")
-    glVertex3f     = _make_encode_3(LCMGL_GL_VERTEX3F, "fff")
-    glVertex3d     = _make_encode_3(LCMGL_GL_VERTEX3D, "ddd")
+    glVertex2f     = _lcmgl_make_encode_2(LCMGL_GL_VERTEX2F, "ff")
+    glVertex2d     = _lcmgl_make_encode_2(LCMGL_GL_VERTEX2D, "dd")
+    glVertex3f     = _lcmgl_make_encode_3(LCMGL_GL_VERTEX3F, "fff")
+    glVertex3d     = _lcmgl_make_encode_3(LCMGL_GL_VERTEX3D, "ddd")
 
-    glColor3f      = _make_encode_3(LCMGL_GL_COLOR3F, "fff")
-    glColor4f      = _make_encode_4(LCMGL_GL_COLOR4F, "ffff")
+    glColor3f      = _lcmgl_make_encode_3(LCMGL_GL_COLOR3F, "fff")
+    glColor4f      = _lcmgl_make_encode_4(LCMGL_GL_COLOR4F, "ffff")
 
-    glPointSize    = _make_encode_1(LCMGL_GL_POINTSIZE, "f")
-    glLineWidth    = _make_encode_1(LCMGL_GL_LINE_WIDTH, "f")
+    glPointSize    = _lcmgl_make_encode_1(LCMGL_GL_POINTSIZE, "f")
+    glLineWidth    = _lcmgl_make_encode_1(LCMGL_GL_LINE_WIDTH, "f")
 
-    glEnable       = _make_encode_1(LCMGL_GL_ENABLE, "I")
-    glDisable      = _make_encode_1(LCMGL_GL_DISABLE, "I")
+    glEnable       = _lcmgl_make_encode_1(LCMGL_GL_ENABLE, "I")
+    glDisable      = _lcmgl_make_encode_1(LCMGL_GL_DISABLE, "I")
 
-    glTranslated   = _make_encode_3(LCMGL_GL_TRANSLATED, "ddd")
-    glRotated      = _make_encode_4(LCMGL_GL_ROTATED, "dddd")
-    glScalef       = _make_encode_3(LCMGL_GL_SCALEF, "fff")
+    glTranslated   = _lcmgl_make_encode_3(LCMGL_GL_TRANSLATED, "ddd")
+    glRotated      = _lcmgl_make_encode_4(LCMGL_GL_ROTATED, "dddd")
+    glScalef       = _lcmgl_make_encode_3(LCMGL_GL_SCALEF, "fff")
 
-    glLoadIdentity = _make_encode_0(LCMGL_GL_LOAD_IDENTITY)
-    glPushMatrix   = _make_encode_0(LCMGL_GL_PUSH_MATRIX)
-    glPopMatrix    = _make_encode_0(LCMGL_GL_POP_MATRIX)
+    glLoadIdentity = _lcmgl_make_encode_0(LCMGL_GL_LOAD_IDENTITY)
+    glPushMatrix   = _lcmgl_make_encode_0(LCMGL_GL_PUSH_MATRIX)
+    glPopMatrix    = _lcmgl_make_encode_0(LCMGL_GL_POP_MATRIX)
 
-    glNormal3f     = _make_encode_3(LCMGL_GL_NORMAL3F, "fff")
-    glMaterialf    = _make_encode_6(LCMGL_GL_MATERIALF, "IIffff")
+    glNormal3f     = _lcmgl_make_encode_3(LCMGL_GL_NORMAL3F, "fff")
+    glMaterialf    = _lcmgl_make_encode_6(LCMGL_GL_MATERIALF, "IIffff")
 
     # circle(x, y, z, radius)
-    circle         = _make_encode_4(LCMGL_CIRCLE, "dddf")
+    circle         = _lcmgl_make_encode_4(LCMGL_CIRCLE, "dddf")
     # disk(x, y, z, r_in, r_out)
-    disk           = _make_encode_5(LCMGL_DISK, "dddff")
+    disk           = _lcmgl_make_encode_5(LCMGL_DISK, "dddff")
     # sphere(x, y, z, radius, slices, stacks)
-    sphere         = _make_encode_6(LCMGL_SPHERE, "ddddII")
+    sphere         = _lcmgl_make_encode_6(LCMGL_SPHERE, "ddddII")
     # cylinder(x, y, z, r_base, r_top, height, slices, stacks)
-    cylinder       = _make_encode_8(LCMGL_CYLINDER, "ddddddII")
+    cylinder       = _lcmgl_make_encode_8(LCMGL_CYLINDER, "ddddddII")
 
     def text(self, x, y, z, text, flags = 0):
         font = 0
@@ -213,19 +213,17 @@ def _make_encode_%d(cmd, fmt):
         return tex_id
 
     def textureDrawQuad(self, tex_id, 
-            x_top_left,  y_top_left,  z_top_left,
-            x_bot_left,  y_bot_left,  z_bot_left,
-            x_bot_right, y_bot_right, z_bot_right,
-            x_top_right, y_top_right, z_top_right):
+            top_left_xyz, bot_left_xyz,
+            bot_right_xyz, top_right_xyz):
 
         if tex_id > self.ntextures or tex_id <= 0:
             raise ValueError("Invalid texture ID")
         self.data.write(struct.pack(">BIdddddddddddd", LCMGL_TEXTURE_DRAW_QUAD,
             tex_id,
-            x_top_left,  y_top_left,  z_top_left,
-            x_bot_left,  y_bot_left,  z_bot_left,
-            x_bot_right, y_bot_right, z_bot_right,
-            x_top_right, y_top_right, z_top_right))
+            top_left_xyz[0], top_left_xyz[1], top_left_xyz[2], 
+            bot_left_xyz[0], bot_left_xyz[1], bot_left_xyz[2], 
+            bot_right_xyz[0], bot_right_xyz[1], bot_right_xyz[2], 
+            top_right_xyz[0], top_right_xyz[1], top_right_xyz[2]))
 
 
 if __name__ == "__main__":
@@ -246,10 +244,10 @@ if __name__ == "__main__":
     tex_id = g.texture2d(img_data, width, height, LCMGL_LUMINANCE, LCMGL_COMPRESS_NONE)
     g.glColor3f(0, 0, 1)
     g.textureDrawQuad(tex_id, 
-            -10, 10, 0,
-            -10, -10, 0,
-            10, -10, 0,
-            10, 10, 0)
+            (-10, 10, 0),
+            (-10, -10, 0),
+            (10, -10, 0),
+            (10, 10, 0))
     g.switch_buffer()
 
     import time

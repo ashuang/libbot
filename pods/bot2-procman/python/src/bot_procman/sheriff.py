@@ -2,55 +2,24 @@ import os
 import platform
 import sys
 import time
-import types
+#import types
 import signal
 
 import gobject
 
 import lcm
-from botlcm.procman_deputy_cmd_t import procman_deputy_cmd_t
-from botlcm.procman_info_t import procman_info_t
-from botlcm.procman_orders_t import procman_orders_t
-from botlcm.procman_sheriff_cmd_t import procman_sheriff_cmd_t
+from deputy_cmd_t import deputy_cmd_t
+from info_t import info_t
+from orders_t import orders_t
+from sheriff_cmd_t import sheriff_cmd_t
 import sheriff_config
 
 #def warn (*args):
 #    return common.print_to_stderr_with_lineno (*args)
 
-def print_to_stderr_with_lineno (*args):
-    try:
-        caller = sys._getframe(1)
-    except ValueError:
-        globals = sys.__dict__
-        lineno = 1
-    else:
-        globals = caller.f_globals
-        lineno = caller.f_lineno
-    if '__name__' in globals:
-        module = globals['__name__']
-    else:
-        module = "<string>"
-    filename = globals.get('__file__')
-    if filename:
-        fnl = filename.lower()
-        if fnl.endswith((".pyc", ".pyo")):
-            filename = filename[:-1]
-    else:
-        if module == "__main__":
-            try:
-                filename = sys.argv[0]
-            except AttributeError:
-                # embedded interpreters don't have sys.argv, see bug #839151
-                filename = '__main__'
-        if not filename:
-            filename = module
-    sys.stderr.write ("[%s:%d] " % (filename, lineno))
-    sys.stderr.write (*args)
-    sys.stderr.write ("\n")
-
 def dbg (*args):
     return
-    return print_to_stderr_with_lineno (*args)
+    sys.stderr.write(*args)
 
 def timestamp_now (): return int (time.time () * 1000000)
 
@@ -180,7 +149,7 @@ class SheriffDeputy (gobject.GObject):
 
     def _update_from_deputy_info (self, dep_info):
         """
-        @dep_info: an instance of botlcm.procman_info_t
+        @dep_info: an instance of bot_procman.info_t
         """
         status_changes = []
         for cmd_info in dep_info.cmds:
@@ -264,7 +233,7 @@ class SheriffDeputy (gobject.GObject):
         return ((cmd, old_status, new_status),)
 
     def _make_orders_message (self, sheriff_name):
-        orders = procman_orders_t ()
+        orders = orders_t ()
         orders.utime = timestamp_now ()
         orders.host = self.name
         orders.ncmds = len (self.commands)
@@ -273,7 +242,7 @@ class SheriffDeputy (gobject.GObject):
             if cmd.scheduled_for_removal:
                 orders.ncmds -= 1
                 continue
-            cmd_msg = procman_sheriff_cmd_t ()
+            cmd_msg = sheriff_cmd_t ()
             cmd_msg.name = cmd.name
             cmd_msg.nickname = cmd.nickname
             cmd_msg.sheriff_id = cmd.sheriff_id
@@ -338,7 +307,7 @@ class Sheriff (gobject.GObject):
         raise KeyError ()
 
     def _on_pmd_info (self, channel, data):
-        try: dep_info = procman_info_t.decode (data)
+        try: dep_info = info_t.decode (data)
         except ValueError: 
             print ("invalid info message")
             return
@@ -357,7 +326,7 @@ class Sheriff (gobject.GObject):
         self._maybe_emit_status_change_signals (deputy, status_changes)
 
     def _on_pmd_orders (self, channel, data):
-        dep_orders = procman_orders_t.decode (data)
+        dep_orders = orders_t.decode (data)
 
         if not self._is_observer:
 #            if dep_orders.sheriff_name != self.name:
@@ -447,7 +416,7 @@ class Sheriff (gobject.GObject):
     def set_command_group (self, cmd, group_name):
         if self._is_observer:
             raise ValueError ("Can't modify commands in Observer mode")
-        deputy = self._get_command_deputy (cmd)
+#        deputy = self._get_command_deputy (cmd)
         old_group = cmd.get_group_name ()
         if old_group != group_name:
             cmd._set_group (group_name)
@@ -537,14 +506,13 @@ class Sheriff (gobject.GObject):
 
 if __name__ == "__main__":
     try:
-        import sheriff_config
         cfg_fname = sys.argv[1]
     except IndexError:
         cfg = None
     else:
         cfg = sheriff_config.config_from_filename (cfg_fname)
 
-    lc = LCM.LCM ()
+    lc = lcm.LCM ()
     sheriff = Sheriff (lc)
     if cfg is not None:
         sheriff.load_config (cfg)

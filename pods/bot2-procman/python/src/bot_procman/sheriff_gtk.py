@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import re
+#import re
 import sys
 import time
 import traceback
@@ -8,14 +8,15 @@ import traceback
 import gobject
 import gtk
 import pango
-import os
+#import os
 
 from lcm import LCM
-from botlcm.procman_deputy_cmd_t import procman_deputy_cmd_t
-from botlcm.procman_info_t import procman_info_t
-from botlcm.procman_orders_t import procman_orders_t
-from botlcm.procman_printf_t import procman_printf_t
-from botlcm.procman_sheriff_cmd_t import procman_sheriff_cmd_t
+
+import deputy_cmd_t
+from info_t import info_t
+from orders_t import orders_t
+from printf_t import printf_t
+from sheriff_cmd_t import sheriff_cmd_t
 import sheriff
 import sheriff_config
 
@@ -24,10 +25,10 @@ UPDATE_CMDS_MIN_INTERVAL_USEC = 300
 
 def timestamp_now (): return int (time.time () * 1000000)
 
-try:
-    getattr(__builtins__, "all")
-except AttributeError:
-    def all (list): return reduce (lambda x, y: x and y, list, True)
+#try:
+#    getattr(__builtins__, "all")
+#except AttributeError:
+#    def all (list): return reduce (lambda x, y: x and y, list, True)
 
 def now_str (): return time.strftime ("[%H:%M:%S] ")
 
@@ -87,7 +88,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         # group
         table.attach (gtk.Label ("Group"), 0, 1, 3, 4, 0, 0)
         self.group_cbe = gtk.combo_box_entry_new_text ()
-        groups = groups[:]
+#        groups = groups[:]
         groups.sort ()
         for group_name in groups:
             self.group_cbe.append_text (group_name)
@@ -100,9 +101,9 @@ class AddModifyCommandDialog (gtk.Dialog):
         table.show_all ()
 
     def get_deputy (self):
-        iter = self.host_cb.get_active_iter ()
-        if iter is None: return None
-        return self.deputy_ls.get_value (iter, 0)
+        host_iter = self.host_cb.get_active_iter ()
+        if host_iter is None: return None
+        return self.deputy_ls.get_value (host_iter, 0)
     
     def get_command (self): return self.name_te.get_text ()
     def get_nickname (self): return self.nickname_te.get_text ()
@@ -483,10 +484,10 @@ class SheriffGtk:
         col = SheriffGtk.COL_CMDS_TV_OBJ
         selected = []
         for path in rows:
-            iter = model.get_iter (path)
-            cmd = model.get_value (iter, col)
+            cmds_iter = model.get_iter (path)
+            cmd = model.get_value (cmds_iter, col)
             if not cmd:
-                child_iter = model.iter_children (iter)
+                child_iter = model.iter_children (cmds_iter)
                 while child_iter:
                     selected.append (model.get_value (child_iter, col))
                     child_iter = model.iter_next (child_iter)
@@ -508,18 +509,18 @@ class SheriffGtk:
             # add the group name to the command name column if visible
             # otherwise, add it to the nickname column
             if (self.cmds_tv.get_column(0).get_visible()):
-                iter = self.cmds_ts.append (None, 
+                ts_iter = self.cmds_ts.append (None, 
                           ((None, group_name, "", "", "", "", 0)))
             else:
                 if (self.cmds_tv.get_column(1).get_visible()):
-                    iter = self.cmds_ts.append (None, 
+                    ts_iter = self.cmds_ts.append (None, 
                                ((None, "", group_name, "", "", "", 0)))
                 else:
-                    iter = self.cmds_ts.append (None, 
+                    ts_iter = self.cmds_ts.append (None, 
                           ((None, group_name, "", "", "", "", 0)))
 
             trr = gtk.TreeRowReference (self.cmds_ts, 
-                    self.cmds_ts.get_path (iter))
+                    self.cmds_ts.get_path (ts_iter))
             self.group_row_references[group_name] = trr
             return trr
 
@@ -540,10 +541,10 @@ class SheriffGtk:
             else:
                 return "<never>"
 
-        def _update_host_row (model, path, iter, user_data):
-            deputy = model.get_value (iter, SheriffGtk.COL_HOSTS_TV_OBJ)
+        def _update_host_row (model, path, model_iter, user_data):
+            deputy = model.get_value (model_iter, SheriffGtk.COL_HOSTS_TV_OBJ)
             if deputy in to_update:
-                model.set (iter, 
+                model.set (model_iter, 
                         SheriffGtk.COL_HOSTS_TV_LAST_UPDATE, 
                         _deputy_last_update_str (deputy),
                         SheriffGtk.COL_HOSTS_TV_LOAD, 
@@ -576,7 +577,7 @@ class SheriffGtk:
         if now < self.next_cmds_update_time:
             return
 
-        selected_cmds = self._get_selected_commands ()
+#        selected_cmds = self._get_selected_commands ()
 
         cmds = set()
         cmd_deps = {}
@@ -588,14 +589,14 @@ class SheriffGtk:
         to_remove = []
         to_reparent = []
 
-        def _update_cmd_row (model, path, iter, user_data):
+        def _update_cmd_row (model, path, model_iter, user_data):
             obj_col = SheriffGtk.COL_CMDS_TV_OBJ
-            cmd = model.get_value (iter, obj_col)
+            cmd = model.get_value (model_iter, obj_col)
             if not cmd: 
                 # row represents a procman group
                 
                 # get a list of all the row's children
-                child_iter = model.iter_children (iter)
+                child_iter = model.iter_children (model_iter)
                 children = []
                 while child_iter:
                     children.append (model.get_value (child_iter, obj_col))
@@ -614,7 +615,7 @@ class SheriffGtk:
                         for cmd in children])
                 cpu_str = "%.2f" % (cpu_total * 100)
                 
-                model.set (iter, 
+                model.set (model_iter, 
                         SheriffGtk.COL_CMDS_TV_STATUS_ACTUAL, status_str,
                         SheriffGtk.COL_CMDS_TV_CPU_USAGE, cpu_str,
                         SheriffGtk.COL_CMDS_TV_MEM_VSIZE, mem_total)
@@ -622,24 +623,24 @@ class SheriffGtk:
                 # add the group name to the command name column if visible
                 # otherwise, add it to the nickname column
                 if (self.cmds_tv.get_column(0).get_visible()):
-                    model.set (iter, 
+                    model.set (model_iter, 
                                SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
                                SheriffGtk.COL_CMDS_TV_NICKNAME, "")
                 else:
                     if (self.cmds_tv.get_column(1).get_visible()):
-                        model.set (iter, 
+                        model.set (model_iter, 
                                    SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.group)
                     else:
-                        model.set (iter, 
+                        model.set (model_iter, 
                                    SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
                                    SheriffGtk.COL_CMDS_TV_NICKNAME, "")
                 return
             if cmd in cmds:
-                extradata = cmd.get_data ("extradata")
+#                extradata = cmd.get_data ("extradata")
                 cpu_str = "%.2f" % (cmd.cpu_usage * 100)
                 mem_usage = int (cmd.mem_vsize_bytes / 1024)
 
-                model.set (iter, 
+                model.set (model_iter, 
                         SheriffGtk.COL_CMDS_TV_CMD, cmd.name,
                         SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.nickname,
                         SheriffGtk.COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
@@ -648,7 +649,7 @@ class SheriffGtk:
                         SheriffGtk.COL_CMDS_TV_MEM_VSIZE, mem_usage)
 
 #                if extradata:
-#                    model.set (iter,
+#                    model.set (model_iter,
 #                            SheriffGtk.COL_CMDS_TV_SUMMARY, extradata.summary)
 
                 # check that the command is in the correct group in the
@@ -659,7 +660,7 @@ class SheriffGtk:
                 actual_parent_path = None
                 if correct_grr:
                     correct_parent_iter = model.get_iter(correct_grr.get_path())
-                actual_parent_iter = model.iter_parent(iter)
+                actual_parent_iter = model.iter_parent(model_iter)
 
                 if correct_parent_iter:
                     correct_parent_path = model.get_path(correct_parent_iter)
@@ -692,24 +693,25 @@ class SheriffGtk:
 
         # remove rows that have been marked for deletion
         for trr in to_remove:
-            iter = self.cmds_ts.get_iter (trr.get_path())
-            if not self.cmds_ts.get_value (iter, SheriffGtk.COL_CMDS_TV_OBJ):
-                self._delete_group_row_reference (self.cmds_ts.get_value (iter,
+            cmds_iter = self.cmds_ts.get_iter (trr.get_path())
+            if not self.cmds_ts.get_value (cmds_iter, 
+                    SheriffGtk.COL_CMDS_TV_OBJ):
+                self._delete_group_row_reference (self.cmds_ts.get_value (cmds_iter,
                     SheriffGtk.COL_CMDS_TV_CMD))
-            self.cmds_ts.remove (iter)
+            self.cmds_ts.remove (cmds_iter)
 
         # remove group rows with no children
         groups_to_remove = []
-        def _check_for_lonely_groups (model, path, iter, user_data):
-            cmd = model.get_value (iter, SheriffGtk.COL_CMDS_TV_OBJ)
-            if not cmd and not model.iter_has_child (iter): 
+        def _check_for_lonely_groups (model, path, model_iter, user_data):
+            cmd = model.get_value (model_iter, SheriffGtk.COL_CMDS_TV_OBJ)
+            if not cmd and not model.iter_has_child (model_iter): 
                 groups_to_remove.append (gtk.TreeRowReference (model, path))
         self.cmds_ts.foreach (_check_for_lonely_groups, None)
         for trr in groups_to_remove:
-            iter = self.cmds_ts.get_iter (trr.get_path())
-            self._delete_group_row_reference (self.cmds_ts.get_value (iter,
+            model_iter = self.cmds_ts.get_iter (trr.get_path())
+            self._delete_group_row_reference (self.cmds_ts.get_value (model_iter,
                 SheriffGtk.COL_CMDS_TV_CMD))
-            self.cmds_ts.remove (iter)
+            self.cmds_ts.remove (model_iter)
 
         # create new rows for new commands
         for cmd in cmds:
@@ -722,7 +724,7 @@ class SheriffGtk:
                 parent_iter = self.cmds_ts.get_iter (parent.get_path ())
             else:
                 parent_iter = None
-            iter = self.cmds_ts.append (parent_iter, new_row)
+            model_iter = self.cmds_ts.append (parent_iter, new_row)
 
         self.next_cmds_update_time = \
                 timestamp_now () + UPDATE_CMDS_MIN_INTERVAL_USEC
@@ -749,7 +751,7 @@ class SheriffGtk:
             dlg.destroy ()
             try:
                 cfg = sheriff_config.config_from_filename (self.config_filename)
-            except Exception, e:
+            except Exception:
                 msgdlg = gtk.MessageDialog (self.window,
                         gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
                         gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, 
@@ -885,7 +887,7 @@ class SheriffGtk:
             extradata.printf_drop_count = 0
         return True
 
-    def _status_cell_data_func (self, column, cell, model, iter):
+    def _status_cell_data_func (self, column, cell, model, model_iter):
         color_map = {
                 sheriff.TRYING_TO_START : "Orange",
                 sheriff.RESTARTING : "Orange",
@@ -898,10 +900,10 @@ class SheriffGtk:
                 }
 
         col = SheriffGtk.COL_CMDS_TV_OBJ
-        cmd = model.get_value (iter, col)
+        cmd = model.get_value (model_iter, col)
         if not cmd:
             # group node
-            child_iter = model.iter_children (iter)
+            child_iter = model.iter_children (model_iter)
             children = []
             while child_iter:
                 children.append (model.get_value (child_iter, col))
@@ -937,21 +939,21 @@ class SheriffGtk:
             # expand a group row when user presses right arrow key
             model, rows = self.cmds_tv.get_selection ().get_selected_rows ()
             if len (rows) == 1:
-                col = SheriffGtk.COL_CMDS_TV_OBJ
-                iter = model.get_iter (rows[0])
-                if model.iter_has_child (iter):
+#                col = SheriffGtk.COL_CMDS_TV_OBJ
+                model_iter = model.get_iter (rows[0])
+                if model.iter_has_child (model_iter):
                     self.cmds_tv.expand_row (rows[0], True)
                 return True
         elif event.keyval == gtk.gdk.keyval_from_name ("Left"):
             # collapse a group row when user presses left arrow key
             model, rows = self.cmds_tv.get_selection ().get_selected_rows ()
             if len (rows) == 1:
-                col = SheriffGtk.COL_CMDS_TV_OBJ
-                iter = model.get_iter (rows[0])
-                if model.iter_has_child (iter):
+#                col = SheriffGtk.COL_CMDS_TV_OBJ
+                model_iter = model.get_iter (rows[0])
+                if model.iter_has_child (model_iter):
                     self.cmds_tv.collapse_row (rows[0])
                 else:
-                    parent = model.iter_parent (iter)
+                    parent = model.iter_parent (model_iter)
                     if parent:
                         parent_path = self.cmds_ts.get_path (parent)
                         self.cmds_tv.set_cursor (parent_path)
@@ -976,9 +978,9 @@ class SheriffGtk:
                     treeview.set_cursor (path, col, 0)
 
                 # build a submenu of all deputies
-                selected_cmds = self._get_selected_commands ()
-                can_start_stop_remove = len(selected_cmds) > 0 and \
-                        not self.sheriff.is_observer ()
+#                selected_cmds = self._get_selected_commands ()
+#                can_start_stop_remove = len(selected_cmds) > 0 and \
+#                        not self.sheriff.is_observer ()
 
                 deputy_submenu = gtk.Menu ()
                 deps = [ (d.name, d) for d in self.sheriff.get_deputies () ]
@@ -1040,8 +1042,8 @@ class SheriffGtk:
                 
 
     def _on_cmds_tv_row_activated (self, treeview, path, column):
-        iter = self.cmds_ts.get_iter (path)
-        cmd = self.cmds_ts.get_value (iter, SheriffGtk.COL_CMDS_TV_OBJ)
+        model_iter = self.cmds_ts.get_iter (path)
+        cmd = self.cmds_ts.get_value (model_iter, SheriffGtk.COL_CMDS_TV_OBJ)
         if not cmd:
             return
 
@@ -1107,7 +1109,7 @@ class SheriffGtk:
 
     # LCM handlers
     def on_procman_orders (self, channel, data):
-        msg = procman_orders_t.decode (data)
+        msg = orders_t.decode (data)
         if not self.sheriff.is_observer () and \
                 self.sheriff.name != msg.sheriff_name:
             # detected the presence of another sheriff that is not this one.
@@ -1120,7 +1122,7 @@ class SheriffGtk:
                     lambda *s: self.statusbar.pop (self.statusbar.get_context_id ("main")))
 
     def on_procman_printf (self, channel, data):
-        msg = procman_printf_t.decode (data)
+        msg = printf_t.decode (data)
         if msg.sheriff_id:
             try:
                 cmd = self.sheriff.get_command_by_id (msg.sheriff_id)
@@ -1158,7 +1160,6 @@ class SheriffGtk:
 
 def run ():
     try:
-        import sheriff_config
         cfg_fname = sys.argv[1]
     except IndexError:
         cfg = None
@@ -1169,8 +1170,7 @@ def run ():
     def handle (*a):
         try:
             lc.handle ()
-        except Exception, e:
-            import traceback
+        except Exception:
             traceback.print_exc ()
         return True
     gobject.io_add_watch (lc, gobject.IO_IN, handle)
