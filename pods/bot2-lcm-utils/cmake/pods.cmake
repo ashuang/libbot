@@ -13,7 +13,7 @@ macro(pods_config_search_paths)
         link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
         # abuse RPATH
-        set(CMAKE_INSTALL_RPATH_USE_LINK_PATH true)
+        set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
         set(__pods_setup true)
     endif(NOT DEFINED __pods_setup)
@@ -136,3 +136,4 @@ function(pods_install_python_packages py_src_dir)
     endif()
 endfunction()
 
+pods_config_search_paths()

@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.4.6)
 project(bot2-lcm-utils)
 
 include(cmake/pods.cmake)
-pods_config_search_paths()
 
 find_package(PkgConfig REQUIRED)
 

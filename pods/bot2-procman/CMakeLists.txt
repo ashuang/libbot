@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.4.6)
 project(bot2-procman)
 
 include(cmake/pods.cmake)
-pods_config_search_paths()
 
 # automatically build LCM types.  This also defines a number of CMake
 # variables, see cmake/lcmtypes.cmake for details

@@ -5,7 +5,6 @@ project(bot2-vis)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 include(cmake/pods.cmake)
-pods_config_search_paths()
 
 find_package(PkgConfig REQUIRED)
 find_package(GTK2 REQUIRED)

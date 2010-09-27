@@ -1,8 +1,9 @@
 add_definitions(-std=gnu99)
 
-include_directories(${GLIB2_INCLUDE_DIRS}
+include_directories(
+    ${BOT2_CORE_INCLUDE_DIRS} 
     ${LCM_INCLUDE_DIRS}
-    ${BOT2_CORE_INCLUDE_DIRS})
+    )
 
 add_executable(bot-hokuyo
     hokuyo.c
@@ -18,9 +19,9 @@ add_executable(bot-hokuyo
     liburg/scip_handler.h
     liburg/urg_errno.h)
 
-target_link_libraries(bot-hokuyo
-    ${GLIB2_LDFLAGS}
+target_link_libraries(bot-hokuyo 
+    ${BOT2_CORE_LDFLAGS}
     ${LCM_LDFLAGS}
-    ${BOT2_CORE_LDFLAGS})
+    )
 
 install(TARGETS bot-hokuyo RUNTIME DESTINATION bin)

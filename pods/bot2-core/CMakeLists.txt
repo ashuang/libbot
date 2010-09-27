@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.4.6)
 project(bot2-core)
 
 include(cmake/pods.cmake)
-pods_config_search_paths()
 
 include(cmake/lcmtypes.cmake)
 lcmtypes_build(C_AGGREGATE_HEADER bot_core.h
