@@ -18,11 +18,11 @@ target_link_libraries(bot2-core
 # changes.
 set_target_properties(bot2-core PROPERTIES SOVERSION 1)
 
-# make both the shared library public
-install(TARGETS bot2-core LIBRARY DESTINATION lib)
+# make the shared library public
+pods_install_libraries(bot2-core)
+pods_install_headers_to(${h_files} bot_core)
 
-install(FILES ${h_files} DESTINATION include/bot_core)
-
+#create a pkg-config file for bot2-core
 pods_create_pkg_config_file(${PROJECT_NAME}
     LIBS -lbot2-core -llcmtypes_bot2-core
     REQUIRES glib-2.0 lcm

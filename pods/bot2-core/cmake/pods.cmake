@@ -136,4 +136,30 @@ function(pods_install_python_packages py_src_dir)
     endif()
 endfunction()
 
+
+#install a (list) of header files to the standard pods location:
+# build/include/DEST_DIR
+# where DEST_DIR is the last specified argument
+# TODO: is this the syntax what we want?
+function(pods_install_headers_to)
+    list(GET ARGV -1 dest_dir)
+    list(REMOVE_AT ARGV -1)
+	install(FILES ${ARGV} DESTINATION include/${dest_dir})
+endfunction(pods_install_headers_to)
+
+#install a (list) of binaries to the standard pods location:
+# build/bin
+function(pods_install_binaries)
+    install(TARGETS ${ARGV} RUNTIME DESTINATION bin)
+endfunction(pods_install_binaries)
+
+#install a (list) of libraries to the standard pods location:
+# build/lib
+function(pods_install_libraries)
+	install(TARGETS ${ARGV} LIBRARY DESTINATION lib)
+endfunction(pods_install_libraries)
+
+
+
+
 pods_config_search_paths()

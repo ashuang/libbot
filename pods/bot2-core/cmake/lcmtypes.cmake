@@ -2,10 +2,7 @@
 # libraries.
 #
 # The primary macro is
-#     lcmtypes_build( [C_LIBNAME libname] 
-#                     [C_AGGREGATE_HEADER header]
-#                     [JAVA_DEST_DIR path]
-#                     [PY_DEST_DIR path] )
+#     lcmtypes_build()
 # 
 # It expects that the directory ${PROJECT_SOURCE_DIR}/lcmtypes contains all
 # the LCM types used by the system.  The macro generates C, Java, and Python
@@ -301,8 +298,19 @@ function(lcmtypes_build_python)
     lcmtypes_add_clean_dir(${_lcmtypes_python_dir})
 endfunction()
 
+function(lcmtypes_install_types)
+    lcmtypes_get_types(_lcmtypes)
+    list(LENGTH _lcmtypes _num_lcmtypes)
+    if(_num_lcmtypes EQUAL 0)
+        return()
+    endif()
+
+    install(FILES ${_lcmtypes} DESTINATION share/lcmtypes)
+endfunction()
+
 macro(lcmtypes_build)
     lcmtypes_build_c(${ARGV})
     lcmtypes_build_java(${ARGV})
     lcmtypes_build_python(${ARGV})
+    lcmtypes_install_types()
 endmacro()
