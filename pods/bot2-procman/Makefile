@@ -9,6 +9,12 @@ BUILD_PREFIX=$(shell [ -d ../../build ] && echo `pwd`/../../build || \
 			   echo `pwd`/build)
 endif
 
+# Default to a release build.  If you want to enable debugging flags, run
+# "make BUILD_TYPE=Debug"
+ifeq "$(BUILD_TYPE)" ""
+BUILD_TYPE="Release"
+endif
+
 all: pod-build/Makefile
 	$(MAKE) -C pod-build all install
 
@@ -26,12 +32,10 @@ configure:
 	@echo "$(BUILD_PREFIX)" > pod-build/build_prefix
 
 	# run CMake to generate and configure the build scripts
-	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) $* ..
+	@cd pod-build && \
+		cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 clean:
-	if [ -d pod-build ]; then $(MAKE) -C pod-build clean; else exit 0; fi
-
-distclean:
 	rm -rf pod-build
 
 uninstall:
