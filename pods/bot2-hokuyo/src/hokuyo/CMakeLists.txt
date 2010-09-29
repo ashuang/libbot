@@ -1,10 +1,5 @@
 add_definitions(-std=gnu99)
 
-include_directories(
-    ${BOT2_CORE_INCLUDE_DIRS} 
-    ${LCM_INCLUDE_DIRS}
-    )
-
 add_executable(bot-hokuyo
     hokuyo.c
     liburg/serial_ctrl.c
@@ -19,9 +14,7 @@ add_executable(bot-hokuyo
     liburg/scip_handler.h
     liburg/urg_errno.h)
 
-target_link_libraries(bot-hokuyo 
-    ${BOT2_CORE_LDFLAGS}
-    ${LCM_LDFLAGS}
-    )
+pods_use_pkg_config_packages(bot-hokuyo 
+    bot2-core lcm)
 
-install(TARGETS bot-hokuyo RUNTIME DESTINATION bin)
+pods_install_executables(bot-hokuyo)

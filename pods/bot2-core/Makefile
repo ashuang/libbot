@@ -10,7 +10,7 @@ BUILD_PREFIX=$(shell [ -d ../../build ] && echo `pwd`/../../build || \
 endif
 
 all: pod-build/Makefile
-	$(MAKE) -C pod-build all install
+	$(MAKE) -C pod-build all install | grep -v Up-to-date:
 
 pod-build/Makefile:
 	$(MAKE) configure

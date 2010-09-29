@@ -9,6 +9,7 @@ include_directories(
 
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)
+
 add_library(bot2-lcmgl-render SHARED ${c_files})
 
 target_link_libraries(bot2-lcmgl-render
@@ -22,11 +23,11 @@ target_link_libraries(bot2-lcmgl-render
 # changes.
 set_target_properties(bot2-lcmgl-render PROPERTIES SOVERSION 1)
 
-# make both the shared library public
-install(TARGETS bot2-lcmgl-render LIBRARY DESTINATION lib)
+pods_install_libraries(bot2-lcmgl-render)
 
-install(FILES ${h_files} DESTINATION include/bot_lcmgl_render)
+pods_install_headers(${h_files} DESTINATION bot_lcmgl_render)
 
-pods_create_pkg_config_file(bot2-lcmgl-render
+pods_install_pkg_config_file(bot2-lcmgl-render
     LIBS -lbot2-lcmgl-render
+    REQUIRES gtk+-2.0 bot2-vis lcm
     VERSION 0.0.1)

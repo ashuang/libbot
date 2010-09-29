@@ -1,5 +1,9 @@
 add_definitions(-std=gnu99)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+pkg_check_modules(LCM REQUIRED lcm)
+
 include_directories(${GLIB2_INCLUDE_DIRS} 
     ${LCM_INCLUDE_DIRS}
     ${LCMTYPES_INCLUDE_DIRS})
@@ -16,4 +20,4 @@ target_link_libraries(bot-procman-deputy
     ${LCM_LDFLAGS}
     ${LCMTYPES_LIBS})
 
-install(TARGETS bot-procman-deputy RUNTIME DESTINATION bin)
+pods_install_executables(bot-procman-deputy)

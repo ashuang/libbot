@@ -1,7 +1,9 @@
 add_definitions(-std=gnu99)
 
 include_directories(${GTK2_INCLUDE_DIRS}
-    ${OPENGL_INCLUDE_DIR})
+    ${OPENGL_INCLUDE_DIR}
+    ${GLUT_INCLUDE_DIR}
+    )
 
 add_executable(bot-rwx-viewer
     main.c
@@ -10,7 +12,8 @@ add_executable(bot-rwx-viewer
 target_link_libraries(bot-rwx-viewer
     ${GTK2_LIBRARIES}
     ${OPENGL_LIBRARIES}
+    ${GLUT_LIBRARIES}
     bot2-vis
-    -lglut)
+    )
 
-install(TARGETS bot-rwx-viewer RUNTIME DESTINATION bin)
+pods_install_executables(bot-rwx-viewer)

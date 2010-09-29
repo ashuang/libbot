@@ -1,13 +1,10 @@
 add_definitions(-std=gnu99)
 
-include_directories(${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUDE_DIRS})
-
 add_executable(bot-lcm-logsplice
     lcm-logsplice.c)
 
-target_link_libraries(bot-lcm-logsplice
-    ${GLIB2_LDFLAGS}
-    ${LCM_LDFLAGS})
+pods_use_pkg_config_packages(bot-lcm-logsplice 
+    lcm glib-2.0)
 
-install(TARGETS bot-lcm-logsplice RUNTIME DESTINATION bin)
+pods_install_executables(bot-lcm-logsplice)
+

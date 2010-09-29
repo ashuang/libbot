@@ -22,10 +22,11 @@ target_link_libraries(${libname}
 set_target_properties(${libname} PROPERTIES SOVERSION 1)
 
 # make both the shared library public
-install(TARGETS ${libname} LIBRARY DESTINATION lib)
+pods_install_libraries(${libname})
 
-install(FILES ${h_files} DESTINATION include/bot_lcmgl_client)
+pods_install_headers(${h_files} DESTINATION bot_lcmgl_client)
 
-pods_create_pkg_config_file(bot2-lcmgl-client
+pods_install_pkg_config_file(bot2-lcmgl-client
     LIBS -l${libname}
+    REQUIRES glib-2.0 lcm
     VERSION 0.0.1)

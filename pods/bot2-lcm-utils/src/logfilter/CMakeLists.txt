@@ -1,13 +1,9 @@
 add_definitions(-std=gnu99)
 
-include_directories(${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUDE_DIRS})
-
 add_executable(bot-lcm-logfilter
     lcm-logfilter.c)
 
-target_link_libraries(bot-lcm-logfilter
-    ${GLIB2_LDFLAGS}
-    ${LCM_LDFLAGS})
+pods_use_pkg_config_packages(bot-lcm-logfilter 
+    lcm glib-2.0)
 
-install(TARGETS bot-lcm-logfilter RUNTIME DESTINATION bin)
+pods_install_executables(bot-lcm-logfilter)

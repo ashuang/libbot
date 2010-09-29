@@ -207,7 +207,7 @@ function(lcmtypes_build_java)
     find_package(Java REQUIRED)
     execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE)
     string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
-    set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar PARENT_SCOPE)
+    set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar)
 
     # convert the list of .java filenames to a list of .class filenames
     foreach(javafile ${_lcmtypes_java_files})
@@ -231,6 +231,7 @@ function(lcmtypes_build_java)
     add_dependencies(lcmtypes_${PROJECT_NAME}_jar lcmgen_java)
 
     install(FILES ${LCMTYPES_JAR} DESTINATION share/java)
+    set(LCMTYPES_JAR ${LCMTYPES_JAR} PARENT_SCOPE)
 
     lcmtypes_add_clean_dir(${_lcmtypes_java_dir})
 endfunction()
@@ -298,8 +299,19 @@ function(lcmtypes_build_python)
     lcmtypes_add_clean_dir(${_lcmtypes_python_dir})
 endfunction()
 
+function(lcmtypes_install_types)
+    lcmtypes_get_types(_lcmtypes)
+    list(LENGTH _lcmtypes _num_lcmtypes)
+    if(_num_lcmtypes EQUAL 0)
+        return()
+    endif()
+
+    install(FILES ${_lcmtypes} DESTINATION share/lcmtypes)
+endfunction()
+
 macro(lcmtypes_build)
     lcmtypes_build_c(${ARGV})
     lcmtypes_build_java(${ARGV})
     lcmtypes_build_python(${ARGV})
+    lcmtypes_install_types()
 endmacro()

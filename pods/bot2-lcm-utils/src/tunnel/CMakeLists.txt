@@ -1,7 +1,3 @@
-include_directories(${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUDE_DIRS}
-    ${BOT2_CORE_INCLUDE_DIRS})
-
 set(ldpc_sources 
     ldpc/getopt.cpp
     ldpc/ldpc_create_pchk.cpp
@@ -31,9 +27,7 @@ add_executable(ldpc-wrapper-test
 set_source_files_properties(introspect.c lcm_tunnel_params_t.c ssocket.c 
     PROPERTIES COMPILE_FLAGS "-std=gnu99")
 
-target_link_libraries(bot-lcm-tunnel
-    ${GLIB2_LDFLAGS}
-    ${LCM_LDFLAGS}
-    ${BOT2_CORE_LDFLAGS})
+pods_use_pkg_config_packages(bot-lcm-tunnel 
+    bot2-core lcm glib-2.0)
 
-install(TARGETS bot-lcm-tunnel RUNTIME DESTINATION bin)
+pods_install_executables(bot-lcm-tunnel)

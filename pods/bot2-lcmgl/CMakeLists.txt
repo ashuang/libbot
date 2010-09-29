@@ -11,6 +11,7 @@ lcmtypes_build(JAVA_DEST_DIR ${PROJECT_SOURCE_DIR}/java/src
 find_package(PkgConfig REQUIRED)
 find_package(GTK2 REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
 
 pkg_check_modules(LCM REQUIRED lcm)
 pkg_check_modules(BOT2_VIS REQUIRED bot2-vis)
