@@ -13,12 +13,6 @@ all:
 
 clean:
 	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod clean; done
-	rm -rf build/*
-
-	@# Place additional commands here if you have any
-
-distclean:
-	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod distclean; done
 	rm -rf build/bin
 	rm -rf build/include
 	rm -rf build/lib
