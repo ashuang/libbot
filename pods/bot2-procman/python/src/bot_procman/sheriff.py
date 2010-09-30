@@ -277,7 +277,6 @@ class Sheriff (gobject.GObject):
         self.lc.subscribe ("PMD_INFO", self._on_pmd_info)
         self.lc.subscribe ("PMD_ORDERS", self._on_pmd_orders)
         self.deputies = {}
-        self.command_to_deputy_map = {}
         self._is_observer = False
         self.name = platform.node () + ":" + str(os.getpid ()) + \
                 ":" + str (timestamp_now ())
@@ -438,6 +437,13 @@ class Sheriff (gobject.GObject):
 
     def find_deputy (self, name):
         return self.deputies[name]
+
+    def purge_useless_deputies(self):
+        for deputy_name, deputy in self.deputies.items():
+            cmds = deputy.commands.values() 
+            if not deputy.commands or \
+                    all([ cmd.scheduled_for_removal for cmd in cmds ]):
+                del self.deputies[deputy_name]
 
     def get_command_by_id (self, command_id):
         for deputy in self.deputies.values ():

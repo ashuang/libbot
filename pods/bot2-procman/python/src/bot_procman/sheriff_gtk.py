@@ -484,6 +484,18 @@ class SheriffGtk:
 #        col.set_resizable (True)
 #        self.hosts_tv.append_column (col)
 
+        self.hosts_tv.connect ("button-press-event", 
+                self._on_hosts_tv_button_press_event)
+
+        # hosts treeview context menu
+        self.hosts_ctxt_menu = gtk.Menu ()
+
+        self.cleanup_hosts_ctxt_mi = gtk.MenuItem ("_Cleanup")
+        self.hosts_ctxt_menu.append (self.cleanup_hosts_ctxt_mi)
+        self.cleanup_hosts_ctxt_mi.connect ("activate", 
+                self._cleanup_hosts_treeview)
+        self.hosts_ctxt_menu.show_all()
+
         gobject.timeout_add (1000, 
                 lambda *s: self._repopulate_hosts_tv() or True)
 
@@ -580,7 +592,7 @@ class SheriffGtk:
         def _deputy_last_update_str (dep):
             if dep.last_update_utime:
                 now = timestamp_now ()
-                return "%.3f seconds ago" % ((now-dep.last_update_utime)*1e-6)
+                return "%.1f seconds ago" % ((now-dep.last_update_utime)*1e-6)
             else:
                 return "<never>"
 
@@ -1100,6 +1112,14 @@ class SheriffGtk:
             if pathinfo is None:
                 self.cmds_tv.get_selection ().unselect_all ()
                 
+    def _on_hosts_tv_button_press_event (self, treeview, event):
+        if event.type == gtk.gdk.BUTTON_PRESS and event.button == 3:
+            self.hosts_ctxt_menu.popup (None, None, None, event.button, event.time)
+            return True
+
+    def _cleanup_hosts_treeview(self, *args):
+        self.sheriff.purge_useless_deputies()
+        self._repopulate_hosts_tv()
 
     def _on_cmds_tv_row_activated (self, treeview, path, column):
         model_iter = self.cmds_ts.get_iter (path)
