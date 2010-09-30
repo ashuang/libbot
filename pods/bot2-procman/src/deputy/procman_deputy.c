@@ -382,7 +382,7 @@ glib_handle_signal (int signal, procman_deputy_t *pmd) {
         dbgt ("received signal %d (%s).  stopping all processes\n", signal,
                 strsignal (signal));
         remove_all_cmds (pmd);
-        dbgt ("stopping GTK\n");
+        dbgt ("stopping deputy main loop\n");
         g_main_loop_quit (pmd->mainloop);
     }
 }

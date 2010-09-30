@@ -4,11 +4,13 @@
 import sys
 import time
 import traceback
+import getopt
+import subprocess
 
 import gobject
 import gtk
 import pango
-#import os
+import os
 
 from lcm import LCM
 
@@ -20,8 +22,24 @@ from sheriff_cmd_t import sheriff_cmd_t
 import sheriff
 import sheriff_config
 
+try:
+    from build_prefix import BUILD_PREFIX
+except ImportError:
+    BUILD_PREFIX = None
+
 PRINTF_RATE_LIMIT = 10000
 UPDATE_CMDS_MIN_INTERVAL_USEC = 300
+
+def find_bot_procman_deputy_cmd():
+    search_path = []
+    if BUILD_PREFIX is not None:
+        search_path.append("%s/bin" % BUILD_PREFIX)
+    search_path.extend(os.getenv("PATH").split(":"))
+    for dirname in search_path:
+        fname = "%s/bot-procman-deputy" % dirname
+        if os.path.exists(fname) and os.path.isfile(fname):
+            return fname
+    return None
 
 def timestamp_now (): return int (time.time () * 1000000)
 
@@ -136,6 +154,9 @@ class SheriffGtk:
         self.stdout_maxlines = 2000
         self.config_filename = None
         self.next_cmds_update_time = 0
+
+        # deputy spawned by the sheriff
+        self.spawned_deputy = None
 
         # create sheriff and subscribe to events
         self.sheriff = sheriff.Sheriff (self.lc)
@@ -269,6 +290,20 @@ class SheriffGtk:
         self.is_observer_cmi = gtk.CheckMenuItem ("_Observer")
         self.is_observer_cmi.connect ("activate", self.on_observer_mi_activate)
         options_menu.append (self.is_observer_cmi)
+
+        self.spawn_deputy_cmi = gtk.MenuItem("Spawn Local_Deputy")
+        self.spawn_deputy_cmi.connect("activate", self.on_spawn_deputy_activate)
+        options_menu.append(self.spawn_deputy_cmi)
+
+        self.terminate_spawned_deputy_cmi = gtk.MenuItem("_Terminate spawned deputy")
+        self.terminate_spawned_deputy_cmi.connect("activate", self.on_terminate_spawned_deputy_activate)
+        options_menu.append(self.terminate_spawned_deputy_cmi)
+        self.terminate_spawned_deputy_cmi.set_sensitive(False)
+
+        self.bot_procman_deputy_cmd = find_bot_procman_deputy_cmd()
+        if not self.bot_procman_deputy_cmd:
+            sys.stderr.write("Can't find bot-procman-deputy.  Spawn Deputy disabled")
+            self.spawn_deputy_cmi.set_sensitive(False)
 
         # view menu
         view_menu = gtk.Menu ()
@@ -476,6 +511,10 @@ class SheriffGtk:
 
         vbox.show_all ()
         self.window.show ()
+
+    def cleanup(self):
+        if self.spawned_deputy:
+            self.spawned_deputy.terminate()
 
     def _get_selected_commands (self):
         selection = self.cmds_tv.get_selection ()
@@ -786,6 +825,23 @@ class SheriffGtk:
 
     def on_observer_mi_activate (self, menu_item):
         self._set_observer (menu_item.get_active ())
+
+    def on_spawn_deputy_activate(self, *args):
+        if self.spawned_deputy:
+            self.spawned_deputy.terminate()
+            self.spawned_deputy = None
+        args = [ self.bot_procman_deputy_cmd, "-n", "localhost" ]
+        self.spawned_deputy = subprocess.Popen(args)
+        # TODO disable
+        self.spawn_deputy_cmi.set_sensitive(False)
+        self.terminate_spawned_deputy_cmi.set_sensitive(True)
+
+    def on_terminate_spawned_deputy_activate(self, *args):
+        if self.spawned_deputy:
+            self.spawned_deputy.terminate()
+            self.spawned_deputy = None
+        self.spawn_deputy_cmi.set_sensitive(True)
+        self.terminate_spawned_deputy_cmi.set_sensitive(False)
 
     def _do_add_command_dialog (self, *args):
         deputies = self.sheriff.get_deputies ()
@@ -1158,13 +1214,41 @@ class SheriffGtk:
 #                    extradata.summary = line[8:]
 
 
+def usage():
+    sys.stdout.write(
+"""usage: %s [options] <procman_config_file>
+
+Process Management operating console.
+
+Options:
+  -l, --lone-ranger   Automatically spawn a deputy running on localhost
+  -h, --help          Shows this help text
+
+If <procman_config_file> is specified, then the sheriff tries to load
+deputy commands from the file.
+
+""" % os.path.basename(sys.argv[0]))
+    sys.exit(1)
+
 def run ():
     try:
-        cfg_fname = sys.argv[1]
-    except IndexError:
-        cfg = None
-    else:
-        cfg = sheriff_config.config_from_filename (cfg_fname)
+        opts, args = getopt.getopt( sys.argv[1:], 'hl',
+                ['help','lone-ranger'] )
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    spawn_deputy = False
+
+    for optval, argval in opts:
+        if optval in [ '-l', '--lone-ranger' ]:
+            spawn_deputy = True
+        elif optval in [ '-h', '--help' ]:
+            usage()
+
+    cfg = None
+    if len(args) > 0:
+        cfg = sheriff_config.config_from_filename(args[0])
 
     lc = LCM ()
     def handle (*a):
@@ -1174,13 +1258,16 @@ def run ():
             traceback.print_exc ()
         return True
     gobject.io_add_watch (lc, gobject.IO_IN, handle)
-    gui = SheriffGtk (lc)
-    def delayed_load ():
-        gui.sheriff.load_config (cfg)
-        return False
+    gui = SheriffGtk(lc)
+    if spawn_deputy:
+        gui.on_spawn_deputy_activate()
     if cfg is not None:
-        gobject.timeout_add (2000, delayed_load)
-    gtk.main ()
+        gobject.timeout_add (2000, lambda: gui.sheriff.load_config (cfg))
+    try:
+        gtk.main ()
+    except KeyboardInterrupt:
+        print("Exiting")
+    gui.cleanup()
 
 if __name__ == "__main__":
     run ()
