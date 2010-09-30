@@ -240,6 +240,10 @@ class SheriffGtk:
         self.save_cfg_mi.connect ("activate", self._do_save_config_dialog)
         quit_mi.connect ("activate", gtk.main_quit)
 
+        # load, save dialogs
+        self.load_dlg = None
+        self.save_dlg = None
+
         # commands menu
         commands_menu = gtk.Menu ()
         commands_mi.set_submenu (commands_menu)
@@ -291,11 +295,11 @@ class SheriffGtk:
         self.is_observer_cmi.connect ("activate", self.on_observer_mi_activate)
         options_menu.append (self.is_observer_cmi)
 
-        self.spawn_deputy_cmi = gtk.MenuItem("Spawn Local_Deputy")
+        self.spawn_deputy_cmi = gtk.MenuItem("Spawn Local _Deputy")
         self.spawn_deputy_cmi.connect("activate", self.on_spawn_deputy_activate)
         options_menu.append(self.spawn_deputy_cmi)
 
-        self.terminate_spawned_deputy_cmi = gtk.MenuItem("_Terminate spawned deputy")
+        self.terminate_spawned_deputy_cmi = gtk.MenuItem("_Terminate local deputy")
         self.terminate_spawned_deputy_cmi.connect("activate", self.on_terminate_spawned_deputy_activate)
         options_menu.append(self.terminate_spawned_deputy_cmi)
         self.terminate_spawned_deputy_cmi.set_sensitive(False)
@@ -781,13 +785,15 @@ class SheriffGtk:
 
     # GTK signal handlers
     def _do_load_config_dialog (self, *args):
-        dlg = gtk.FileChooserDialog ("Load Config", self.window, 
-                buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT,
-                    gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
-#        dlg.set_current_folder_uri (CONFIG_DIR)
-        if gtk.RESPONSE_ACCEPT == dlg.run ():
-            self.config_filename = dlg.get_filename ()
-            dlg.destroy ()
+        if not self.load_dlg:
+            self.load_dlg = gtk.FileChooserDialog ("Load Config", self.window, 
+                    buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT,
+                        gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
+
+            if BUILD_PREFIX and os.path.exists("%s/data/procman" % BUILD_PREFIX):
+                self.load_dlg.set_current_folder_uri("%s/data/procman" % BUILD_PREFIX)
+        if gtk.RESPONSE_ACCEPT == self.load_dlg.run ():
+            self.config_filename = self.load_dlg.get_filename ()
             try:
                 cfg = sheriff_config.config_from_filename (self.config_filename)
             except Exception:
@@ -799,19 +805,18 @@ class SheriffGtk:
                 msgdlg.destroy ()
             else:
                 self.sheriff.load_config (cfg)
-        else:
-            dlg.destroy ()
+        self.load_dlg.hide()
 
     def _do_save_config_dialog (self, *args):
-        dlg = gtk.FileChooserDialog ("Save Config", self.window,
-                action = gtk.FILE_CHOOSER_ACTION_SAVE,
-                buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_ACCEPT,
-                    gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
+        if not self.save_dlg:
+            self.save_dlg = gtk.FileChooserDialog ("Save Config", self.window,
+                    action = gtk.FILE_CHOOSER_ACTION_SAVE,
+                    buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_ACCEPT,
+                        gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
         if self.config_filename is not None:
-            dlg.set_filename (self.config_filename)
-        if gtk.RESPONSE_ACCEPT == dlg.run ():
-            self.config_filename = dlg.get_filename ()
-            dlg.destroy ()
+            self.save_dlg.set_filename (self.config_filename)
+        if gtk.RESPONSE_ACCEPT == self.save_dlg.run ():
+            self.config_filename = self.save_dlg.get_filename ()
             try:
                 self.sheriff.save_config (file (self.config_filename, "w"))
             except IOError, e:
@@ -820,8 +825,7 @@ class SheriffGtk:
                         gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, str (e))
                 msgdlg.run ()
                 msgdlg.destroy ()
-        else:
-            dlg.destroy ()
+        self.save_dlg.hide ()
 
     def on_observer_mi_activate (self, menu_item):
         self._set_observer (menu_item.get_active ())
