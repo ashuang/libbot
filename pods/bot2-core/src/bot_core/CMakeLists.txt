@@ -1,4 +1,4 @@
-add_definitions(-std=gnu99)
+add_definitions(-std=gnu99 -Wno-unused-result)
 
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)
@@ -21,6 +21,6 @@ pods_install_libraries(bot2-core)
 pods_install_headers(${h_files} DESTINATION bot_core)
 
 pods_install_pkg_config_file(${PROJECT_NAME}
-    LIBS -lbot2-core -llcmtypes_bot2-core
+    LIBS -lbot2-core -llcmtypes_bot2-core m
     REQUIRES glib-2.0 lcm
     VERSION 0.0.1)

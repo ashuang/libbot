@@ -85,7 +85,7 @@ bot_g_hash_table_get_vals (GHashTable *hash_table)
 static void
 get_all_vals_array_helper (gpointer key, gpointer value, gpointer user_data)
 {
-    GPtrArray *vals = (GPtrArray**) user_data;
+    GPtrArray *vals = (GPtrArray*) user_data;
     g_ptr_array_add(vals, value);
 }
 
