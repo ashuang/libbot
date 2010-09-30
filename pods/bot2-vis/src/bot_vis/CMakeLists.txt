@@ -13,6 +13,7 @@ target_link_libraries(bot2-vis
     ${GLIB2_LDFLAGS}
     ${GTK2_LDFLAGS}
     ${LCM_LDFLAGS}
+    ${GLUT_LIBRARIES}
     ${BOT2_CORE_LDFLAGS})
 
 # set the library API version.  Increment this every time the public API

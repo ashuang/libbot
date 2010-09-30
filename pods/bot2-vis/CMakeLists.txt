@@ -9,7 +9,10 @@ include(cmake/pods.cmake)
 find_package(PkgConfig REQUIRED)
 find_package(GTK2 REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
+#find_package(GLUT REQUIRED)
+
+set(GLUT_CFLAGS "")
+set(GLUT_LIBRARIES -lglut)
 
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 pkg_check_modules(LCM REQUIRED lcm)
