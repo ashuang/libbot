@@ -25,15 +25,15 @@
 #   pods_config_search_paths()      Configures include, pkg-config, and linker paths.
 #                                   Automatically invoked, do not invoke manually.
 #
+# ----
+# File: pods.cmake
+# Distributed with pods version: 10.09.30
 
-
+# pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
+# 
 # Install a (list) of header files.
 #
-# usage: 
-#   pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
-#
 # Header files will all be installed to include/<subdir_name>
-#
 function(pods_install_headers)
     list(GET ARGV -2 checkword)
     if(NOT checkword STREQUAL DESTINATION)
@@ -47,34 +47,29 @@ function(pods_install_headers)
 	install(FILES ${ARGV} DESTINATION include/${dest_dir})
 endfunction(pods_install_headers)
 
+# pods_install_executables(<executable1> ...)
+#
 # Install a (list) of executables to bin/
-#
-# usage:
-#   pods_install_executables(<executable1> ...)
-#
 function(pods_install_executables)
     install(TARGETS ${ARGV} RUNTIME DESTINATION bin)
 endfunction(pods_install_executables)
 
-# Install a (list) of libraries to lib/
+# pods_install_libraries(<library1> ...)
 #
-# usage:
-#   pods_install_libraries(<library1> ...)
+# Install a (list) of libraries to lib/
 function(pods_install_libraries)
 	install(TARGETS ${ARGV} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 endfunction(pods_install_libraries)
 
 
-# Create and install a pkg-config .pc file.
-#
-# usage: 
-#   pods_install_pkg_config_file(<package-name> 
-#                                [VERSION <version>]
-#                                [DESCRIPTION <description>]
-#                                [CFLAGS <cflag> ...]
-#                                [LIBS <lflag> ...]
-#                                [REQUIRES <required-package-name> ...])
+# pods_install_pkg_config_file(<package-name> 
+#                              [VERSION <version>]
+#                              [DESCRIPTION <description>]
+#                              [CFLAGS <cflag> ...]
+#                              [LIBS <lflag> ...]
+#                              [REQUIRES <required-package-name> ...])
 # 
+# Create and install a pkg-config .pc file.
 #
 # example:
 #    add_library(mylib mylib.c)
@@ -136,16 +131,14 @@ function(pods_install_pkg_config_file)
 endfunction(pods_install_pkg_config_file)
 
 
+# pods_install_python_script(<script_name> <python_module>)
+#
 # Create and install a script that invokes the python interpreter with a
 # specified module.
-#
-# usage: 
-#   pods_install_python_script(<script_name> <python_module>)
 #
 # A script will be installed to bin/<script_name>.  The script simply
 # adds <install-prefix>/lib/pythonX.Y/site-packages to the python path, and
 # then invokes `python -m <python_module>`.
-#
 function(pods_install_python_script script_name py_module)
     find_package(PythonInterp REQUIRED)
 
@@ -167,15 +160,13 @@ function(pods_install_python_script script_name py_module)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${script_name} DESTINATION bin)
 endfunction()
 
+# pods_install_python_packages(<src_dir>)
+#
 # Install python packages to lib/pythonX.Y/site-packages, where X.Y refers to
 # the current python version (e.g., 2.6)
 #
-# usage:
-#   pods_install_python_packages(<src_dir>)
-#
 # Recursively searches <src_dir> for .py files, byte-compiles them, and
 # installs them
-#
 function(pods_install_python_packages py_src_dir)
     find_package(PythonInterp REQUIRED)
 
@@ -213,10 +204,10 @@ function(pods_install_python_packages py_src_dir)
 endfunction()
 
 
+# pods_use_pkg_config_packages(<target> <package-name> ...)
+#
 # Convenience macro to get compiler and linker flags from pkg-config and apply them
 # to the specified target.
-#
-# usage:  pods_use_pkg_config_packages(<target> <package-name> ...)
 #
 # Invokes `pkg-config --cflags-only-I <package-name> ...` and adds the result to the
 # include directories.
@@ -248,12 +239,11 @@ macro(pods_use_pkg_config_packages target)
 endmacro()
 
 
-
-
+# pods_config_search_paths()
+#
 # Setup include, linker, and pkg-config paths according to the pods core
 # policy.  This macro is automatically invoked, there is no need to do so
 # manually.
-#
 macro(pods_config_search_paths)
     if(NOT DEFINED __pods_setup)
         # add build/lib/pkgconfig to the pkg-config search path

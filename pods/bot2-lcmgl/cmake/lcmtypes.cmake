@@ -21,6 +21,10 @@
 #   LCMTYPES_JAR  -- path to the automatically compiled .jar file of LCM types
 #
 # TODO Python variables
+#
+# ----
+# File: lcmtypes.cmake
+# Distributed with pods version: 10.09.30
 
 cmake_minimum_required(VERSION 2.6.0)
 
@@ -165,6 +169,13 @@ function(lcmtypes_build_java)
         return()
     endif()
 
+    find_package(Java)
+    if(JAVA_COMPILE STREQUAL JAVA_COMPILE-NOTFOUND OR
+       JAVA_ARCHIVE STREQUAL JAVA_ARCHIVE-NOTFOUND)
+        message(STATUS "Not building Java LCM type bindings (Can't find Java)")
+        return()
+    endif()
+
     # generate Java bindings for LCM types
     set(_lcmtypes_java_dir ${PROJECT_SOURCE_DIR}/lcmtypes/java)
     set(auto_manage_files YES)
@@ -204,7 +215,6 @@ function(lcmtypes_build_java)
     file(GLOB_RECURSE _lcmtypes_java_files ${_lcmtypes_java_dir}/*.java)
 
     # where is lcm.jar?
-    find_package(Java REQUIRED)
     execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE)
     string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
     set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar)
@@ -237,11 +247,15 @@ function(lcmtypes_build_java)
 endfunction()
 
 function(lcmtypes_build_python)
-    find_package(PythonInterp REQUIRED)
-
     lcmtypes_get_types(_lcmtypes)
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
+        return()
+    endif()
+
+    find_package(PythonInterp)
+    if(NOT PYTHONINTERP_FOUND)
+        message(STATUS "Not building Python LCM type bindings (Can't find Python)")
         return()
     endif()
 
