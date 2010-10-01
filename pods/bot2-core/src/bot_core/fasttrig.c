@@ -201,9 +201,8 @@ bot_fasttrig_sincos_test()
 
     for (int iters = 0; iters < limit; iters++) {
         double theta = rand()/ 1000.0;
-        double s,  c;
+        double s = sin(theta),  c = cos(theta);
         double s2, c2;
-        sincos(theta, &s, &c);
         bot_fasttrig_sincos(theta, &s2, &c2);
 
         if (1) {
