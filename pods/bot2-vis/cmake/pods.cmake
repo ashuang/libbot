@@ -247,7 +247,7 @@ endmacro()
 macro(pods_config_search_paths)
     if(NOT DEFINED __pods_setup)
         # add build/lib/pkgconfig to the pkg-config search path
-        set(ENV{PKG_CONFIG_PATH} ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+        set(ENV{PKG_CONFIG_PATH} ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
 
         # add build/include to the compiler include path
         include_directories(${CMAKE_INSTALL_PREFIX}/include)
