@@ -34,6 +34,7 @@ Requirements
     Python
     GTK+2.0   (required by bot2-vis)
     OpenGL    (required by bot2-vis)
+    GLUT
 
 
   On a Debian/Ubuntu system, the following packages should be sufficient:
