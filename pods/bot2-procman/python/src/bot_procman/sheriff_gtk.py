@@ -675,20 +675,25 @@ class SheriffGtk:
                         SheriffGtk.COL_CMDS_TV_CPU_USAGE, cpu_str,
                         SheriffGtk.COL_CMDS_TV_MEM_VSIZE, mem_total)
 
-                # add the group name to the command name column if visible
-                # otherwise, add it to the nickname column
-                if (self.cmds_tv.get_column(0).get_visible()):
-                    model.set (model_iter, 
-                               SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
-                               SheriffGtk.COL_CMDS_TV_NICKNAME, "")
-                else:
-                    if (self.cmds_tv.get_column(1).get_visible()):
-                        model.set (model_iter, 
-                                   SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.group)
-                    else:
+                cur_grpname = \
+                        model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_CMD) or \
+                        model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_NICKNAME)
+
+                if not cur_grpname:
+                    # add the group name to the command name column if visible
+                    # otherwise, add it to the nickname column
+                    if (self.cmds_tv.get_column(0).get_visible()):
                         model.set (model_iter, 
                                    SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
                                    SheriffGtk.COL_CMDS_TV_NICKNAME, "")
+                    else:
+                        if (self.cmds_tv.get_column(1).get_visible()):
+                            model.set (model_iter, 
+                                       SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.group)
+                        else:
+                            model.set (model_iter, 
+                                       SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
+                                       SheriffGtk.COL_CMDS_TV_NICKNAME, "")
                 return
             if cmd in cmds:
 #                extradata = cmd.get_data ("extradata")
@@ -758,8 +763,8 @@ class SheriffGtk:
         # remove group rows with no children
         groups_to_remove = []
         def _check_for_lonely_groups (model, path, model_iter, user_data):
-            cmd = model.get_value (model_iter, SheriffGtk.COL_CMDS_TV_OBJ)
-            if not cmd and not model.iter_has_child (model_iter): 
+            isgroup = not model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_OBJ)
+            if isgroup and not model.iter_has_child (model_iter): 
                 groups_to_remove.append (gtk.TreeRowReference (model, path))
         self.cmds_ts.foreach (_check_for_lonely_groups, None)
         for trr in groups_to_remove:
