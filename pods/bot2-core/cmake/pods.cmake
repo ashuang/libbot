@@ -154,7 +154,7 @@ function(pods_install_python_script script_name py_module)
     # write the script file
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${script_name} "#!/bin/sh\n"
         "export PYTHONPATH=${python_install_dir}:\${PYTHONPATH}\n"
-        "exec python -m ${py_module} $*\n")
+        "exec ${PYTHON_EXECUTABLE} -m ${py_module} $*\n")
 
     # install it...
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${script_name} DESTINATION bin)

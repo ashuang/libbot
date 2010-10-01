@@ -3,8 +3,13 @@ default_target: all
 # get a list of pods to build by reading pods/tobuild.txt
 PODS:=$(shell grep -v "^\#" pods/tobuild.txt)
 
+# Figure out where to build the software.
+#   Use BUILD_PREFIX if it was passed in.
+#   If not, use ../build if it exists.
+#   Otherwise, use ./build.
 ifeq "$(BUILD_PREFIX)" ""
-BUILD_PREFIX=$(shell if [ -d ../build ]; then echo `pwd`/../build; else echo `pwd`/build; fi)
+BUILD_PREFIX=$(shell if [ -d ../build ]; then echo `pwd`/../build; \
+                     else echo `pwd`/build; fi)
 endif
 
 # build quietly by default.  For a verbose build, run "make VERBOSE=1"
