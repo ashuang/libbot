@@ -1,12 +1,18 @@
+# Default makefile distributed with pods version: 10.09.30
+
 default_target: all
 
+# Default to a less-verbose build.  If you want all the gory compiler output,
+# run "make VERBOSE=1"
 $(VERBOSE).SILENT:
 
-# Figure out where to build the pod. Use BUILD_PREFIX if it was passed in.
-# Otherwise, use ../../build if it exists, and ./build if not.
+# Figure out where to build the software.
+#   Use BUILD_PREFIX if it was passed in.
+#   If not, search up to three parent directories for a 'build' directory.
+#   Otherwise, use ./build.
 ifeq "$(BUILD_PREFIX)" ""
-BUILD_PREFIX=$(shell [ -d ../../build ] && echo `pwd`/../../build || \
-			   echo `pwd`/build)
+BUILD_PREFIX=$(shell for pfx in .. ../.. ../../..; do d=`pwd`/$$pfx/build; \
+               if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
 endif
 
 # Default to a release build.  If you want to enable debugging flags, run
@@ -16,7 +22,7 @@ BUILD_TYPE="Release"
 endif
 
 all: pod-build/Makefile
-	$(MAKE) -C pod-build all install
+	$(MAKE) -C pod-build all install | grep -v Up-to-date:
 
 pod-build/Makefile:
 	$(MAKE) configure
@@ -32,8 +38,8 @@ configure:
 	@echo "$(BUILD_PREFIX)" > pod-build/build_prefix
 
 	# run CMake to generate and configure the build scripts
-	@cd pod-build && \
-		cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
+	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
+	                       -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 clean:
 	rm -rf pod-build

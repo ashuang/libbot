@@ -3,8 +3,9 @@
 
 bot2-core
 bot2-vis
-bot2-sick
-bot2-hokuyo
 bot2-procman
 bot2-lcmgl
 bot2-lcm-utils
+
+#bot2-sick
+#bot2-hokuyo
