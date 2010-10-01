@@ -243,6 +243,9 @@ class SheriffGtk:
         # load, save dialogs
         self.load_dlg = None
         self.save_dlg = None
+        self.load_save_dir = None
+        if BUILD_PREFIX and os.path.exists("%s/data/procman" % BUILD_PREFIX):
+            self.load_save_dir = "%s/data/procman" % BUILD_PREFIX
 
         # commands menu
         commands_menu = gtk.Menu ()
@@ -806,11 +809,11 @@ class SheriffGtk:
             self.load_dlg = gtk.FileChooserDialog ("Load Config", self.window, 
                     buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT,
                         gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
-
-            if BUILD_PREFIX and os.path.exists("%s/data/procman" % BUILD_PREFIX):
-                self.load_dlg.set_current_folder_uri("%s/data/procman" % BUILD_PREFIX)
+        if self.load_save_dir:
+            self.load_dlg.set_current_folder(self.load_save_dir)
         if gtk.RESPONSE_ACCEPT == self.load_dlg.run ():
             self.config_filename = self.load_dlg.get_filename ()
+            self.load_save_dir = os.path.dirname(self.config_filename)
             try:
                 cfg = sheriff_config.config_from_filename (self.config_filename)
             except Exception:
@@ -830,10 +833,13 @@ class SheriffGtk:
                     action = gtk.FILE_CHOOSER_ACTION_SAVE,
                     buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_ACCEPT,
                         gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
+        if self.load_save_dir:
+            self.save_dlg.set_current_folder(self.load_save_dir)
         if self.config_filename is not None:
             self.save_dlg.set_filename (self.config_filename)
         if gtk.RESPONSE_ACCEPT == self.save_dlg.run ():
             self.config_filename = self.save_dlg.get_filename ()
+            self.load_save_dir = os.path.dirname(self.config_filename)
             try:
                 self.sheriff.save_config (file (self.config_filename, "w"))
             except IOError, e:
@@ -1292,6 +1298,7 @@ def run ():
         gui.on_spawn_deputy_activate()
     if cfg is not None:
         gobject.timeout_add (2000, lambda: gui.sheriff.load_config (cfg))
+        gui.load_save_dir = os.path.dirname(args[0])
     try:
         gtk.main ()
     except KeyboardInterrupt:
