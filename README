@@ -23,20 +23,19 @@ may depend on others.  The current list of pods is:
 Requirements
 ============
 
-  These packages are required.
+  These are required.
     GLib 2.0+
     CMake
-    LCM   (http://lcm.googlecode.com)
-
-  These packages are strongly recommended.  In other words, you should
-  install them unless doing so is impossible.
-    Java (Sun JDK or OpenJDK strongly preferred, gcj probably will not work)
+    LCM       (http://lcm.googlecode.com)
+    Java      (Sun JDK or OpenJDK strongly preferred)
     Python
-    GTK+2.0   (required by bot2-vis)
+    GTK+ 2.0+ (required by bot2-vis)
     OpenGL    (required by bot2-vis)
     GLUT
     PyGTK
 
+  Note that some pods may have fewer requirements (e.g., if you just want
+  bot2-core)
 
   On a Debian/Ubuntu system, the following packages should be sufficient:
     libglib2.0-dev
