@@ -20,15 +20,6 @@ may depend on others.  The current list of pods is:
   bot2-lcm-utils  LCM utility programs (tunnel LCM over TCP, chop or splice
                   log files, etc.)
 
-
-  DEPRECATED -- will be moved out of libbot soon:
-
-  bot2-hokuyo     Hokuyo URG/UTM LIDAR driver.
-
-  bot2-sick       SICK LIDAR driver.
-
-  bot2-scanmatch  # NYI
-
 Requirements
 ============
 

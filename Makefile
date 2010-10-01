@@ -17,7 +17,7 @@ all:
 	@# Place additional commands here if you have any
 
 clean:
-	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod clean; done
+	@for pod in $(PODS); do echo $$pod; $(MAKE) -C pods/$$pod uninstall clean; done
 	rm -rf build/bin
 	rm -rf build/include
 	rm -rf build/lib
