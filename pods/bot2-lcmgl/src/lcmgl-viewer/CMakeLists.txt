@@ -15,7 +15,7 @@ add_executable(bot-lcmgl-viewer
     )
 
 target_link_libraries(bot-lcmgl-viewer
-    ${GTK2_LIBRARIES}
+    ${GTK2_LDFLAGS}
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     ${LCM_LDFLAGS}

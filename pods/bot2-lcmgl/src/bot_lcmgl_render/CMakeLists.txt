@@ -13,7 +13,7 @@ file(GLOB h_files *.h)
 add_library(bot2-lcmgl-render SHARED ${c_files})
 
 target_link_libraries(bot2-lcmgl-render
-    ${GTK2_LIBRARIES}
+    ${GTK2_LDFLAGS}
     ${OPENGL_LIBRARIES}
     ${BOT2_VIS_LDFLAGS}
     ${LCM_LDFLAGS}

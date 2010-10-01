@@ -10,9 +10,7 @@ file(GLOB h_files *.h)
 add_library(bot2-vis SHARED ${c_files})
 
 target_link_libraries(bot2-vis
-    ${GLIB2_LDFLAGS}
     ${GTK2_LDFLAGS}
-    ${LCM_LDFLAGS}
     ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${BOT2_CORE_LDFLAGS})
