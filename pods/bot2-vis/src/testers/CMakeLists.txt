@@ -10,7 +10,7 @@ include_directories(${GLIB2_INCLUDE_DIRS}
 
 set(link_libraries 
     ${GLIB2_LDFLAGS}
-    ${GTK2_LIBRARIES}
+    ${GTK2_LDLFLAGS}
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     ${LCM_LDFLAGS}

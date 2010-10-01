@@ -1,4 +1,4 @@
-add_definitions(-std=gnu99 -Wno-unused-result)
+add_definitions(-std=gnu99)
 
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)

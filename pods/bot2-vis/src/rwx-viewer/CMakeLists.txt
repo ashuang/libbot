@@ -10,7 +10,7 @@ add_executable(bot-rwx-viewer
     renderer_rwx.c)
 
 target_link_libraries(bot-rwx-viewer
-    ${GTK2_LIBRARIES}
+    ${GTK2_LDFLAGS}
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARIES}
     bot2-vis

@@ -14,6 +14,7 @@ target_link_libraries(bot2-vis
     ${GTK2_LDFLAGS}
     ${LCM_LDFLAGS}
     ${GLUT_LIBRARIES}
+    ${OPENGL_LIBRARIES} -lglx
     ${BOT2_CORE_LDFLAGS})
 
 # set the library API version.  Increment this every time the public API
