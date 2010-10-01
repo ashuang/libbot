@@ -55,21 +55,21 @@ Requirements
 Installation
 ============
 
-  By default, this software does not require installation.  Instead, it
-  builds and runs from within the build/ subdirectory.
-
-  To compile, run: 
-
-  $ make
-
-  If you want, you can also install it to your system by running:
+  You can install libbot2 to your system by running:
 
   $ sudo make BUILD_PREFIX=/usr/local
+
+  If you don't want to install libbot2 to your system, you can also build it
+  inside the source directory.  To do this, run:
+
+  $ make
 
 Uninstallation
 ==============
 
-  TODO
+  If compiled and installed to your system, run:
+
+  $ sudo make uninstall
 
 Documentation
 =============
