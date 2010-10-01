@@ -1256,7 +1256,10 @@ def usage():
 Process Management operating console.
 
 Options:
-  -l, --lone-ranger   Automatically spawn a deputy running on localhost
+  -l, --lone-ranger   Automatically run a deputy within the sheriff process
+                      This deputy terminates with the sheriff, along with
+                      all the commands it hosts.
+
   -h, --help          Shows this help text
 
 If <procman_config_file> is specified, then the sheriff tries to load
