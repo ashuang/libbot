@@ -1,17 +1,26 @@
 <pod>
 <name>
-    bot2-vis
+  bot2-vis
 </name>
 
 <summary>
+  Visualization libraries for libbot2.
 </summary>
 
 <description>
+  TODO
 </description>
 
 <requirements>
-    Requires the following pods, which are distributed as part of libbot2:
+  General requirements:
 
-    bot2-core
+  GTK+ >= 2.0
+  OpenGL
+  GLUT
+  LCM (http://lcm.googlecode.com)
+
+  Requires the following pods, which are distributed as part of libbot2:
+
+  bot2-core
 </requirements>
 </pod>
