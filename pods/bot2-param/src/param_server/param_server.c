@@ -37,7 +37,7 @@ void publish_params(param_server_t *self)
   }
   bot_param_write(self->params, tmpF);
 
-  bot_param_update_t * update_msg = (bot_param_update_t *) calloc(1,sizeof(bot_param_update_t));
+  bot_param_update_t * update_msg = (bot_param_update_t *) calloc(1, sizeof(bot_param_update_t));
   update_msg->utime = _timestamp_now();
   update_msg->server_id = self->id;
   update_msg->sequence_number = self->seqNo;
@@ -82,18 +82,23 @@ void on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, const bot
 
 void on_param_set(const lcm_recv_buf_t *rbuf, const char * channel, const bot_param_set_t * msg, void * user)
 {
-  fprintf(stderr,"got param set message: %s = %s\n",msg->key,msg->value);
+  fprintf(stderr, "got param set message: %s = %s\n", msg->key, msg->value);
   param_server_t * self = (param_server_t*) user;
-  bot_param_set_str(self->params, msg->key, msg->value);
-  publish_params(self);
+  if (bot_param_set_str(self->params, msg->key, msg->value) > 0) {
+    self->seqNo++;
+    publish_params(self);
+  }
+  else {
+    fprintf(stderr,"error: could not set param!\n");
+  }
 }
 
-static gboolean on_timer(gpointer user){
+static gboolean on_timer(gpointer user)
+{
   param_server_t * self = (param_server_t*) user;
   publish_params(self);
   return TRUE;
 }
-
 
 int main(int argc, char ** argv)
 {
@@ -107,7 +112,7 @@ int main(int argc, char ** argv)
     fprintf(stderr, "usage:\n %s <param_file>\n", argv[0]);
     exit(1);
   }
-  self->seqNo =0;
+  self->seqNo = 0;
   self->id = _timestamp_now();
   self->params = bot_param_new_from_file(argv[1]);
   fprintf(stderr, "Loaded params from %s\n", argv[1]);
