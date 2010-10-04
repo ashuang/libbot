@@ -258,6 +258,9 @@ macro(pods_config_search_paths)
         # abuse RPATH
         set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
+        # for osx, which uses "install name" path rather than rpath
+        set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+
         set(__pods_setup true)
     endif(NOT DEFINED __pods_setup)
 endmacro(pods_config_search_paths)
