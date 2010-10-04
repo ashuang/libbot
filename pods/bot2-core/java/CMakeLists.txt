@@ -1,7 +1,6 @@
 find_package(Java REQUIRED)
 
-set(java_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(class_dir ${CMAKE_CURRENT_BINARY_DIR}/java-build)
+set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(jar_fname libbot2.jar)
 
 # where is lcm.jar?
@@ -9,18 +8,21 @@ execute_process(COMMAND pkg-config --variable=classpath lcm-java
     OUTPUT_VARIABLE LCM_JAR_FILE)
 string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
 
-set(classpath ${java_dir}:${LCM_JAR_FILE})
+set(classpath ${src_dir}:${LCM_JAR_FILE})
 
 
 # ============= shouldn't need to modify anything below this line =============
 
 # get a list of all .java files
-file(GLOB_RECURSE java_files ${java_dir}/*.java)
+file(GLOB_RECURSE java_files ${src_dir}/*.java)
+
+# where do we build .class files to?
+set(class_dir ${CMAKE_CURRENT_BINARY_DIR}/java-build)
 
 # convert the list of .java filenames to a list of .class filenames
 foreach(javafile ${java_files})
     string(REPLACE .java .class tmp_fname ${javafile})
-    string(REPLACE ${java_dir} ${class_dir} tmp_fname ${tmp_fname})
+    string(REPLACE ${src_dir} ${class_dir} tmp_fname ${tmp_fname})
     list(APPEND class_files ${tmp_fname})
 endforeach()
 
