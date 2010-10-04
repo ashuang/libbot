@@ -52,7 +52,17 @@ Requirements
     Additionally, you'll need to install LCM from http://lcm.googlecode.com
 
   On OS X, the recommended procedure is to use MacPorts and install:
-    # TODO
+    cmake
+    pkgconfig
+    glib2
+    gtk2
+    atk
+    cairo
+    python26
+    py26-gtk
+    pango
+    
+    Additionally, you'll need to install LCM from http://lcm.googlecode.com
 
 Installation
 ============
