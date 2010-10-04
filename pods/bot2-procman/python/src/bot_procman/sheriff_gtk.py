@@ -6,6 +6,7 @@ import time
 import traceback
 import getopt
 import subprocess
+import signal
 
 import gobject
 import gtk
@@ -14,13 +15,10 @@ import os
 
 from lcm import LCM
 
-import deputy_cmd_t
-from info_t import info_t
-from orders_t import orders_t
-from printf_t import printf_t
-from sheriff_cmd_t import sheriff_cmd_t
-import sheriff
-import sheriff_config
+from bot_procman.orders_t import orders_t
+from bot_procman.printf_t import printf_t
+import bot_procman.sheriff as sheriff
+import bot_procman.sheriff_config as sheriff_config
 
 try:
     from build_prefix import BUILD_PREFIX
@@ -532,8 +530,16 @@ class SheriffGtk:
         self.window.show ()
 
     def cleanup(self):
+        self._terminate_spawned_deputy()
+
+    def _terminate_spawned_deputy(self):
         if self.spawned_deputy:
-            self.spawned_deputy.terminate()
+            try:
+                self.spawned_deputy.terminate()
+            except AttributeError: # python 2.4, 2.5 don't have Popen.terminate()
+                os.kill(self.spawned_deputy.pid, signal.SIGTERM)
+                self.spawned_deputy.wait()
+        self.spawned_deputy = None
 
     def _get_selected_commands (self):
         selection = self.cmds_tv.get_selection ()
@@ -854,9 +860,7 @@ class SheriffGtk:
         self._set_observer (menu_item.get_active ())
 
     def on_spawn_deputy_activate(self, *args):
-        if self.spawned_deputy:
-            self.spawned_deputy.terminate()
-            self.spawned_deputy = None
+        self._terminate_spawned_deputy()
         args = [ self.bot_procman_deputy_cmd, "-n", "localhost" ]
         self.spawned_deputy = subprocess.Popen(args)
         # TODO disable
@@ -864,9 +868,7 @@ class SheriffGtk:
         self.terminate_spawned_deputy_cmi.set_sensitive(True)
 
     def on_terminate_spawned_deputy_activate(self, *args):
-        if self.spawned_deputy:
-            self.spawned_deputy.terminate()
-            self.spawned_deputy = None
+        self._terminate_spawned_deputy()
         self.spawn_deputy_cmi.set_sensitive(True)
         self.terminate_spawned_deputy_cmi.set_sensitive(False)
 

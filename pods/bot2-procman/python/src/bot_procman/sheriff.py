@@ -8,11 +8,10 @@ import signal
 import gobject
 
 import lcm
-from deputy_cmd_t import deputy_cmd_t
-from info_t import info_t
-from orders_t import orders_t
-from sheriff_cmd_t import sheriff_cmd_t
-import sheriff_config
+from bot_procman.info_t import info_t
+from bot_procman.orders_t import orders_t
+from bot_procman.sheriff_cmd_t import sheriff_cmd_t
+import bot_procman.sheriff_config as sheriff_config
 
 #def warn (*args):
 #    return common.print_to_stderr_with_lineno (*args)
