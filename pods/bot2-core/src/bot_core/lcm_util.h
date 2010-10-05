@@ -7,13 +7,13 @@
  * SECTION:lcm_util
  * @title:LCM Utilities
  * @short_description: Utilities to bind and unbind LCM to the #GMainLoop.
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * These functions attach an #lcm_t object to a #GMainLoop so that when there is
  * a new message on LCM, lcm_handle() gets called, and your message handlers
  * get invoked.
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #include <lcm/lcm.h>

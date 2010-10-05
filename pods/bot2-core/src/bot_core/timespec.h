@@ -8,11 +8,11 @@
  * SECTION:timespec
  * @title: timespec
  * @short_description: Convenience functions for <literal>struct timespec</literal>
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * TODO
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #ifdef __cplusplus

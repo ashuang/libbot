@@ -7,9 +7,9 @@
  * SECTION:minheap
  * @title: Minheap
  * @short_description: Heap data structure
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #ifdef __cplusplus

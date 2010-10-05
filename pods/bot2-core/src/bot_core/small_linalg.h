@@ -5,12 +5,12 @@
  * SECTION:small_linalg
  * @title: Linear Algebra
  * @short_description: convenience functions for small linear algebra operations
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * FIXME: most functions aren't getting picked up by GTK-Doc because they are
  * static inline.
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #include <stdio.h>

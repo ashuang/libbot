@@ -7,9 +7,9 @@
  * SECTION:glib_util
  * @title:GLib Utilities
  * @short_description: useful functions missing from GLib
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #include <glib.h>

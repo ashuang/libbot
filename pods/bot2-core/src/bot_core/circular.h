@@ -9,7 +9,7 @@ extern "C" {
  * SECTION:circular
  * @title: Circular Array
  * @short_description:  Fixed-capacity circular array 
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * BotCircular is a hybrid of the glib types GArray and GQueue.  BotCircular
  * acts like a GQueue in the sense that you can push on one end and pop
@@ -20,7 +20,7 @@ extern "C" {
  * when the BotCircular is already full, the last element on the tail is
  * automatically overwritten.
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 typedef struct _BotCircular BotCircular;
 

@@ -9,11 +9,11 @@
  * SECTION:timestamp
  * @title:timestamp
  * @short_description: Retrieving the current time, synchronizing clocks
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * TODO
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 typedef struct bot_timestamp_sync_state bot_timestamp_sync_state_t;

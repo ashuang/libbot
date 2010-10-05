@@ -5,7 +5,7 @@
  * SECTION:rotations
  * @title: Rotations
  * @short_description: Rotation utilities
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * This code allows several different rotation representations to be
  * converted.  The representations are:
@@ -19,7 +19,7 @@
  * Note that these conventions have the property that each
  * representation yields a different function signature.
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #ifdef __cplusplus

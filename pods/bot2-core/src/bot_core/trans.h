@@ -9,11 +9,11 @@ extern "C" {
  * SECTION:trans
  * @title: Trans
  * @short_description: Simple 3D rigid-body transformations
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * Data structure and functions for working with 3D rigid-body transformations.
  *
- * Linking: <literal>-lbot2-core</literal>
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 /**

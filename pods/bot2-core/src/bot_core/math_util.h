@@ -10,9 +10,9 @@
  * SECTION:math_util
  * @title: Math Utilities
  * @short_description: Miscellaneous math utility functions
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #ifdef __cplusplus

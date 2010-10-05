@@ -9,7 +9,7 @@
  * SECTION:ctrans
  * @title: CTrans
  * @short_description: Transforming between multiple coordinate frames.
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * Represents a set of cartesian coordinate frames and the possibly
  * time-varying rigid-body transformations between the coordinate frames.
@@ -20,7 +20,7 @@
  * graph.  The path is then traversed from source to target, and the rigid body
  * transformations are composed together to form a single transformation.
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #ifdef __cplusplus

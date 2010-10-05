@@ -9,11 +9,11 @@ extern "C" {
  * SECTION:camtrans
  * @title: CamTrans
  * @short_description: Perspective camera projection and distortion models
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * TODO
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 typedef struct _BotCamTrans BotCamTrans;

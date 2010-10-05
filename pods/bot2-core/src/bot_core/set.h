@@ -7,11 +7,11 @@
  * SECTION:set
  * @title: Set
  * @short_description: Set data structure for hashable objects
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * TODO
  *
- * Linking: -lbot2-core
+ * Linking: `pkg-config --libs bot2-core`
  */
 
 #ifdef __cplusplus

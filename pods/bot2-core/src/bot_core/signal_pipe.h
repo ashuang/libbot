@@ -5,7 +5,7 @@
  * SECTION:signal_pipe
  * @title:Signals to pipes
  * @short_description: Receive UNIX signal notifications via pipes
- * @include: bot2-core/bot2-core.h
+ * @include: bot_core/bot_core.h
  *
  * signal_pipe provides convenience wrappers to convert unix signals into glib
  * events.
