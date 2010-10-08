@@ -1,4 +1,4 @@
-package bot_core.lcmspy;
+package bot2_spy;
 
 import java.util.*;
 import java.awt.*;
