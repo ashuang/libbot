@@ -19,8 +19,10 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${script_name}
     "for d in ${CMAKE_INSTALL_PREFIX}/share/java $*; do\n"
     "  echo Checking $d\n"
     "  for f in $d/lcmtypes_*.jar $d/lcmspy_plugins_*.jar; do\n"
-    "    echo \"  Adding $f to classpath\"\n"
-    "    CLASSPATH=\$CLASSPATH:\$f\n"
+    "    if [ -e $f ]; then\n"
+    "      echo \"   Found $f\"\n"
+    "      CLASSPATH=\$CLASSPATH:\$f\n"
+    "    fi\n"
     "  done\n"
     "done\n"
     "exec java -ea -cp \$CLASSPATH lcm.spy.Spy $*\n")
