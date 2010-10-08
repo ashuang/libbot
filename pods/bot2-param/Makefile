@@ -1,4 +1,4 @@
-# Default makefile distributed with pods version: 10.10.01
+# Default makefile distributed with pods version: 10.10.08
 
 default_target: all
 
@@ -8,10 +8,10 @@ $(VERBOSE).SILENT:
 
 # Figure out where to build the software.
 #   Use BUILD_PREFIX if it was passed in.
-#   If not, search up to three parent directories for a 'build' directory.
+#   If not, search up to four parent directories for a 'build' directory.
 #   Otherwise, use ./build.
 ifeq "$(BUILD_PREFIX)" ""
-BUILD_PREFIX=$(shell for pfx in .. ../.. ../../..; do d=`pwd`/$$pfx/build; \
+BUILD_PREFIX=$(shell for pfx in .. ../.. ../../.. ../../../..; do d=`pwd`/$$pfx/build; \
                if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
 endif
 
@@ -42,6 +42,7 @@ configure:
 	                       -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 clean:
+	if [ -d pod-build ]; then make -C pod-build clean; fi
 	rm -rf pod-build
 
 uninstall:
