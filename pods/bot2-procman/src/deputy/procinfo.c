@@ -33,8 +33,9 @@ static void strsplit (char *buf, char **words, int maxwords)
     words[wordind] = NULL;
 }
 
-int 
-procinfo_read_proc_cpu_mem (int pid, proc_cpu_mem_t *s)
+#ifdef __linux__
+static int 
+procinfo_read_proc_cpu_mem_linux(int pid, proc_cpu_mem_t *s)
 {
     memset (s, 0, sizeof (proc_cpu_mem_t));
     char fname[80];
@@ -76,8 +77,8 @@ procinfo_read_proc_cpu_mem (int pid, proc_cpu_mem_t *s)
     return 0;
 }
 
-int 
-procinfo_read_sys_cpu_mem (sys_cpu_mem_t *s)
+static int 
+procinfo_read_sys_cpu_mem_linux(sys_cpu_mem_t *s)
 {
     memset (s, 0, sizeof(sys_cpu_mem_t));
     FILE *fp = fopen ("/proc/stat", "r");
@@ -143,4 +144,27 @@ procinfo_read_sys_cpu_mem (sys_cpu_mem_t *s)
     fclose (fp);
 
     return 0;
+}
+#endif
+
+int 
+procinfo_read_proc_cpu_mem (int pid, proc_cpu_mem_t *s)
+{
+#ifdef __linux__
+    return procinfo_read_proc_cpu_mem_linux(pid, s);
+#else
+    memset(s, 0, sizeof(proc_cpu_mem_t));
+    return 0;
+#endif
+}
+
+int 
+procinfo_read_sys_cpu_mem (sys_cpu_mem_t *s)
+{
+#ifdef __linux__
+    return procinfo_read_sys_cpu_mem_linux(s);
+#else
+    memset(s, 0, sizeof(sys_cpu_mem_t));
+    return 0;
+#endif
 }
