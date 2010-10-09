@@ -328,7 +328,7 @@ macro(lcmtypes_build)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LCM REQUIRED lcm)
     lcmtypes_build_c(${ARGV})
-    include_directories(${LCM_INCLUDE_DIRS})
+    include_directories(${LCMTYPES_INCLUDE_DIRS})
 
     lcmtypes_build_java(${ARGV})
     lcmtypes_build_python(${ARGV})
