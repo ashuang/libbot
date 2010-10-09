@@ -27,7 +27,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.10.01
+# Distributed with pods version: 10.10.08
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -256,7 +256,11 @@ macro(pods_config_search_paths)
         link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
         # abuse RPATH
-        set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
+        if(${CMAKE_INSTALL_RPATH})
+            set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib:${CMAKE_INSTALL_RPATH})
+        else(${CMAKE_INSTALL_RPATH})
+            set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
+        endif(${CMAKE_INSTALL_RPATH})
 
         # for osx, which uses "install name" path rather than rpath
         set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)

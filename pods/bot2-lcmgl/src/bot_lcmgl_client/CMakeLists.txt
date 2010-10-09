@@ -2,8 +2,7 @@ add_definitions(-std=gnu99)
 
 include_directories(
     ${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUDE_DIRS}
-    ${LCMTYPES_INCLUDE_DIRS})
+    ${LCM_INCLUDE_DIRS})
 
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)

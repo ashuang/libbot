@@ -24,7 +24,7 @@
 #
 # ----
 # File: lcmtypes.cmake
-# Distributed with pods version: 10.10.01
+# Distributed with pods version: 10.10.08
 
 cmake_minimum_required(VERSION 2.6.0)
 
@@ -328,6 +328,8 @@ macro(lcmtypes_build)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LCM REQUIRED lcm)
     lcmtypes_build_c(${ARGV})
+    include_directories(${LCM_INCLUDE_DIRS})
+
     lcmtypes_build_java(${ARGV})
     lcmtypes_build_python(${ARGV})
     lcmtypes_install_types()
