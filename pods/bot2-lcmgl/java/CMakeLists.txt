@@ -2,7 +2,7 @@ find_package(Java REQUIRED)
 
 set(java_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(class_dir ${CMAKE_CURRENT_BINARY_DIR}/java-build)
-set(jar_fname lcmgl.jar)
+set(jar_fname bot2-lcmgl.jar)
 
 # where is lcm.jar?
 execute_process(COMMAND pkg-config --variable=classpath lcm-java 
