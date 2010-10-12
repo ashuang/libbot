@@ -4,14 +4,16 @@
 #include <stdio.h>
 
 /**
- * SECTION:conf
- * @title: Configuration Files
- * @short_description: Hierarchical key/value configuration files
+ * @defgroup BotCoreConf Configuration Files
+ * @brief Hierarchical key/value configuration files
+ * @ingroup BotCoreIO
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -543,5 +545,9 @@ bot_conf_set_str_array (BotConf * conf,
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

@@ -4,14 +4,16 @@
 #include <glib.h>
 
 /**
- * SECTION:set
- * @title: Set
- * @short_description: Set data structure for hashable objects
+ * @defgroup BotCoreSet Set
+ * @brief Set data structure for hashable objects
+ * @ingroup BotCoreDataStructures
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -59,5 +61,9 @@ GPtrArray *bot_set_get_elements (BotSet *set);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

@@ -2,14 +2,16 @@
 #define __bot_ssocket_h__
 
 /**
- * SECTION:ssocket
- * @title:TCP Sockets
- * @short_description:
+ * @defgroup BotCoreSSocket TCP Sockets
+ * @brief Convenience data structure for using a TCP socket
+ * @ingroup BotCoreIO
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #include <sys/types.h>
@@ -44,5 +46,9 @@ int bot_ssocket_get_fd(bot_ssocket_t *s);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

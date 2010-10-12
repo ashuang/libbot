@@ -4,12 +4,14 @@
 #include <glib.h>
 
 /**
- * SECTION:minheap
- * @title: Minheap
- * @short_description: Heap data structure
+ * @defgroup BotCoreMinHeap Minheap
+ * @brief Heap data structure
+ * @ingroup BotCoreDataStructures
  * @include: bot_core/bot_core.h
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -40,5 +42,9 @@ gboolean bot_minheap_is_empty (BotMinheap *mh);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

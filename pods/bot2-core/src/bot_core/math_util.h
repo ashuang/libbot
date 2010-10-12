@@ -1,19 +1,21 @@
 #ifndef __bot_mathutil_h__
 #define __bot_mathutil_h__
 
+/**
+ * @defgroup BotCoreMathUtil Math Utilities
+ * @ingroup BotCoreMathGeom
+ * @brief Miscellaneous math utility functions
+ * @include: bot_core/bot_core.h
+ *
+ * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
+ */
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
-
-/**
- * SECTION:math_util
- * @title: Math Utilities
- * @short_description: Miscellaneous math utility functions
- * @include: bot_core/bot_core.h
- *
- * Linking: `pkg-config --libs bot2-core`
- */
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +64,10 @@ static inline int bot_theta_to_int(double theta, int max)
 #define bot_to_degrees(rad) ((rad)*180/M_PI)
 
 #define bot_sq(a) ((a)*(a))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

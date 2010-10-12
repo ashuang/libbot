@@ -1,6 +1,8 @@
 #ifndef __bot2_core_h__
 #define __bot2_core_h__
 
+#include "math_util.h"
+#include "small_linalg.h"
 #include "camtrans.h"
 #include "circular.h"
 #include "conf.h"
@@ -10,7 +12,6 @@
 #include "glib_util.h"
 #include "gps_linearize.h"
 #include "lcm_util.h"
-#include "math_util.h"
 #include "minheap.h"
 #include "ppm.h"
 #include "ptr_circular.h"
@@ -18,7 +19,6 @@
 #include "serial.h"
 #include "set.h"
 #include "signal_pipe.h"
-#include "small_linalg.h"
 #include "ssocket.h"
 #include "tictoc.h"
 #include "timespec.h"
@@ -31,5 +31,34 @@
 #include <lcmtypes/bot_core_pose_t.h>
 #include <lcmtypes/bot_core_raw_t.h>
 #include <lcmtypes/bot_core_rigid_transform_2d_t.h>
+
+/**
+ * @defgroup BotCore Core API
+ * @brief Core data structures and functions
+ */
+
+/**
+ * @defgroup BotCoreMathGeom Math / Geometry
+ * @ingroup BotCore
+ * @brief Functions and data structures for math and geometry
+ */
+
+/**
+ * @defgroup BotCoreDataStructures Data Structures
+ * @ingroup BotCore
+ * @brief General purpose data structures
+ */
+
+/**
+ * @defgroup BotCoreIO I/O
+ * @ingroup BotCore
+ * @brief I/O routines (files, sockets, etc.) and reading/writing certain file formats.
+ */
+
+/**
+ * @defgroup BotCoreTime Time
+ * @ingroup BotCore
+ * @brief Time keeping
+ */
 
 #endif

@@ -5,14 +5,16 @@
 #include <time.h>
 
 /**
- * SECTION:timespec
- * @title: timespec
- * @short_description: Convenience functions for <literal>struct timespec</literal>
+ * @defgroup BotCoreTimeSpec Timespec
+ * @brief Convenience functions for <literal>struct timespec</literal>
+ * @ingroup BotCoreTime
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -49,5 +51,9 @@ void bot_timespec_to_timeval(struct timespec *ts, struct timeval *tv);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

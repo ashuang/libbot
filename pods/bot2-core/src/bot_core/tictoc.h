@@ -9,8 +9,10 @@
 #define __bot_tictoch_h__
 
 /**
- * SECTION:tictoc
- * @short_description: quick and dirty profiling tool...
+ * @defgroup BotCoreTicToc TicToc
+ * @brief quick and dirty profiling tool.
+ * @ingroup BotCoreTime
+ * @include: bot_core/bot_core.h
  *
  * inspired by the matlab tic/toc command
  *
@@ -18,6 +20,8 @@
  * call it again with the same description to stop the timer
  *
  * Note: To get output, set the "BOT_TICTOC" environment variable to something
+ *
+ * @{
  */
 
 #define BOT_TICTOC_ENV "BOT_TICTOC"
@@ -66,6 +70,10 @@ typedef enum
  */
 void
 bot_tictoc_print_stats(bot_tictoc_sort_type_t sortType);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

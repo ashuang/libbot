@@ -2,15 +2,14 @@
 #define __bot_small_linalg_h__
 
 /**
- * SECTION:small_linalg
- * @title: Linear Algebra
- * @short_description: convenience functions for small linear algebra operations
+ * @defgroup BotCoreLinalg Linear Algebra
+ * @ingroup BotCoreMathGeom
+ * @brief Convenience functions for small linear algebra operations
  * @include: bot_core/bot_core.h
  *
- * FIXME: most functions aren't getting picked up by GTK-Doc because they are
- * static inline.
- *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #include <stdio.h>
@@ -22,8 +21,6 @@ extern "C" {
 #endif
 
 /**
- * bot_matrix_determinant_3x3d:
- *
  * Determinant of a 3x3 matrix
  */
 static inline double
@@ -34,6 +31,9 @@ bot_matrix_determinant_3x3d (const double m[9])
          + m[2]*(m[3]*m[7] - m[4]*m[6]);
 }
 
+/**
+ * Determinant of a 2x2 matrix
+ */
 static inline double
 bot_matrix_determinant_2x2(const double m[4])
 {
@@ -41,7 +41,7 @@ bot_matrix_determinant_2x2(const double m[4])
 }
 
 /*
- * convenience function for computing the cross product of 2D vectors
+ * Convenience function for computing the cross product of 2D vectors
  */
 static inline double
 bot_matrix_determinant_2x2_by_row(const double m_1[2], const double m_2[2])
@@ -49,10 +49,18 @@ bot_matrix_determinant_2x2_by_row(const double m_1[2], const double m_2[2])
     return m_1[0]*m_2[1] - m_1[1]*m_2[0];
 }
 
-
+/**
+ * Inverse of a 4x4 matrix.
+ *
+ * @returns 0 on success, -1 if matrix is singular
+ */
 int bot_matrix_inverse_4x4d (const double m[16], double inv[16]);
 
-// returns 0 on success, -1 if matrix is singular
+/**
+ * Inverse of a 3x3 matrix
+ *
+ * @returns 0 on success, -1 if matrix is singular
+ */
 static inline int
 bot_matrix_inverse_3x3d (const double m[9], double inverse[9])
 {
@@ -72,6 +80,11 @@ bot_matrix_inverse_3x3d (const double m[9], double inverse[9])
     return 0;
 }
 
+/**
+ * Inverse of a 2x2 matrix
+ *
+ * @returns 0 on success, -1 if matrix is singular
+ */
 static inline int
 bot_matrix_inverse_2x2d(const double m[4], double inverse[4])
 {
@@ -508,8 +521,6 @@ bot_vector_vector_outer_product_3d (const double v1[3], const double v2[3],
 }
 
 /**
- * linear_least_squares_3d:
- *
  * Finds the vector x that minimizes ||Ax - b||, where A is a %m x 3 matrix
  *
  * Computes and solves (A'A)x = A'b
@@ -522,6 +533,10 @@ int bot_linear_least_squares_3d (const double *A, int m, const double b[3],
 void bot_matrix_mean_cov_3d (const double *X, int n, double mean[3], double cov[9]);
 
 void bot_matrix_mean_cov_2d (const double *X, int n, double mean[2], double cov[4]);
+
+/*
+ * @}
+ */
 
 #ifdef __cplusplus
 }

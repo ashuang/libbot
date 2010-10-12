@@ -5,14 +5,16 @@
 #include <inttypes.h>
 
 /**
- * SECTION:ppm
- * @title: PPM/PGM
- * @short_description: Reading and writing PPM/PGM files
+ * @defgroup BotCorePPM PPM/PGM
+ * @brief Reading and writing PPM/PGM files
+ * @ingroup BotCoreIO
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -43,5 +45,9 @@ int bot_pgm_write_fname(const char *fname, const uint8_t * pixels,
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

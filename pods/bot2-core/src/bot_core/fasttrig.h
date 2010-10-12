@@ -2,12 +2,14 @@
 #define __bot_fasttrig_h__
 
 /**
- * SECTION:fasttrig
- * @title: Fast Trigonometry
- * @short_description: Very fast, but approximate trigonometry
+ * @defgroup BotCoreFastTrig Fast Trigonometry 
+ * @ingroup BotCoreMathGeom
+ * @brief Very fast, but approximate trigonometry
  * @include: bot_core/bot_core.h
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -17,6 +19,10 @@ extern "C" {
 void bot_fasttrig_init(void);
 void bot_fasttrig_sincos(double theta, double *s, double *c);
 double bot_fasttrig_atan2(double y, double x);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

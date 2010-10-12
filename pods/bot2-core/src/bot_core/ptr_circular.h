@@ -2,12 +2,14 @@
 #define __bot_ptr_circular_h__
 
 /**
- * SECTION:ptr_circular
- * @title: Circular Pointer Array
- * @short_description: Circular array of pointers
+ * @defgroup BotCorePtrCircular Circular Pointer Array
+ * @brief Circular array of pointers
+ * @ingroup BotCoreDataStructures
  * @include: bot_core/bot_core.h
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -54,5 +56,9 @@ void bot_ptr_circular_clear(BotPtrCircular *circ);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

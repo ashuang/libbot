@@ -6,14 +6,16 @@ extern "C" {
 #endif
 
 /**
- * SECTION:trans
- * @title: Trans
- * @short_description: Simple 3D rigid-body transformations
+ * @defgroup BotCoreTrans Trans
+ * @ingroup BotCoreMathGeom
+ * @brief Simple 3D rigid-body transformations
  * @include: bot_core/bot_core.h
  *
  * Data structure and functions for working with 3D rigid-body transformations.
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 /**
@@ -143,6 +145,10 @@ void bot_trans_get_mat_3x4(const BotTrans *btrans, double mat[12]);
  * translation portion of the rigid body transformation.
  */
 void bot_trans_get_trans_vec(const BotTrans * btrans, double trans_vec[3]);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

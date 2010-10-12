@@ -6,9 +6,9 @@
 #include "trans.h"
 
 /**
- * SECTION:ctrans
- * @title: CTrans
- * @short_description: Transforming between multiple coordinate frames.
+ * @defgroup BotCoreCTrans CTrans
+ * @ingroup BotCoreMathGeom
+ * @brief Transforming between multiple coordinate frames.
  * @include: bot_core/bot_core.h
  *
  * Represents a set of cartesian coordinate frames and the possibly
@@ -21,6 +21,8 @@
  * transformations are composed together to form a single transformation.
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -182,6 +184,10 @@ int bot_ctrans_link_get_nth_trans(BotCTransLink * link,
 
 const char * bot_ctrans_link_get_from_frame(BotCTransLink *link);
 const char * bot_ctrans_link_get_to_frame(BotCTransLink *link);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

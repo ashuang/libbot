@@ -6,14 +6,16 @@
 #include <time.h>
 
 /**
- * SECTION:timestamp
- * @title:timestamp
- * @short_description: Retrieving the current time, synchronizing clocks
+ * @defgroup BotCoreTimestamp Timestamp
+ * @brief Retrieving the current time, synchronizing clocks
+ * @ingroup BotCoreTime
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 typedef struct bot_timestamp_sync_state bot_timestamp_sync_state_t;
@@ -58,5 +60,9 @@ bot_timestamp_sync (bot_timestamp_sync_state_t * s, int64_t dev_ticks,
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

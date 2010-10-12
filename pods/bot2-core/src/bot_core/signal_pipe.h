@@ -2,9 +2,9 @@
 #define __bot_signal_pipe_h__
 
 /**
- * SECTION:signal_pipe
- * @title:Signals to pipes
- * @short_description: Receive UNIX signal notifications via pipes
+ * @defgroup BotCoreSignalPipe Signals to pipes
+ * @brief Receive UNIX signal notifications via pipes
+ * @ingroup BotCoreIO
  * @include: bot_core/bot_core.h
  *
  * signal_pipe provides convenience wrappers to convert unix signals into glib
@@ -29,6 +29,8 @@
  *     bot_signal_pipe_destroy();
  * }
  * </programlisting>
+ *
+ * @{
  */
 
 #include <glib.h>
@@ -64,5 +66,9 @@ int bot_signal_pipe_glib_quit_on_kill (GMainLoop *mainloop);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

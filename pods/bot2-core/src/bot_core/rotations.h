@@ -2,13 +2,15 @@
 #define __bot_rotations_h_
 
 /**
- * SECTION:rotations
- * @title: Rotations
- * @short_description: Rotation utilities
+ * @defgroup BotCoreRotations Rotations
+ * @ingroup BotCoreMathGeom
+ * @brief Rotation Utilities
  * @include: bot_core/bot_core.h
  *
- * This code allows several different rotation representations to be
- * converted.  The representations are:
+ * Functions for working with rotations and converting between
+ * different rotation representations.
+ *
+ * The representations are:
  *
  * Quaternion           double[4]
  * Angle/Axis           double, double[3]
@@ -20,6 +22,7 @@
  * representation yields a different function signature.
  *
  * Linking: `pkg-config --libs bot2-core`
+ * @{
  */
 
 #ifdef __cplusplus
@@ -123,6 +126,10 @@ int bot_quaternion_test(void);
  */
 void bot_quat_interpolate(const double q0[4], const double q1[4], double u, 
         double result[4]);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

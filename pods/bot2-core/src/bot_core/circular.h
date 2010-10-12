@@ -6,9 +6,9 @@ extern "C" {
 #endif
 
 /**
- * SECTION:circular
- * @title: Circular Array
- * @short_description:  Fixed-capacity circular array 
+ * @defgroup BotCoreCircular Circular Array
+ * @brief Fixed-capacity circular array 
+ * @ingroup BotCoreDataStructures
  * @include: bot_core/bot_core.h
  *
  * BotCircular is a hybrid of the glib types GArray and GQueue.  BotCircular
@@ -21,6 +21,8 @@ extern "C" {
  * automatically overwritten.
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 typedef struct _BotCircular BotCircular;
 
@@ -57,6 +59,10 @@ int bot_circular_size(BotCircular *circular);
 
 #define bot_circular_peek_nth(a,i) \
     ((void*)((char*)(a)->array + (((a)->head + (i)) % (a)->capacity) * (a)->element_size))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

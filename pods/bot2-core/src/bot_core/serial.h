@@ -2,14 +2,16 @@
 #define __bot_serial_h__
 
 /**
- * SECTION:serial
- * @title:Serial ports
- * @short_description: Reading and writing from serial ports
+ * @defgroup BotCoreSerial Serial ports
+ * @brief Reading and writing from serial ports
+ * @ingroup BotCoreIO
  * @include: bot_core/bot_core.h
  *
  * TODO
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -50,5 +52,9 @@ int bot_serial_close(int fd);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

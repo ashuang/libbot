@@ -1,20 +1,19 @@
 #ifndef __BOT_CAMTRANS_H__
 #define __BOT_CAMTRANS_H__
 
+/**
+ * @defgroup BotCoreCamTrans CamTrans
+ * @ingroup BotCoreMathGeom
+ * @brief Perspective camera projection and distortion models
+ * @include: bot_core/bot_core.h
+ *
+ * Linking: `pkg-config --libs bot2-core`
+ * @{
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * SECTION:camtrans
- * @title: CamTrans
- * @short_description: Perspective camera projection and distortion models
- * @include: bot_core/bot_core.h
- *
- * TODO
- *
- * Linking: `pkg-config --libs bot2-core`
- */
 
 typedef struct _BotCamTrans BotCamTrans;
 
@@ -175,6 +174,10 @@ int bot_camtrans_unproject_pixel(const BotCamTrans *self, double im_x,
  * Returns: TODO
  */
 void bot_camtrans_scale_image (BotCamTrans *self, const double scale_factor);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

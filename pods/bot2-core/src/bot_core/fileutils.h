@@ -4,12 +4,14 @@
 #include <stdio.h>
 
 /**
- * SECTION:fileutils
- * @title: File Utilities
- * @short_description: 
+ * @defgroup BotCoreFileUtils File Utilities
+ * @brief Convenience functions for reading/writing files
+ * @ingroup BotCoreIO
  * @include: bot_core/bot_core.h
  *
  * Linking: `pkg-config --libs bot2-core`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -57,5 +59,9 @@ int bot_fileutils_fread64(FILE *f, int64_t *v64);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif
