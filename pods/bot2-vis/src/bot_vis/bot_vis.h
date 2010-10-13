@@ -21,4 +21,22 @@
  * @brief Visualization with OpenGL and GTK+
  */
 
+/**
+ * @defgroup BotVisGtk GTK+
+ * @brief GTK+ Widgets utility functions
+ * @ingroup BotVis
+ */
+
+/**
+ * @defgroup BotVisGl OpenGL
+ * @brief OpenGL data structures and utility functions
+ * @ingroup BotVis
+ */
+
+/**
+ * @defgroup BotViewerGroup Viewer
+ * @brief Visualization with OpenGL and GTK+
+ * @ingroup BotVis
+ */
+
 #endif

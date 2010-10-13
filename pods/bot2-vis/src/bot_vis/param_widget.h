@@ -6,14 +6,15 @@
 #include <gtk/gtk.h>
 
 /**
- * SECTION:param_widget
- * @title:BotGtkParamWidget
- * @short_description: Parameter widget
- * @include: bot2-vis/bot2-vis.h
+ * @defgroup BotGtkParamWidget BotGtkParamWidget
+ * @brief GTK+ widget for creating adjustable parameters
+ * @ingroup BotVisGtk
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 G_BEGIN_DECLS
@@ -112,5 +113,9 @@ int bot_gtk_param_widget_modify_int(BotGtkParamWidget *pw,
         const char *name, int min, int max, int increment, int value);
 
 G_END_DECLS
+
+/**
+ * @}
+ */
 
 #endif  /* __bot_gtk_param_widget_h__ */

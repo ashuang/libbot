@@ -1,7 +1,15 @@
 #ifndef __bot_rwx_h__
 #define __bot_rwx_h__
 
-// Renderware file format parser
+/**
+ * @defgroup BotVisRwx Renderware (.rwx) mesh model rendering
+ * @brief Parsing and rendering .rwx models
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
+ *
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
+ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,5 +64,9 @@ void bot_rwx_model_get_extrema (bot_rwx_model_t * model,
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

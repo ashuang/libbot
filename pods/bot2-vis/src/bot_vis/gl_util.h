@@ -19,14 +19,15 @@
 #include "batch_gl.h"
 
 /**
- * SECTION:gl_util
- * @title:GL Utilities
- * @short_description: OpenGL Utility functions
- * @include: bot2-vis/bot2-vis.h
+ * @defgroup BotGlUtil Miscellaneous OpenGL utility functions
+ * @brief OpenGL Utility functions
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 #ifdef __cplusplus
@@ -123,5 +124,9 @@ void bot_gl_print_current_matrix(void);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

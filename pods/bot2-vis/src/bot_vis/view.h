@@ -1,6 +1,16 @@
 #ifndef __bot_gl_view_h__
 #define __bot_gl_view_h__
 
+/**
+ * @defgroup BotGlView BotGlView
+ * @brief Viewpoints and OpenGL matrices
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
+ *
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
+ */
+
 #include <glib.h>
 
 #ifdef __cplusplus
@@ -55,5 +65,9 @@ void bot_gl_view_get_look_at(const BotGlView *self, double eye[3],
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

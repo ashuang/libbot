@@ -8,8 +8,8 @@
 /**
  * @defgroup BotGtkGlDrawingArea BotGTKGlDrawingArea 
  * @brief GTK+ drawing-area widget with an OpenGL context
- * @ingroup BotVis
- * @include: bot2-vis/bot2-vis.h
+ * @ingroup BotVisGtk
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *

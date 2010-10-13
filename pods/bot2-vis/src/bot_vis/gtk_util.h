@@ -8,14 +8,15 @@
 #include "viewer.h"
 
 /**
- * SECTION:gtk_util
- * @title: GTK Utilities
- * @short_description: GTK utility functions
- * @include: bot2-vis/bot2-vis.h
+ * @defgroup BotVisGtkUtil Miscellaneous GTK+ utility functions
+ * @brief GTK utility functions
+ * @ingroup BotVisGtk
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 #ifdef __cplusplus
@@ -31,5 +32,9 @@ int bot_gtk_quit_on_interrupt(void);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

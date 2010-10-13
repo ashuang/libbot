@@ -9,14 +9,15 @@
 #endif
 
 /**
- * SECTION:texture
- * @title: Textures
- * @short_description: Rendering images/textures
- * @include: bot2-vis/bot2-vis.h
+ * @defgroup BotGlTexture Textures
+ * @brief Rendering images/textures
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 #ifdef __cplusplus
@@ -77,5 +78,9 @@ GLenum bot_gl_texture_get_target (BotGlTexture *t);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

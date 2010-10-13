@@ -12,7 +12,7 @@
  * @defgroup BotLCMGLCLient LCMGL client
  * @ingroup BotLCMGL
  * @brief OpenGL rendering via LCM - client routines
- * @include bot_lcmgl_client/lcmgl.h
+ * @include: bot_lcmgl_client/lcmgl.h
  *
  * TODO
  *

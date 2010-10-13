@@ -14,15 +14,15 @@ extern "C" {
 #endif
 
 /**
- * SECTION:viewer
- * @title: BotViewer
- * @see_also: rwx-viewer
- * @short_description: Graphical debugging utility
- * @include: bot2-vis/bot2-vis.h
+ * @defgroup BotViewer BotViewer
+ * @brief Graphical debugging utility
+ * @ingroup BotViewerGroup
+ * @include: bot_vis/bot_vis.h
  *
  * Data structures and functions for displaying debugging information.
  *
- * Linking: <literal>-lbot2-vis</literal>
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 typedef struct _BotViewer BotViewer;
@@ -469,5 +469,9 @@ void bot_viewer_add_stock_renderer(BotViewer* viewer, int stock_renderer_id, int
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

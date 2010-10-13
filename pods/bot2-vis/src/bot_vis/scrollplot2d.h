@@ -2,14 +2,15 @@
 #define __bot_gl_scrollplot2d_h__
 
 /**
- * SECTION:scrollplot2d
- * @title: Scrolling Plots
- * @short_description: Plotting windows of time-varying signals
- * @include: bot2-vis/bot2-vis.h
+ * @defgroup BotGlScrollPlot2d Plotting time-varying signals
+ * @brief Plotting windows of time-varying signals
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 #ifdef __cplusplus
@@ -65,16 +66,20 @@ int bot_gl_scrollplot2d_set_color (BotGlScrollPlot2d *self, const char *name,
 int bot_gl_scrollplot2d_add_point (BotGlScrollPlot2d *self, const char *name,
         double x, double y);
 
-/**
- * renders the plot in a square from [ 0, 0 ] to [ 1, 1 ]
- */
-//void bot_gl_scrollplot2d_gl_render (BotGlScrollPlot2d *self);
-
 void bot_gl_scrollplot2d_gl_render_at_window_pos (BotGlScrollPlot2d *self,
         int topleft_x, int topleft_y, int width, int height);
 
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
+
+/**
+ * renders the plot in a square from [ 0, 0 ] to [ 1, 1 ]
+ */
+//void bot_gl_scrollplot2d_gl_render (BotGlScrollPlot2d *self);
 
 #endif

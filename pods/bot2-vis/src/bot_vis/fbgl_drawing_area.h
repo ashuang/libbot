@@ -10,8 +10,8 @@
 /**
  * @defgroup BotFBGLDrawingArea OpenGL offscreen rendering
  * @brief Offscreen rendering using Framebuffer objects
- * @ingroup BotVis
- * @include: bot2-vis/bot2-vis.h
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *

@@ -1,6 +1,18 @@
 #ifndef __BOT_GTK_GL_IMAGE_AREA_H__
 #define __BOT_GTK_GL_IMAGE_AREA_H__
 
+/**
+ * @defgroup BotGtkGlImageArea BotGTKGlImageArea 
+ * @brief GTK+ widget to draw images with OpenGL
+ * @ingroup BotVisGl
+ * @include: bot_vis/bot_vis.h
+ *
+ * TODO
+ *
+ * Linking: `pkg-config --libs bot-vis`
+ * @{
+ */
+
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #else
@@ -52,6 +64,10 @@ int         bot_gtk_gl_image_area_upload_image (BotGtkGlImageArea * self,
         const void *data, int row_stride);
 
 G_END_DECLS
+
+/**
+ * @}
+ */
 
 #endif
 
