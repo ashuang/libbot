@@ -6,14 +6,15 @@
 #include <gtk/gtkdrawingarea.h>
 
 /**
- * SECTION:gl_drawing_area
- * @title: BotGtkGlDrawingArea
- * @short_description: OpenGL widget
+ * @defgroup BotGtkGlDrawingArea BotGTKGlDrawingArea 
+ * @brief GTK+ drawing-area widget with an OpenGL context
+ * @ingroup BotVis
  * @include: bot2-vis/bot2-vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot-vis`
+ * @{
  */
 
 G_BEGIN_DECLS
@@ -47,5 +48,9 @@ int         bot_gtk_gl_drawing_area_set_context (BotGtkGlDrawingArea * glarea);
 void        bot_gtk_gl_drawing_area_invalidate (BotGtkGlDrawingArea * glarea);
 
 G_END_DECLS
+
+/**
+ * @}
+ */
 
 #endif

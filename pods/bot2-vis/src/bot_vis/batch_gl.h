@@ -18,16 +18,18 @@ extern "C" {
 #endif
 
 /**
- * SECTION:batch_gl
- * @title: Batched GL
- * @short_description: Batching OpenGL commands for delayed rendering
+ * @defgroup BotVisBatchGL Batched OpenGL commands
+ * @brief Batching OpenGL commands for delayed rendering
+ * @ingroup BotVis
  * @include: bot2-vis/bot2-vis.h
  *
  * Batched GL drawing allows a program to issue some basic OpenGL drawing
  * commands while an OpenGL context is not active.  Commands will be queued up,
  * stored, and then executed when requested via bot_bgl_render().
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ *
+ * @{
  */
 
 typedef struct _bot_bgl bot_bgl_t;
@@ -79,6 +81,10 @@ void bot_bgl_switch_buffer (bot_bgl_t *bgl);
 //void bot_bgl_text_ex(bot_bgl_t *bgl, const double xyz[3], const char *text, uint32_t font, uint32_t flags);
 //
 //void bot_bgl_rect(bot_bgl_t *bgl, double xyz[3], double size[2], double theta_rad, int filled);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

@@ -4,14 +4,16 @@
 #include <inttypes.h>
 
 /**
- * SECTION:lcmgl_decode
- * @title: LCMGL decoding
- * @short_description: Executing OpenGL commands received via LCMGL
- * @include: bot_lcmgl_renderer/lcmgl_decode.h
+ * @defgroup BotLCMGLRender LCMGL decoding and rendering
+ * @ingroup BotLCMGL
+ * @brief Executing OpenGL commands received via LCMGL
+ * @include bot_lcmgl_render/lcmgl_decode.h
  *
  * TODO
  *
- * Linking: -lbot2-lcmgl-renderer
+ * Linking: `pkg-config --libs bot2-lcmgl-render`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -25,6 +27,10 @@ extern "C" {
  * the current OpenGL context.
  */
 void bot_lcmgl_decode(uint8_t *data, int datalen);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

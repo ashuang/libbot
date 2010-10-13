@@ -8,14 +8,15 @@
 #endif
 
 /**
- * SECTION:fbgl_drawing_area
- * @title:BotFbglDrawingArea
- * @short_description: Offscreen rendering using Framebuffer objects
+ * @defgroup BotFBGLDrawingArea OpenGL offscreen rendering
+ * @brief Offscreen rendering using Framebuffer objects
+ * @ingroup BotVis
  * @include: bot2-vis/bot2-vis.h
  *
  * TODO
  *
- * Linking: -lbot2-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ * @{
  */
 
 G_BEGIN_DECLS
@@ -49,5 +50,9 @@ int         bot_fbgl_drawing_area_end (BotFbglDrawingArea * glarea);
 int         bot_fbgl_drawing_area_flush (BotFbglDrawingArea * glarea);
 
 G_END_DECLS
+
+/**
+ * @}
+ */
 
 #endif

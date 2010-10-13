@@ -2,14 +2,16 @@
 #define __bot_gl_console_h__
 
 /**
- * SECTION:console
- * @title: Console
- * @short_description: Vertically scrolling text
+ * @defgroup console Scrolling text OpenGL overlay
+ * @brief Vertically scrolling text
+ * @ingroup BotVis
  * @include: bot2-vis/bot2-vis.h
  *
  * TODO
  *
- * Linking: -lbot-vis
+ * Linking: `pkg-config --libs bot2-vis`
+ *
+ * @{
  */
 
 #ifdef __cplusplus
@@ -36,5 +38,9 @@ void bot_gl_console_render (BotGlConsole *console);
 #ifdef __cplusplus
 }
 #endif
+
+/**
+ * @}
+ */
 
 #endif

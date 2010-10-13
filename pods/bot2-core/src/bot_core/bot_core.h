@@ -33,7 +33,7 @@
 #include <lcmtypes/bot_core_rigid_transform_2d_t.h>
 
 /**
- * @defgroup BotCore Core API
+ * @defgroup BotCore Bot Core
  * @brief Core data structures and functions
  */
 

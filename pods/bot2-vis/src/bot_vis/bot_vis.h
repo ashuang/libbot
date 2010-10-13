@@ -16,4 +16,9 @@
 #include "viewer.h"
 #include "view.h"
 
+/**
+ * @defgroup BotVis Bot Vis
+ * @brief Visualization with OpenGL and GTK+
+ */
+
 #endif

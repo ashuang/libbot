@@ -4,14 +4,20 @@
 #include <lcm/lcm.h>
 
 /**
- * SECTION:lcmgl
- * @title: LCMGL
- * @short_description: OpenGL rendering via LCM - client routines
- * @include: bot/bot_core.h
+ * @defgroup BotLCMGL LCMGL
+ * @brief Transmit and render OpenGL commands via LCM
+ */
+
+/**
+ * @defgroup BotLCMGLCLient LCMGL client
+ * @ingroup BotLCMGL
+ * @brief OpenGL rendering via LCM - client routines
+ * @include bot_lcmgl_client/lcmgl.h
  *
  * TODO
  *
- * Linking: -lbot-core
+ * Linking: `pkg-config --libs bot2-lcmgl-client`
+ * @{
  */
 
 #ifdef __cplusplus
@@ -259,6 +265,10 @@ enum _bot_lcmgl_enum_t
     BOT_LCMGL_SPHERE,
     BOT_LCMGL_CYLINDER
 };
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
