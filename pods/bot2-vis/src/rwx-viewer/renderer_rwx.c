@@ -18,7 +18,7 @@
 typedef struct _RendererRwx {
     BotRenderer renderer;
 
-    bot_rwx_model_t *rwx_model;
+    BotRwxModel *rwx_model;
     int display_lists_ready;
     GLuint rwx_dl;
 
@@ -49,7 +49,7 @@ draw_rwx_model (RendererRwx * self)
 }
 
 static GLuint
-compile_display_list (RendererRwx * self, char * prefix, bot_rwx_model_t * model)
+compile_display_list (RendererRwx * self, char * prefix, BotRwxModel * model)
 {
     GLuint dl = glGenLists (1);
     glNewList (dl, GL_COMPILE);

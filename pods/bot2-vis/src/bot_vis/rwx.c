@@ -80,7 +80,7 @@ parse_require(tokenize_t *t, char *tok)
 }
 
 static int 
-parse_vertex( tokenize_t *tok, bot_rwx_vertex_t *v )
+parse_vertex( tokenize_t *tok, BotRwxVertex *v )
 {
     tokenize_next( tok );
 
@@ -116,7 +116,7 @@ parse_vertex( tokenize_t *tok, bot_rwx_vertex_t *v )
 }
 
 static int 
-parse_triangle( tokenize_t *tok, bot_rwx_triangle_t *t )
+parse_triangle( tokenize_t *tok, BotRwxTriangle *t )
 {
     tokenize_next( tok );
 
@@ -127,7 +127,7 @@ parse_triangle( tokenize_t *tok, bot_rwx_triangle_t *t )
 }
 
 static int 
-parse_clump( bot_rwx_clump_t *clump, tokenize_t *tok )
+parse_clump( BotRwxClump *clump, tokenize_t *tok )
 {
     // get clump name
     parse_require( tok, "#Layer" );
@@ -143,7 +143,7 @@ parse_clump( bot_rwx_clump_t *clump, tokenize_t *tok )
     clump->specular = 0;
 
     int nvbuf = 20000;
-    bot_rwx_vertex_t *vbuf = (bot_rwx_vertex_t*)calloc(1, nvbuf*sizeof(bot_rwx_vertex_t));
+    BotRwxVertex *vbuf = (BotRwxVertex*)calloc(1, nvbuf*sizeof(BotRwxVertex));
 
     // clump color
     tokenize_next( tok );
@@ -196,7 +196,7 @@ parse_clump( bot_rwx_clump_t *clump, tokenize_t *tok )
 
             if( clump->nvertices >= nvbuf ) {
                 nvbuf += 10000;
-                vbuf = (bot_rwx_vertex_t*)realloc(vbuf, nvbuf*sizeof(bot_rwx_vertex_t));
+                vbuf = (BotRwxVertex*)realloc(vbuf, nvbuf*sizeof(BotRwxVertex));
             }
         } else if( ! strcmp( tok->token, "#texend" ) ) {
             // expect the clump name
@@ -208,13 +208,13 @@ parse_clump( bot_rwx_clump_t *clump, tokenize_t *tok )
     }
 
     clump->vertices = 
-        (bot_rwx_vertex_t*)malloc(clump->nvertices*sizeof(bot_rwx_vertex_t));
-    memcpy( clump->vertices, vbuf, clump->nvertices*sizeof(bot_rwx_vertex_t) );
+        (BotRwxVertex*)malloc(clump->nvertices*sizeof(BotRwxVertex));
+    memcpy( clump->vertices, vbuf, clump->nvertices*sizeof(BotRwxVertex) );
     free( vbuf );
 
     int ntbuf = 20000;
-    bot_rwx_triangle_t *tbuf = 
-        (bot_rwx_triangle_t*)calloc(1, ntbuf*sizeof(bot_rwx_triangle_t));
+    BotRwxTriangle *tbuf = 
+        (BotRwxTriangle*)calloc(1, ntbuf*sizeof(BotRwxTriangle));
 
     // parse the list of triangles
     tokenize_next( tok );
@@ -226,8 +226,8 @@ parse_clump( bot_rwx_clump_t *clump, tokenize_t *tok )
 
             if( clump->ntriangles >= ntbuf ) {
                 ntbuf += 10000;
-                tbuf = (bot_rwx_triangle_t*)realloc(tbuf, 
-                        ntbuf*sizeof(bot_rwx_triangle_t));
+                tbuf = (BotRwxTriangle*)realloc(tbuf, 
+                        ntbuf*sizeof(BotRwxTriangle));
             }
         } else if( ! strcmp( tok->token, "ClumpEnd" ) ) {
             break;
@@ -235,17 +235,17 @@ parse_clump( bot_rwx_clump_t *clump, tokenize_t *tok )
     }
 
     clump->triangles = 
-        (bot_rwx_triangle_t*)malloc(clump->ntriangles*sizeof(bot_rwx_triangle_t));
-    memcpy( clump->triangles, tbuf, clump->ntriangles*sizeof(bot_rwx_triangle_t) );
+        (BotRwxTriangle*)malloc(clump->ntriangles*sizeof(BotRwxTriangle));
+    memcpy( clump->triangles, tbuf, clump->ntriangles*sizeof(BotRwxTriangle) );
     free( tbuf );
 
     return 0;
 }
 
-bot_rwx_model_t* 
+BotRwxModel* 
 bot_rwx_model_create( const char *fname )
 {
-    bot_rwx_model_t *model = calloc(1, sizeof(bot_rwx_model_t)); 
+    BotRwxModel *model = calloc(1, sizeof(BotRwxModel)); 
 
     tokenize_t *tok = tokenize_create( fname );
     int status;
@@ -261,7 +261,7 @@ bot_rwx_model_create( const char *fname )
 
     while (tokenize_next(tok)!=EOF) {
         if( 0 == strcmp( tok->token, "ClumpBegin" ) ) {
-            bot_rwx_clump_t *clump = (bot_rwx_clump_t*)calloc(1, sizeof(bot_rwx_clump_t));
+            BotRwxClump *clump = (BotRwxClump*)calloc(1, sizeof(BotRwxClump));
             model->clumps = g_list_append( model->clumps, clump );
 
             status = parse_clump( clump, tok );
@@ -281,12 +281,12 @@ bot_rwx_model_create( const char *fname )
 }
 
 void
-bot_rwx_model_destroy( bot_rwx_model_t *model )
+bot_rwx_model_destroy( BotRwxModel *model )
 {
     // cleanup clumps
     GList *citer;
     for( citer = model->clumps; citer != NULL; citer = citer->next ) {
-        bot_rwx_clump_t *clump = (bot_rwx_clump_t*)citer->data;
+        BotRwxClump *clump = (BotRwxClump*)citer->data;
         free( clump->vertices );
         free( clump->triangles );
         free( clump->name );
@@ -297,7 +297,7 @@ bot_rwx_model_destroy( bot_rwx_model_t *model )
 }
 
 void
-bot_rwx_model_get_extrema (bot_rwx_model_t * model, double minv[3], double maxv[3])
+bot_rwx_model_get_extrema (BotRwxModel * model, double minv[3], double maxv[3])
 {
     GList *citer;
     int i;
@@ -307,9 +307,9 @@ bot_rwx_model_get_extrema (bot_rwx_model_t * model, double minv[3], double maxv[
     }
 
     for (citer = model->clumps; citer != NULL; citer = citer->next) {
-        bot_rwx_clump_t *clump = (bot_rwx_clump_t*)citer->data;
+        BotRwxClump *clump = (BotRwxClump*)citer->data;
         for (i = 1; i < clump->nvertices; i++) {
-            bot_rwx_vertex_t * v = clump->vertices + i;
+            BotRwxVertex * v = clump->vertices + i;
             int j;
             for (j = 0; j < 3; j++) {
                 if (v->pos[j] < minv[j])
@@ -339,14 +339,14 @@ _matrix_vector_multiply_4x4_3d2 (const double m[16], const double v[3],
 }    
 
 void
-bot_rwx_model_apply_transform (bot_rwx_model_t * model, double m[16])
+bot_rwx_model_apply_transform (BotRwxModel * model, double m[16])
 {
     GList *citer;
 
     for (citer = model->clumps; citer != NULL; citer = citer->next) {
-        bot_rwx_clump_t *clump = (bot_rwx_clump_t*)citer->data;
+        BotRwxClump *clump = (BotRwxClump*)citer->data;
         for (int i = 0; i < clump->nvertices; i++) {
-            bot_rwx_vertex_t * v = clump->vertices + i;
+            BotRwxVertex * v = clump->vertices + i;
             double old_pos[3]={v->pos[0],v->pos[1],v->pos[2]};
             _matrix_vector_multiply_4x4_3d2(m,old_pos,v->pos);
         }
@@ -355,7 +355,7 @@ bot_rwx_model_apply_transform (bot_rwx_model_t * model, double m[16])
 
 
 void
-bot_rwx_model_gl_draw( bot_rwx_model_t *model ) 
+bot_rwx_model_gl_draw( BotRwxModel *model ) 
 {
     GList *citer;
 
@@ -369,7 +369,7 @@ bot_rwx_model_gl_draw( bot_rwx_model_t *model )
 #endif
 
     for( citer = model->clumps; citer != NULL; citer = citer->next ) {
-        bot_rwx_clump_t *clump = (bot_rwx_clump_t*)citer->data;
+        BotRwxClump *clump = (BotRwxClump*)citer->data;
         int i;
 
         /*glColor4f( clump->color[0], clump->color[1], clump->color[2],
@@ -419,7 +419,7 @@ bot_rwx_model_gl_draw( bot_rwx_model_t *model )
 
 #if 0
         for (i = 1; i < clump->nvertices; i++) {
-            bot_rwx_vertex_t * v = clump->vertices + i;
+            BotRwxVertex * v = clump->vertices + i;
             int j;
             for (j = 0; j < 3; j++) {
                 if (v->pos[j] < minv[j])
@@ -438,7 +438,7 @@ bot_rwx_model_gl_draw( bot_rwx_model_t *model )
             vid2 = clump->triangles[i].vertices[1];
             vid3 = clump->triangles[i].vertices[2];
             // load the vertices
-            bot_rwx_vertex_t *v1, *v2, *v3;
+            BotRwxVertex *v1, *v2, *v3;
             v1 = &clump->vertices[vid1];
             v2 = &clump->vertices[vid2];
             v3 = &clump->vertices[vid3];
@@ -491,7 +491,7 @@ bot_rwx_model_gl_draw( bot_rwx_model_t *model )
             vid3 = clump->triangles[i].vertices[2];
 
             // load the vertices
-            bot_rwx_vertex_t *v1, *v2, *v3;
+            BotRwxVertex *v1, *v2, *v3;
             v1 = &clump->vertices[vid1];
             v2 = &clump->vertices[vid2];
             v3 = &clump->vertices[vid3];
@@ -539,7 +539,7 @@ bot_rwx_model_gl_draw( bot_rwx_model_t *model )
     glColor4f( 1, 1, 1, 0.5 );
 
     for( citer = model->clumps; citer != NULL; citer = citer->next ) {
-        bot_rwx_clump_t *clump = (bot_rwx_clump_t*)citer->data;
+        BotRwxClump *clump = (BotRwxClump*)citer->data;
         int i;
         for( i=0; i<clump->ntriangles; i++ ) {
             // find the vertex indices
@@ -549,7 +549,7 @@ bot_rwx_model_gl_draw( bot_rwx_model_t *model )
             vid3 = clump->triangles[i].vertices[2];
 
             // load the vertices
-            bot_rwx_vertex_t *v1, *v2, *v3;
+            BotRwxVertex *v1, *v2, *v3;
             v1 = &clump->vertices[vid1];
             v2 = &clump->vertices[vid2];
             v3 = &clump->vertices[vid3];

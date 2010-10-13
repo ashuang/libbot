@@ -21,12 +21,12 @@ typedef struct _bot_rwx_vertex
 {
     double pos[3];
     int id;
-} bot_rwx_vertex_t;
+} BotRwxVertex;
 
 typedef struct _bot_rwx_triangle
 {
     int vertices[3];
-} bot_rwx_triangle_t;
+} BotRwxTriangle;
 
 typedef struct _bot_rwx_clump
 {
@@ -37,28 +37,28 @@ typedef struct _bot_rwx_clump
     double opacity;
     double ambient;
     char *name;
-    bot_rwx_vertex_t *vertices;
-    bot_rwx_triangle_t *triangles;
+    BotRwxVertex *vertices;
+    BotRwxTriangle *triangles;
     int nvertices;
     int ntriangles;
-} bot_rwx_clump_t;
+} BotRwxClump;
 
 typedef struct _bot_rwx_model
 {
     GList *clumps;
     int nclumps;
-} bot_rwx_model_t;
+} BotRwxModel;
 
 
-bot_rwx_model_t * bot_rwx_model_create( const char *fname );
+BotRwxModel * bot_rwx_model_create( const char *fname );
 
-void bot_rwx_model_destroy( bot_rwx_model_t *model );
+void bot_rwx_model_destroy( BotRwxModel *model );
 
-void bot_rwx_model_apply_transform( bot_rwx_model_t *model, double m[16]);
+void bot_rwx_model_apply_transform( BotRwxModel *model, double m[16]);
 
-void bot_rwx_model_gl_draw( bot_rwx_model_t *model );
+void bot_rwx_model_gl_draw( BotRwxModel *model );
 
-void bot_rwx_model_get_extrema (bot_rwx_model_t * model,
+void bot_rwx_model_get_extrema (BotRwxModel * model,
         double minv[3], double maxv[3]);
 
 #ifdef __cplusplus

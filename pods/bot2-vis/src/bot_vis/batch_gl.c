@@ -5,27 +5,27 @@
 
 #include "batch_gl.h"
 
-typedef struct _bot_bgl_command bot_bgl_command_t;
-struct _bot_bgl_command {
+typedef struct _BotBatchGl_command bot_bgl_command_t;
+struct _BotBatchGl_command {
     void (*execute) (bot_bgl_command_t *);
     void (*destroy) (bot_bgl_command_t *);
 };
 
-struct _bot_bgl 
+struct _BotBatchGl 
 {
     GPtrArray *front_buffer;
     GPtrArray *back_buffer;
 };
 
-bot_bgl_t * bot_bgl_new ()
+BotBatchGl * bot_bgl_new ()
 {
-    bot_bgl_t *bgl = g_slice_new (bot_bgl_t);
+    BotBatchGl *bgl = g_slice_new (BotBatchGl);
     bgl->front_buffer = g_ptr_array_new ();
     bgl->back_buffer = g_ptr_array_new ();
     return bgl;
 }
 
-void bot_bgl_destroy (bot_bgl_t *bgl)
+void bot_bgl_destroy (BotBatchGl *bgl)
 {
     for (int i=0; i<bgl->front_buffer->len; i++) {
         bot_bgl_command_t *cmd = g_ptr_array_index (bgl->front_buffer, i);
@@ -37,10 +37,10 @@ void bot_bgl_destroy (bot_bgl_t *bgl)
         cmd->destroy (cmd);
     }
     g_ptr_array_free (bgl->back_buffer, TRUE);
-    g_slice_free (bot_bgl_t, bgl);
+    g_slice_free (BotBatchGl, bgl);
 }
 
-void bot_bgl_render (bot_bgl_t *bgl)
+void bot_bgl_render (BotBatchGl *bgl)
 {
     for (int i=0; i<bgl->front_buffer->len; i++) {
         bot_bgl_command_t *cmd = g_ptr_array_index (bgl->front_buffer, i);
@@ -48,7 +48,7 @@ void bot_bgl_render (bot_bgl_t *bgl)
     }
 }
 
-void bot_bgl_switch_buffer (bot_bgl_t *bgl)
+void bot_bgl_switch_buffer (BotBatchGl *bgl)
 {
     for (int i=0; i<bgl->front_buffer->len; i++) {
         bot_bgl_command_t *cmd = g_ptr_array_index (bgl->front_buffer, i);
@@ -66,7 +66,7 @@ static void bot_bgl_cmd_##name##_destroy (bot_bgl_command_t *bcmd) { \
 static void bot_bgl_##name##_execute (bot_bgl_command_t *bcmd) { \
     glfunc (); \
 } \
-void bot_bgl_##name (bot_bgl_t *bgl) { \
+void bot_bgl_##name (BotBatchGl *bgl) { \
     bot_bgl_command_t *cmd = g_slice_new (bot_bgl_command_t); \
     cmd->execute = bot_bgl_##name##_execute; \
     cmd->destroy = bot_bgl_cmd_##name##_destroy; \
@@ -85,7 +85,7 @@ static void bot_bgl_##name##_execute (bot_bgl_command_t *bcmd) { \
     bot_bgl_cmd_##name##_t *cmd = (bot_bgl_cmd_##name##_t*) bcmd; \
     glfunc (cmd->v); \
 } \
-void bot_bgl_##name (bot_bgl_t *bgl, type v) { \
+void bot_bgl_##name (BotBatchGl *bgl, type v) { \
     bot_bgl_cmd_##name##_t *cmd = g_slice_new (bot_bgl_cmd_##name##_t); \
     cmd->v = v; \
     cmd->parent.execute = bot_bgl_##name##_execute; \
@@ -106,7 +106,7 @@ static void bot_bgl_##name##_execute (bot_bgl_command_t *bcmd) { \
     bot_bgl_cmd_##name##_t *cmd = (bot_bgl_cmd_##name##_t*) bcmd; \
     glfunc (cmd->a, cmd->b); \
 } \
-void bot_bgl_##name (bot_bgl_t *bgl, type_1 a, type_2 b) { \
+void bot_bgl_##name (BotBatchGl *bgl, type_1 a, type_2 b) { \
     bot_bgl_cmd_##name##_t *cmd = g_slice_new (bot_bgl_cmd_##name##_t); \
     cmd->a = a; \
     cmd->b = b; \
@@ -129,7 +129,7 @@ static void bot_bgl_##name##_execute (bot_bgl_command_t *bcmd) { \
     bot_bgl_cmd_##name##_t *cmd = (bot_bgl_cmd_##name##_t*) bcmd; \
     glfunc (cmd->a, cmd->b, cmd->c); \
 } \
-void bot_bgl_##name (bot_bgl_t *bgl, type_1 a, type_2 b, type_3 c) { \
+void bot_bgl_##name (BotBatchGl *bgl, type_1 a, type_2 b, type_3 c) { \
     bot_bgl_cmd_##name##_t *cmd = g_slice_new (bot_bgl_cmd_##name##_t); \
     cmd->a = a; \
     cmd->b = b; \
@@ -154,7 +154,7 @@ static void bot_bgl_##name##_execute (bot_bgl_command_t *bcmd) { \
     bot_bgl_cmd_##name##_t *cmd = (bot_bgl_cmd_##name##_t*) bcmd; \
     glfunc (cmd->a, cmd->b, cmd->c, cmd->d); \
 } \
-void bot_bgl_##name (bot_bgl_t *bgl, type_1 a, type_2 b, type_3 c, type_4 d) { \
+void bot_bgl_##name (BotBatchGl *bgl, type_1 a, type_2 b, type_3 c, type_4 d) { \
     bot_bgl_cmd_##name##_t *cmd = g_slice_new (bot_bgl_cmd_##name##_t); \
     cmd->a = a; \
     cmd->b = b; \
@@ -203,7 +203,7 @@ static void bot_bgl_##name##_execute (bot_bgl_command_t *bcmd) { \
     bot_bgl_cmd_##name##_t *cmd = (bot_bgl_cmd_##name##_t*) bcmd; \
     glfunc (cmd->v); \
 } \
-void bot_bgl_##name (bot_bgl_t *bgl, const type *v) { \
+void bot_bgl_##name (BotBatchGl *bgl, const type *v) { \
     bot_bgl_cmd_##name##_t *cmd = g_slice_new (bot_bgl_cmd_##name##_t); \
     memcpy(cmd->v, v, sizeof(cmd->v)); \
     cmd->parent.execute = bot_bgl_##name##_execute; \
