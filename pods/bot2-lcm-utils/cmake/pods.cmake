@@ -43,8 +43,14 @@ function(pods_install_headers)
     list(GET ARGV -1 dest_dir)
     list(REMOVE_AT ARGV -1)
     list(REMOVE_AT ARGV -1)
-
+    #copy the headers to the INCLUDE_OUTPUT_PATH (pod-build/include)
+    foreach(header ${ARGV})
+	    configure_file(${header} ${INCLUDE_OUTPUT_PATH}/${dest_dir}/${header} COPYONLY)
+	endforeach(header)
+	#mark them to be installed
 	install(FILES ${ARGV} DESTINATION include/${dest_dir})
+
+
 endfunction(pods_install_headers)
 
 # pods_install_executables(<executable1> ...)
@@ -83,8 +89,8 @@ function(pods_install_pkg_config_file)
     set(pc_requires "")
     set(pc_libs "")
     set(pc_cflags "")
-    set(pc_fname "${CMAKE_CURRENT_BINARY_DIR}/${pc_name}.pc")
-
+    set(pc_fname "${PKG_CONFIG_OUTPUT_PATH}/${pc_name}.pc")
+    
     set(modewords LIBS CFLAGS REQUIRES VERSION DESCRIPTION)
     set(curmode "")
 
@@ -246,27 +252,49 @@ endmacro()
 # manually.
 macro(pods_config_search_paths)
     if(NOT DEFINED __pods_setup)
+		#set where files should be output locally
+	    set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/lib)
+	    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/bin)
+	    set(INCLUDE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/include)
+	    set(PKG_CONFIG_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/lib/pkgconfig)
+		
+		#set where files should be installed to
+	    set(LIBRARY_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib)
+	    set(EXECUTABLE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
+	    set(INCLUDE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/include)
+	    set(PKG_CONFIG_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+
+
         # add build/lib/pkgconfig to the pkg-config search path
-        set(ENV{PKG_CONFIG_PATH} ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
+        set(ENV{PKG_CONFIG_PATH} ${PKG_CONFIG_INSTALL_PATH}:$ENV{PKG_CONFIG_PATH})
+        set(ENV{PKG_CONFIG_PATH} ${PKG_CONFIG_OUTPUT_PATH}:$ENV{PKG_CONFIG_PATH})
 
         # add build/include to the compiler include path
-        include_directories(${CMAKE_INSTALL_PREFIX}/include)
+        include_directories(${INCLUDE_INSTALL_PATH})
+        include_directories(${INCLUDE_OUTPUT_PATH})
 
         # add build/lib to the link path
-        link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+        link_directories(${LIBRARY_INSTALL_PATH})
+        link_directories(${LIBRARY_OUTPUT_PATH})
 
         # abuse RPATH
         if(${CMAKE_INSTALL_RPATH})
-            set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib:${CMAKE_INSTALL_RPATH})
+            set(CMAKE_INSTALL_RPATH ${LIBRARY_INSTALL_PATH}:${CMAKE_INSTALL_RPATH})
         else(${CMAKE_INSTALL_RPATH})
-            set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
+            set(CMAKE_INSTALL_RPATH ${LIBRARY_INSTALL_PATH})
         endif(${CMAKE_INSTALL_RPATH})
+        set(CMAKE_INSTALL_RPATH ${LIBRARY_OUTPUT_PATH}:${CMAKE_INSTALL_RPATH})
 
         # for osx, which uses "install name" path rather than rpath
-        set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+        set(CMAKE_INSTALL_NAME_DIR ${LIBRARY_OUTPUT_PATH})
 
         set(__pods_setup true)
     endif(NOT DEFINED __pods_setup)
 endmacro(pods_config_search_paths)
 
+#set the variable POD_NAME to the directory path, and set the cmake PROJECT_NAME
+get_filename_component(POD_NAME ${CMAKE_SOURCE_DIR} NAME)
+project(${POD_NAME})
+
+#call the function to setup paths
 pods_config_search_paths()

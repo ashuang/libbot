@@ -44,6 +44,7 @@ configure:
 clean:
 	if [ -d pod-build ]; then make -C pod-build clean; fi
 	rm -rf pod-build
+	rm -rf build #remove the local build directory if it exists
 
 uninstall:
 	@echo removing...
