@@ -86,4 +86,9 @@ Uninstallation
 Documentation
 =============
 
-  TODO
+  To build documentation, install Doxygen and then run:
+
+  $ cd doc
+  $ doxygen
+
+  HTML docs will then be build to doc/html/
