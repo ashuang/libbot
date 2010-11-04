@@ -21,7 +21,7 @@ extern "C" {
  * @defgroup BotVisBatchGL Batched OpenGL commands
  * @brief Batching OpenGL commands for delayed rendering
  * @ingroup BotVisGl
- * @include: bot2-vis/bot2-vis.h
+ * @include: bot_vis/bot_vis.h
  *
  * Batched GL drawing allows a program to issue some basic OpenGL drawing
  * commands while an OpenGL context is not active.  Commands will be queued up,

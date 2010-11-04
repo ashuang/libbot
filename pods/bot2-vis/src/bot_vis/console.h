@@ -5,7 +5,7 @@
  * @defgroup console Scrolling text OpenGL overlay
  * @brief Vertically scrolling text
  * @ingroup BotVisGl
- * @include: bot2-vis/bot2-vis.h
+ * @include: bot_vis/bot_vis.h
  *
  * TODO
  *
