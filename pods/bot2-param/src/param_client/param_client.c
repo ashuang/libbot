@@ -628,12 +628,10 @@ static void _on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, c
     param->sequence_number = msg->sequence_number - 1;
   }
   if (msg->server_id == param->server_id) {
-    if (msg->sequence_number > param->sequence_number)
-      fprintf(stderr, "received NEW params from server:\n");
-    else {
-      fprintf(stderr, ".");
-      return;
-    }
+    if (msg->sequence_number <= param->sequence_number)
+     	return;
+//    else 
+//	fprintf(stderr, "received NEW params from server:\n");
   }
   else {
     fprintf(stderr, "WARNING: Got params from a different server! Ignoring them\n");

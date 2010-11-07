@@ -36,7 +36,10 @@ configure:
 	@[ -d pod-build ] || mkdir pod-build || exit 1
 
 	@echo "$(BUILD_PREFIX)" > pod-build/build_prefix
-
+	
+	#cleanup in case an "in-source" attempt
+	if [ -d CMakeFiles ]; then rm -rf CMakeFiles CMakeCache.txt; fi
+	
 	# run CMake to generate and configure the build scripts
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 	                       -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
@@ -44,6 +47,8 @@ configure:
 clean:
 	if [ -d pod-build ]; then make -C pod-build clean; fi
 	rm -rf pod-build
+	rm -rf build #remove the local build directory if it exists
+	rm -rf CMakeFiles CMakeCache.txt #cleanup in case an "in-source" build was accidentaly attempted
 
 uninstall:
 	@echo removing...
