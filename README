@@ -81,7 +81,10 @@ Uninstallation
 
   If compiled and installed to your system, run:
 
-  $ sudo make uninstall
+  $ sudo make clean
+
+  note: this can only be done from the libbot2 source that was used for
+        installation
 
 Documentation
 =============
