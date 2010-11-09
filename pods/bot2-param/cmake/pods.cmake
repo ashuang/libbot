@@ -27,7 +27,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.10.08
+# Distributed with pods version: 10.11.09
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -295,13 +295,13 @@ endmacro(pods_config_search_paths)
 
 macro(enforce_out_of_source)
     if(CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
-      file(REMOVE CMakeCache.txt)
-      file(REMOVE CMakeFiles)
       message(FATAL_ERROR 
       "\n
       Do not run cmake directly in the pod directory. 
-      use the supplied Makefile instead!
-      to build, simply type: 
+      use the supplied Makefile instead!  You now need to
+      remove CMakeCache.txt and the CMakeFiles directory.
+
+      Then to build, simply type: 
        $ make
       ")
     endif()
