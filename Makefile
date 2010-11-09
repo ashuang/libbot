@@ -38,11 +38,3 @@ clean:
 	rm -rf build/share
 
 	@# Place additional commands here if you have any
-
-uninstall:
-	@for pod in $(PODS); do \
-		echo "\n-------------------------------------------"; \
-		echo "-- POD: $$pod"; \
-		echo "-------------------------------------------"; \
-		 $(MAKE) -C pods/$$pod uninstall; \
-	done
