@@ -1,7 +1,7 @@
 default_target: all
 
-# get a list of pods to build by reading pods/tobuild.txt
-PODS:=$(shell grep -v "^\#" pods/tobuild.txt)
+# get a list of subdirs to build by reading tobuild.txt
+SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
 # Figure out where to build the software.
 #   Use BUILD_PREFIX if it was passed in.
@@ -17,24 +17,23 @@ $(VERBOSE).SILENT:
 
 all: 
 	@[ -d $(BUILD_PREFIX) ] || mkdir -p $(BUILD_PREFIX) || exit 1
-	@for pod in $(PODS); do \
+	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
-		echo "-- POD: $$pod"; \
+		echo "-- $$subdir"; \
 		echo "-------------------------------------------"; \
-		$(MAKE) -C pods/$$pod all || exit 2; \
+		$(MAKE) -C $$subdir all || exit 2; \
 	done
 	@# Place additional commands here if you have any
 
 clean:
-	@for pod in $(PODS); do \
+	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
-		echo "-- POD: $$pod"; \
+		echo "-- $$subdir"; \
 		echo "-------------------------------------------"; \
-		$(MAKE) -C pods/$$pod clean; \
+		$(MAKE) -C $$subdir clean; \
 	done
 	rm -rf build/bin
 	rm -rf build/include
 	rm -rf build/lib
 	rm -rf build/share
-
 	@# Place additional commands here if you have any
