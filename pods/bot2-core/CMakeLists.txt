@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6.0)
 
-project(bot2-core)
+set(POD_NAME bot2-core)
 
 include(cmake/pods.cmake)
 
