@@ -1,4 +1,4 @@
-# list of pods to build, one one each line.  Empty lines
+# list of subdirectories to build, one one each line.  Empty lines
 # and lines starting with '#' are ignored
 
 bot2-core
