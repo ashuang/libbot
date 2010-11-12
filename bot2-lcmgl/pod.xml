@@ -8,7 +8,7 @@
 </summary>
 
 <description>
-    bot2-lcmgl contains a aset of client libraries in C, Java, and Python
+    bot2-lcmgl contains a set of client libraries in C, Java, and Python
     for transmitting OpenGL commands over LCM.  It also provides routines
     for receiving and rendering these commands in either a standalone
     application (bot-lcmgl-viewer), or incorporated into another
