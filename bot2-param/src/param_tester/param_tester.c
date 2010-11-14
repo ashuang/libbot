@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <param_client/param_client.h>
+#include <bot_param_client/param_client.h>
 #include <lcmtypes/bot2_param.h>
 
 int main()

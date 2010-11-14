@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <lcm/lcm.h>
-#include <param_client/param_client.h>
+#include <bot_param_client/param_client.h>
 #include <sys/time.h>
 #include "../param_client/misc_utils.h"
 
