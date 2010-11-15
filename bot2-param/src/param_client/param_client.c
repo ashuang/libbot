@@ -988,6 +988,19 @@ int bot_param_get_int_array(BotParam * param, const char * key, int * vals, int 
   return i;
 }
 
+
+void bot_param_get_int_array_or_fail(BotParam * param, const char * key, int * vals, int len)
+{
+    int res = bot_param_get_int_array(param, key, vals, len);
+    if (res != len) {
+        fprintf (stderr, "ERROR: BotParam: only read %d of %d integer values for key: %s\n", res, len, key);
+        abort ();
+    }
+
+    return;
+}
+
+
 int bot_param_get_boolean_array(BotParam * param, const char * key, int * vals, int len)
 {
   g_mutex_lock(param->lock);
@@ -1017,6 +1030,18 @@ int bot_param_get_boolean_array(BotParam * param, const char * key, int * vals, 
   return i;
 }
 
+void bot_param_get_boolean_array_or_fail(BotParam * param, const char * key, int * vals, int len)
+{
+    int res = bot_param_get_boolean_array(param, key, vals, len);
+    if (res != len) {
+        fprintf (stderr, "ERROR: BotParam: only read %d of %d boolean values for key: %s\n", res, len, key);
+        abort ();
+    }
+
+    return;
+}
+
+
 int bot_param_get_double_array(BotParam * param, const char * key, double * vals, int len)
 {
   g_mutex_lock(param->lock);
@@ -1044,6 +1069,18 @@ int bot_param_get_double_array(BotParam * param, const char * key, double * vals
   g_mutex_unlock(param->lock);
   return i;
 }
+
+void bot_param_get_double_array_or_fail(BotParam * param, const char * key, double * vals, int len)
+{
+    int res = bot_param_get_double_array(param, key, vals, len);
+    if (res != len) {
+        fprintf (stderr, "ERROR: BotParam: only read %d of %d double values for key: %s\n\n", res, len, key);
+        abort ();
+    }
+
+    return;
+}
+
 
 int bot_param_get_array_len(BotParam *param, const char * key)
 {

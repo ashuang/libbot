@@ -258,10 +258,25 @@ char
  *
  * Same as bot_param_get_int(), except for an array.
  *
- * Returns: 0 on success, -1 is on error.
+ * Returns: Number of elements read or -1 on error.
  */
 int
 bot_param_get_int_array (BotParam * param, const char * key, int * vals, int len);
+
+/**
+ * bot_param_get_int_array_or_fail:
+ * @param: The configuration:
+ * @key: The key to look for an array of values.
+ * @vals: An array of ints (return values).
+ * @len: Number of elements in @vals array.
+ *
+ * Same as bot_param_get_int_or_fail(), except for an array. Calls abort() if
+ * the number of elements read is less than len.
+ *
+ */
+void
+bot_param_get_int_array_or_fail (BotParam * param, const char * key, int * vals, int len);
+
 
 /**
  * bot_param_get_boolean_array:
@@ -272,10 +287,26 @@ bot_param_get_int_array (BotParam * param, const char * key, int * vals, int len
  *
  * Same as bot_param_get_boolean(), except for an array.
  *
- * Returns: 0 on success, -1 is on error.
+ * Returns: Number of elements read or -1 on error.
  */
 int
 bot_param_get_boolean_array (BotParam * param, const char * key, int * vals, int len);
+
+
+/**
+ * bot_param_get_boolean_array_or_fail:
+ * @param: The configuration:
+ * @key: The key to look for an array of values.
+ * @vals: An array of booleans (return values).
+ * @len: Number of elements in @vals array.
+ *
+ * Same as bot_param_get_boolean_or_fail(), except for an array. Calls abort() if
+ * the number of elements read is less than len. 
+ *
+ */
+void
+bot_param_get_boolean_array_or_fail (BotParam * param, const char * key, int * vals, int len);
+
 
 /**
  * bot_param_get_double_array:
@@ -286,10 +317,26 @@ bot_param_get_boolean_array (BotParam * param, const char * key, int * vals, int
  *
  * Same as bot_param_get_double(), except for an array.
  *
- * Returns: 0 on success, -1 is on error.
+ * Returns: Number of elements read or -1 on error.
  */
 int
 bot_param_get_double_array (BotParam * param, const char * key, double * vals, int len);
+
+
+/**
+ * bot_param_get_double_array_or_fail:
+ * @param: The configuration:
+ * @key: The key to look for an array of values.
+ * @vals: An array of doubles (return values).
+ * @len: Number of elements in @vals array.
+ *
+ * Same as bot_param_get_double(), except for an array. Calls abort() if
+ * the number of elements read is less than len. 
+ *
+ */
+void
+bot_param_get_double_array_or_fail (BotParam * param, const char * key, double * vals, int len);
+
 
 /**
  * bot_param_get_array_len:

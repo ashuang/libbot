@@ -118,6 +118,11 @@ int main(int argc, char ** argv)
 
   param_server_t * self = calloc(1, sizeof(param_server_t));
   GMainLoop * mainloop = g_main_loop_new(NULL, FALSE);
+  if (!mainloop) {
+      fprintf (stderr, "Error getting the GLIB main loop\n");
+      exit(1);
+  }
+
   self->lcm = lcm_create(NULL); //TODO: provider options?
   lcmu_glib_mainloop_attach_lcm(self->lcm);
 
@@ -137,11 +142,10 @@ int main(int argc, char ** argv)
           return 1;
       }
   }
-  
 
   if (argc != 2) {
       usage (argc, argv);
-    exit(1);
+      exit(1);
   }
 
   self->seqNo = 0;
