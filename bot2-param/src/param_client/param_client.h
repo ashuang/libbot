@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <lcm/lcm.h>
 
+#define PARAM_UPDATE_CHANNEL "PARAM_UPDATE"
+#define PARAM_REQUEST_CHANNEL "PARAM_REQUEST"
+#define PARAM_SET_CHANNEL "PARAM_SET"
+
 /**
  * SECTION:param
  * @title: Configuration Files

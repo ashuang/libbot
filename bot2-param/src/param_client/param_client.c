@@ -605,9 +605,11 @@ static BotParam * _bot_param_new(void)
   root->type = BotParamContainer;
 
   BotParam * param;
-  param = malloc(sizeof(BotParam));
+  param = calloc(1, sizeof(BotParam));
   param->root = root;
   param->lock = g_mutex_new();
+  param->server_id = 0;
+  param->sequence_number = 0;
 
   return param;
 }
@@ -660,11 +662,11 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
   //create a temporary lcm object to be sure nothing else is subscribed...
   lcm_t * lcm_tmp = lcm_create(NULL); //TOOD: figure out how to handle other LCM providers...
 
-  bot_param_update_t_subscribe(lcm_tmp, "PRM_UPDATE", _on_param_update, (void *) param);
+  bot_param_update_t_subscribe(lcm_tmp, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
   for (int i = 0; i < 5; i++) {
     bot_param_request_t req;
     req.utime = _timestamp_now();
-    bot_param_request_t_publish(lcm_tmp, "PRM_REQUEST", &req);
+    bot_param_request_t_publish(lcm_tmp, PARAM_REQUEST_CHANNEL, &req);
     lcm_sleep(lcm_tmp, 1);
     if (param->root->children != NULL)
       break;
@@ -676,7 +678,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
     return NULL;
   }
   if (keep_updated) {
-    bot_param_update_t_subscribe(lcm, "PRM_UPDATE", _on_param_update, (void *) param);
+    bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
     //the handler will update the param structure every time a message arrives
   }
   return param;

@@ -10,11 +10,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <lcm/lcm.h>
-#include <bot_param_client/param_client.h>
+#include <getopt.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <glib.h>
+
+#include <lcm/lcm.h>
+#include <bot_param_client/param_client.h>
 #include "lcm_util.h"
 
 #include "../param_client/misc_utils.h"
@@ -59,7 +61,7 @@ void publish_params(param_server_t *self)
   }
   fclose(tmpF);
 
-  bot_param_update_t_publish(self->lcm, "PRM_UPDATE", update_msg);
+  bot_param_update_t_publish(self->lcm, PARAM_UPDATE_CHANNEL, update_msg);
   bot_param_update_t_destroy(update_msg);
 
   fprintf(stderr, ".");
@@ -100,6 +102,17 @@ static gboolean on_timer(gpointer user)
   return TRUE;
 }
 
+static void usage(int argc, char ** argv)
+{
+    fprintf(stderr, "Usage: %s [options] <param_file>\n"
+            "Parameter Server: Maintains and publishes params initially read from param_file config file\n"
+            "\n"
+            "Options:\n"
+            "   -h, --help   print this help and exit\n"
+            "\n"
+            , argv[0]);
+}
+
 int main(int argc, char ** argv)
 {
 
@@ -108,18 +121,37 @@ int main(int argc, char ** argv)
   self->lcm = lcm_create(NULL); //TODO: provider options?
   lcmu_glib_mainloop_attach_lcm(self->lcm);
 
+  char *optstring = "h";
+  char c;
+  struct option long_opts[] = {
+      { "help", no_argument, NULL, 'h' },
+      { 0, 0, 0, 0 }
+  };
+
+  while ((c = getopt_long (argc, argv, optstring, long_opts, 0)) >= 0)
+  {
+      switch (c) {
+      case 'h':
+      default:
+          usage (argc, argv);
+          return 1;
+      }
+  }
+  
+
   if (argc != 2) {
-    fprintf(stderr, "usage:\n %s <param_file>\n", argv[0]);
+      usage (argc, argv);
     exit(1);
   }
+
   self->seqNo = 0;
   self->id = _timestamp_now();
   self->params = bot_param_new_from_file(argv[1]);
   fprintf(stderr, "Loaded params from %s\n", argv[1]);
 
-  bot_param_update_t_subscribe(self->lcm, "PRM_UPDATE", on_param_update, (void *) self);
-  bot_param_request_t_subscribe(self->lcm, "PRM_REQUEST", on_param_request, (void *) self);
-  bot_param_set_t_subscribe(self->lcm, "PRM_SET", on_param_set, (void *) self);
+  bot_param_update_t_subscribe(self->lcm, PARAM_UPDATE_CHANNEL, on_param_update, (void *) self);
+  bot_param_request_t_subscribe(self->lcm, PARAM_REQUEST_CHANNEL, on_param_request, (void *) self);
+  bot_param_set_t_subscribe(self->lcm, PARAM_SET_CHANNEL, on_param_set, (void *) self);
 
   //timer to always publish params every 5sec
   g_timeout_add_full(G_PRIORITY_HIGH, (guint) 5.0 * 1000, on_timer, (gpointer) self, NULL);
