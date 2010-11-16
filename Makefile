@@ -32,8 +32,4 @@ clean:
 		echo "-------------------------------------------"; \
 		$(MAKE) -C $$subdir clean; \
 	done
-	rm -rf build/bin
-	rm -rf build/include
-	rm -rf build/lib
-	rm -rf build/share
 	@# Place additional commands here if you have any

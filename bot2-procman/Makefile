@@ -1,4 +1,4 @@
-# Default makefile distributed with pods version: 10.11.12
+# Default makefile distributed with pods version: 10.11.16
 
 default_target: all
 
@@ -41,5 +41,5 @@ configure:
 	                       -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 clean:
-	if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
-	if [ -d pod-build ]; then $(MAKE) -C pod-build clean; rm -rf pod-build; fi
+	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
+	-if [ -d pod-build ]; then $(MAKE) -C pod-build clean; rm -rf pod-build; fi

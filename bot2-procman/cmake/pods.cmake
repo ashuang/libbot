@@ -1,9 +1,15 @@
 # Macros to simplify compliance with the pods build policies.
 #
-# Available macros:
+# To enable the macros, add the following lines to CMakeLists.txt:
+#   set(POD_NAME <pod-name>)
+#   include(cmake/pods.cmake)
+#
+# If POD_NAME is not set, then the CMake source directory is used as POD_NAME
+#
+# Next, any of the following macros can be used.  See the individual macro
+# definitions in this file for individual documentation.
 #
 # C/C++
-#
 #   pods_install_headers(...)
 #   pods_install_libraries(...)
 #   pods_install_executables(...)
@@ -11,29 +17,27 @@
 #
 #   pods_use_pkg_config_packages(...)
 #
-# Python:
-#
-#   pods_install_python_script(...)
+# Python
 #   pods_install_python_packages(...)
+#   pods_install_python_script(...)
 #
-# Java:
-#
-#   TODO
-#
-# Other:
-#
-#   pods_config_search_paths()      Configures include, pkg-config, and linker paths.
-#                                   Automatically invoked, do not invoke manually.
+# Java
+#   None yet
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.11.12
+# Distributed with pods version: 10.11.16
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
 # Install a (list) of header files.
 #
 # Header files will all be installed to include/<subdir_name>
+#
+# example:
+#   add_library(perception detector.h sensor.h)
+#   pods_install_headers(detector.h sensor.h DESTINATION perception)
+#
 function(pods_install_headers)
     list(GET ARGV -2 checkword)
     if(NOT checkword STREQUAL DESTINATION)
@@ -146,6 +150,9 @@ endfunction(pods_install_pkg_config_file)
 # A script will be installed to bin/<script_name>.  The script simply
 # adds <install-prefix>/lib/pythonX.Y/site-packages to the python path, and
 # then invokes `python -m <python_module>`.
+#
+# example:
+#    pods_install_python_script(run-pdb pdb)
 function(pods_install_python_script script_name py_module)
     find_package(PythonInterp REQUIRED)
 
@@ -221,6 +228,10 @@ endfunction()
 #
 # Additionally, invokes `pkg-config --libs <package-name> ...` and adds the result to
 # the target's link flags (via target_link_libraries)
+#
+# example:
+#   add_executable(myprogram main.c)
+#   pods_use_pkg_config_packages(myprogram glib-2.0 opencv)
 macro(pods_use_pkg_config_packages target)
     if(${ARGC} LESS 2)
         message(WARNING "Useless invocation of pods_use_pkg_config_packages")
@@ -288,6 +299,10 @@ macro(pods_config_search_paths)
 
         # for osx, which uses "install name" path rather than rpath
         set(CMAKE_INSTALL_NAME_DIR ${LIBRARY_OUTPUT_PATH})
+        
+        #hack to force cmake always create install and clean targets 
+        install(FILES DESTINATION)
+        add_custom_target(tmp)
 
         set(__pods_setup true)
     endif(NOT DEFINED __pods_setup)
