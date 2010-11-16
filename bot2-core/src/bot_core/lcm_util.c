@@ -30,6 +30,7 @@ lcm_message_ready (GIOChannel *source, GIOCondition cond, void *user_data)
 
 static GHashTable *lcm_glib_sources = NULL;
 static GStaticMutex lcm_glib_sources_mutex = G_STATIC_MUTEX_INIT;
+static lcm_t *global_lcm = NULL;
 
 int
 bot_glib_mainloop_attach_lcm (lcm_t *lcm)
@@ -103,4 +104,14 @@ bot_glib_mainloop_detach_lcm (lcm_t *lcm)
 
     g_static_mutex_unlock (&lcm_glib_sources_mutex);
     return 0;
+}
+
+lcm_t *
+bot_lcm_get_global(void)
+{
+    g_static_mutex_lock (&lcm_glib_sources_mutex);
+    if(!global_lcm)
+        global_lcm = lcm_create(NULL);
+    g_static_mutex_unlock (&lcm_glib_sources_mutex);
+    return global_lcm;
 }

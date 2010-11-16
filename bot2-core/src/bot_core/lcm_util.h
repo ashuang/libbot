@@ -4,9 +4,9 @@
 #include <glib.h>
 
 /**
- * SECTION:lcm_util
- * @title:LCM Utilities
- * @short_description: Utilities to bind and unbind LCM to the #GMainLoop.
+ * @defgroup BotCoreLcmUtil LcmUtil
+ * @ingroup BotCoreIO
+ * @brief Convenience functions for working with LCM
  * @include: bot_core/bot_core.h
  *
  * These functions attach an #lcm_t object to a #GMainLoop so that when there is
@@ -36,7 +36,7 @@ extern "C" {
  *
  * Returns: 0 on success, -1 on failure
  */
-int bot_glib_mainloop_attach_lcm (lcm_t *lcm);
+int bot_glib_mainloop_attach_lcm(lcm_t *lcm);
 
 /**
  * bot_glib_mainloop_detach_lcm:
@@ -48,7 +48,7 @@ int bot_glib_mainloop_attach_lcm (lcm_t *lcm);
  *
  * Returns: 0 on success, -1 on failure.
  */
-int bot_glib_mainloop_detach_lcm (lcm_t *lcm);
+int bot_glib_mainloop_detach_lcm(lcm_t *lcm);
 
 /**
  * bot_glib_mainloop_attach_lcm_full:
@@ -62,8 +62,21 @@ int bot_glib_mainloop_detach_lcm (lcm_t *lcm);
  *
  * Returns: 0 on success, -1 on failure.
  */
-int bot_glib_mainloop_attach_lcm_full (GMainLoop * mainloop, lcm_t *lcm,
+int bot_glib_mainloop_attach_lcm_full(GMainLoop * mainloop, lcm_t *lcm,
         gboolean quit_on_lcm_fail);
+
+/**
+ * bot_lcm_get_global:
+ *
+ * The first time this function is invoked, it instantiates and returns new
+ * lcm_t instance via lcm_create(NULL).  Every subsequent call just returns the
+ * same lcm_t instance.
+ *
+ * This function is thread-safe, if g_thread_init() has been called.
+ *
+ * Returns: pointer to lcm_t
+ */
+lcm_t *bot_lcm_get_global(void);
 
 #ifdef __cplusplus
 }
