@@ -107,11 +107,17 @@ bot_glib_mainloop_detach_lcm (lcm_t *lcm)
 }
 
 lcm_t *
-bot_lcm_get_global(void)
+bot_lcm_get_global_with_provider(const char *provider)
 {
     g_static_mutex_lock (&lcm_glib_sources_mutex);
     if(!global_lcm)
-        global_lcm = lcm_create(NULL);
+        global_lcm = lcm_create(provider);
     g_static_mutex_unlock (&lcm_glib_sources_mutex);
     return global_lcm;
+}
+
+lcm_t *
+bot_lcm_get_global(void)
+{
+    return bot_lcm_get_global_with_provider(NULL);
 }
