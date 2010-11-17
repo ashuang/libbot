@@ -13,12 +13,15 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
+#include <bot_core/lcm_util.h>
 #include "param_client.h"
 #include "misc_utils.h"
 #include <lcmtypes/bot2_param.h>
 #include <glib.h>
 
 #define err(args...) fprintf(stderr, args)
+
+#define MAX_REFERENCES ((1LL << 60))
 
 typedef struct _Parser Parser;
 typedef struct _ParserFile ParserFile;
@@ -1331,12 +1334,79 @@ int64_t bot_param_client_get_server_id(BotParam * param)
   g_mutex_unlock(param->lock);
   return ret;
 }
+
 int bot_param_client_get_seqno(BotParam * param)
 {
   g_mutex_lock(param->lock);
   int ret = param->sequence_number;
   g_mutex_unlock(param->lock);
   return ret;
-
 }
 
+static lcm_t *global_lcm = NULL;
+static BotParam *global_param = NULL;
+static int64_t global_param_refcount = 0;
+static GStaticMutex bot_param_global_mutex = G_STATIC_MUTEX_INIT;
+
+BotParam*
+bot_param_get_global(int keep_updated)
+{
+    g_static_mutex_lock (&bot_param_global_mutex);
+
+    if (keep_updated)
+        global_lcm = bot_lcm_get_global ();
+
+    if (global_param_refcount == 0) {
+        assert (!global_param);
+
+        if (keep_updated)
+            global_param = bot_param_new_from_server (global_lcm, keep_updated);
+        else
+            global_param = bot_param_new_from_server (NULL, keep_updated);
+
+        if (!global_param)
+            goto fail;
+    }
+
+    assert (global_param);
+
+    if (global_param_refcount < MAX_REFERENCES)
+        global_param_refcount++;
+
+    BotParam *result = global_param;
+    g_static_mutex_unlock (&bot_param_global_mutex);
+    return result;
+
+ fail:
+    g_static_mutex_unlock (&bot_param_global_mutex);
+    fprintf (stderr, "ERROR: Could not get global BotParam!\n");
+    return NULL;
+}
+
+void
+bot_param_release_global(BotParam *param)
+{
+    g_static_mutex_lock (&bot_param_global_mutex);
+
+    if (global_param_refcount == 0) {
+        fprintf (stderr, "ERROR: singleton param refcount already zero!\n");
+        g_static_mutex_unlock (&bot_param_global_mutex);
+        return;
+    }
+
+    if (param != global_param)
+        fprintf (stderr, "ERROR: %p is not the singleton BotParam (%p)\n", param, global_param);
+
+    global_param_refcount--;
+
+    if (global_param_refcount == 0) {
+        bot_param_destroy (global_param);
+        global_param = NULL;
+        
+        if (global_lcm) {
+            lcm_destroy (global_lcm);
+            global_lcm = NULL;
+        }
+    }
+    g_static_mutex_unlock (&bot_param_global_mutex);
+}

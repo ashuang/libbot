@@ -509,6 +509,28 @@ bot_param_set_str_array (BotParam * param,
                       int len);
 
 
+/**
+ * bot_param_get_global:
+ * @keep_updated: Set to 1 to keep the BotParam updated
+ *
+ * Upon first being called, this function instantiates and returns a new
+ * BotParam instance. Subsequent calls return the same BotParam instance.
+ *
+ * Returns: pointer to BotParam
+ */
+BotParam*
+bot_param_get_global (int keep_updated);
+
+
+/**
+ * bot_param_release_global:
+ * @param: The BotParam instance
+ *
+ * Releases the provided BotParam instance.
+ */
+void
+bot_param_release_global (BotParam *param);
+
 int64_t bot_param_client_get_server_id(BotParam * param);
 int bot_param_client_get_seqno(BotParam * param);
 

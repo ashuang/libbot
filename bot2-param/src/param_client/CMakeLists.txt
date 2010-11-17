@@ -10,7 +10,7 @@ add_library(${libname} SHARED
 target_link_libraries(${libname}
    ${LCMTYPES_LIBS})
 
-pods_use_pkg_config_packages(${libname} lcm glib-2.0)
+pods_use_pkg_config_packages(${libname} lcm bot2-core glib-2.0)
 
 # set the library API version.  Increment this every time the public API
 # changes.
