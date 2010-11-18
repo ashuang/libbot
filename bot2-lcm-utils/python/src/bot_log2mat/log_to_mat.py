@@ -1,4 +1,4 @@
-#!/usr/bin/python
+    #!/usr/bin/python
 #
 #Converts a LCM log to a "matrix" format that is easier to work with in external
 #tools such as Matlab. The set of messages on a given channel can be represented 
@@ -20,7 +20,7 @@ else:
     import scipy.io.matlab.mio
 
 from lcm import EventLog
-
+from scan_for_lcmtypes import *
 
 def usage():
     pname, sname = os.path.split(sys.argv[0])
@@ -39,28 +39,6 @@ def usage():
 
     """
     sys.exit()
-
-class LCMTypeDatabase:
-    def __init__(self, package_names, verbose):
-        for p in lcm_packages:
-            try:
-                __import__(p)
-            except:
-                if verbose:
-                    sys.stderr.write("couldn't load module %s\n" % p)
-                    lcm_packages.remove(p)
-
-        self.klasses = {}
-        for pkg in [ sys.modules[n] for n in package_names ]:
-            for mname in dir(pkg):
-                module = getattr(pkg, mname)
-                if type(module) != types.TypeType:
-                    continue
-                self.klasses[module._get_packed_fingerprint()] = module
-
-    def find_type(self, packed_fingerprint):
-        return self.klasses.get(packed_fingerprint, None)
-
 
 flatteners = {}
 data = {}
@@ -243,7 +221,7 @@ dirname = os.path.dirname(fullPathName)
 outBaseName = os.path.basename(outFname).split(".")[0]
 fullBaseName = dirname + "/" + outBaseName
 
-type_db = LCMTypeDatabase(lcm_packages, verbose)
+type_db = make_lcmtype_dictionary()
 
 channelsToProcess = re.compile(channelsToProcess)
 channelsToIgnore = re.compile(channelsToIgnore)
@@ -276,7 +254,8 @@ for e in log:
         ignored_channels.append(e.channel)
         continue
 
-    lcmtype = type_db.find_type(e.data[:8])
+    packed_fingerprint = e.data[:8]
+    lcmtype = type_db.get(packed_fingerprint, None)
     if not lcmtype:
         if verbose:
             sys.stderr.write("ignoring channel %s\n" % e.channel)
