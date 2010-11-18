@@ -5,7 +5,7 @@ include_directories(${LCMTYPES_INCLUDE_DIRS})
 set(libname bot2-param-client)
 
 add_library(${libname} SHARED
-    param_client.c)
+    param_internal.c)
     
 target_link_libraries(${libname}
    ${LCMTYPES_LIBS})

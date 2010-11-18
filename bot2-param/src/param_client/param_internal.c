@@ -662,19 +662,16 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
 {
   BotParam * param = _bot_param_new();
 
-  //create a temporary lcm object to be sure nothing else is subscribed...
-  lcm_t * lcm_tmp = lcm_create(NULL); //TOOD: figure out how to handle other LCM providers...
-
-  bot_param_update_t_subscribe(lcm_tmp, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
+  //TODO: is there a way to be sure nothing else is subscribed???
+  bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
   for (int i = 0; i < 5; i++) {
     bot_param_request_t req;
     req.utime = _timestamp_now();
-    bot_param_request_t_publish(lcm_tmp, PARAM_REQUEST_CHANNEL, &req);
-    lcm_sleep(lcm_tmp, 1);
+    bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
+    lcm_sleep(lcm, 1);
     if (param->root->children != NULL)
       break;
   }
-  lcm_destroy(lcm_tmp); //got the first parameter set, don't need this anymore
 
   if (param->root->children == NULL) {
     fprintf(stderr, "WARNING: Could not get parameters from the param-server! did you forget to start one?\n");
@@ -1343,35 +1340,26 @@ int bot_param_client_get_seqno(BotParam * param)
   return ret;
 }
 
-static lcm_t *global_lcm = NULL;
 static BotParam *global_param = NULL;
-static int64_t global_param_refcount = 0;
 static GStaticMutex bot_param_global_mutex = G_STATIC_MUTEX_INIT;
 
 BotParam*
-bot_param_get_global(int keep_updated)
+bot_param_client_get_global(lcm_t * lcm,int keep_updated)
 {
     g_static_mutex_lock (&bot_param_global_mutex);
 
-    if (keep_updated)
-        global_lcm = bot_lcm_get_global ();
+    if (keep_updated && lcm==NULL)
+        lcm = bot_lcm_get_global(NULL);
 
-    if (global_param_refcount == 0) {
-        assert (!global_param);
-
+    if (global_param == NULL) {
         if (keep_updated)
-            global_param = bot_param_new_from_server (global_lcm, keep_updated);
+            global_param = bot_param_new_from_server (lcm, 1);
         else
-            global_param = bot_param_new_from_server (NULL, keep_updated);
+            global_param = bot_param_new_from_server (lcm, 0);
 
         if (!global_param)
             goto fail;
     }
-
-    assert (global_param);
-
-    if (global_param_refcount < MAX_REFERENCES)
-        global_param_refcount++;
 
     BotParam *result = global_param;
     g_static_mutex_unlock (&bot_param_global_mutex);
@@ -1381,32 +1369,4 @@ bot_param_get_global(int keep_updated)
     g_static_mutex_unlock (&bot_param_global_mutex);
     fprintf (stderr, "ERROR: Could not get global BotParam!\n");
     return NULL;
-}
-
-void
-bot_param_release_global(BotParam *param)
-{
-    g_static_mutex_lock (&bot_param_global_mutex);
-
-    if (global_param_refcount == 0) {
-        fprintf (stderr, "ERROR: singleton param refcount already zero!\n");
-        g_static_mutex_unlock (&bot_param_global_mutex);
-        return;
-    }
-
-    if (param != global_param)
-        fprintf (stderr, "ERROR: %p is not the singleton BotParam (%p)\n", param, global_param);
-
-    global_param_refcount--;
-
-    if (global_param_refcount == 0) {
-        bot_param_destroy (global_param);
-        global_param = NULL;
-        
-        if (global_lcm) {
-            lcm_destroy (global_lcm);
-            global_lcm = NULL;
-        }
-    }
-    g_static_mutex_unlock (&bot_param_global_mutex);
 }

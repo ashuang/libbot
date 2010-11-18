@@ -1,11 +1,3 @@
-/*
- * conf_tester.cpp
- *
- *  Created on: Sep 13, 2010
- *      Author: abachrac
- */
-// reading a complete binary file
-
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -20,6 +12,7 @@
 #include "lcm_util.h"
 
 #include "../param_client/misc_utils.h"
+#include "../param_client/param_internal.h"
 
 #include <lcmtypes/bot2_param.h>
 

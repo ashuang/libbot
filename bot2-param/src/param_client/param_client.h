@@ -33,6 +33,9 @@ typedef struct _BotParam BotParam;
  * Gets the params for the param-server, and parse them. Returns a handle to the contents.
  * If no parameters are received within 5seconds, returns with an error.
  *
+ * WARNING: This calls lcm_handle internally, so make sure that you create the param_client
+ * BEFORE you subscribe with handlers that may use it!
+ *
  * Returns: A handle to a newly-allocated %BotParam or %NULL on error.
  */
 BotParam *
@@ -373,163 +376,22 @@ void bot_param_str_array_free ( char **data);
 
 
 /**
- * bot_param_set_int:
- * @param: The configuration.
- * @key: The key to look for a value.
- * @val: The value to set it to.
- *
- * This function searches for a key (or creates it if it does not exist yet)
- * and stores a single value (@val) associated with that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_int (BotParam * param,
-                const char * key,
-                int val);
-
-/**
- * bot_param_set_boolean:
- * @param: The configuration.
- * @key: The key to look for a value.
- * @val: The value to set it to.
- *
- * This function searches for a key (or creates it if it does not exist yet)
- * and stores a single value (@val) associated with that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_boolean (BotParam * param,
-                    const char * key,
-                    int val);
-
-/**
- * bot_param_set_double:
- * @param: The configuration.
- * @key: The key to look for a value.
- * @val: The value to set it to.
- *
- * This function searches for a key (or creates it if it does not exist yet)
- * and stores a single value (@val) associated with that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_double (BotParam * param,
-                   const char * key,
-                   double val);
-
-/**
- * bot_param_set_str:
- * @param: The configuration.
- * @key: The key to look for a value.
- * @val: The value to set it to.
- *
- * This function searches for a key (or creates it if it does not exist yet)
- * and stores a single value (@val) associated with that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_str (BotParam * param,
-                const char * key,
-                char * val);
-
-/**
- * bot_param_set_int_array:
- * @param: The configuration.
- * @key: The key to look up (or create).
- * @vals: Array of values to set.
- * @len: Number of members in @vals.
- *
- * This function searches for a key, or creates it if it does not exist.  It
- * stores the entire input array @vals at that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_int_array (BotParam * param,
-                      const char * key,
-                      int * vals,
-                      int len);
-
-/**
- * bot_param_set_boolean_array:
- * @param: The configuration.
- * @key: The key to look up (or create).
- * @vals: Array of values to set.
- * @len: Number of members in @vals.
- *
- * This function searches for a key, or creates it if it does not exist.  It
- * stores the entire input array @vals at that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_boolean_array (BotParam * param,
-                          const char * key,
-                          int * vals,
-                          int len);
-
-/**
- * bot_param_set_double_array:
- * @param: The configuration.
- * @key: The key to look up (or create).
- * @vals: Array of values to set.
- * @len: Number of members in @vals.
- *
- * This function searches for a key, or creates it if it does not exist.  It
- * stores the entire input array @vals at that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_double_array (BotParam * param,
-                         const char * key,
-                         double * vals,
-                         int len);
-
-/**
- * bot_param_set_str_array:
- * @param: The configuration.
- * @key: The key to look up (or create).
- * @vals: Array of values to set.
- * @len: Number of members in @vals.
- *
- * This function searches for a key, or creates it if it does not exist.  It
- * stores the entire input array @vals at that key.
- *
- * Returns: 0 on success, -1 on failure.
- */
-int
-bot_param_set_str_array (BotParam * param,
-                      const char * key,
-                      char ** vals,
-                      int len);
-
-
-/**
- * bot_param_get_global:
+ * bot_param_client_get_global:
+ * @lcm: The lcm object for the global_param client to use
  * @keep_updated: Set to 1 to keep the BotParam updated
  *
  * Upon first being called, this function instantiates and returns a new
  * BotParam instance. Subsequent calls return the same BotParam instance.
  *
+ * WARNING: Creating the param_client calls lcm_handle internally,
+ * so make sure that you create the param_client BEFORE
+ * you subscribe handlers that may use it!
+ *
  * Returns: pointer to BotParam
  */
 BotParam*
-bot_param_get_global (int keep_updated);
+bot_param_client_get_global(lcm_t * lcm,int keep_updated);
 
-
-/**
- * bot_param_release_global:
- * @param: The BotParam instance
- *
- * Releases the provided BotParam instance.
- */
-void
-bot_param_release_global (BotParam *param);
 
 int64_t bot_param_client_get_server_id(BotParam * param);
 int bot_param_client_get_seqno(BotParam * param);

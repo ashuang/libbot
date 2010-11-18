@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.11.16
+# Distributed with pods version: 10.11.17
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -50,7 +50,7 @@ function(pods_install_headers)
     #copy the headers to the INCLUDE_OUTPUT_PATH (pod-build/include)
     foreach(header ${ARGV})
         get_filename_component(_header_name ${header} NAME)
-        configure_file(${header} ${INCLUDE_OUTPUT_PATH}/${dest_dir}/${header} COPYONLY)
+        configure_file(${header} ${INCLUDE_OUTPUT_PATH}/${dest_dir}/${_header_name} COPYONLY)
 	endforeach(header)
 	#mark them to be installed
 	install(FILES ${ARGV} DESTINATION include/${dest_dir})
@@ -69,7 +69,7 @@ endfunction(pods_install_executables)
 #
 # Install a (list) of libraries to lib/
 function(pods_install_libraries)
-	install(TARGETS ${ARGV} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+    install(TARGETS ${ARGV} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 endfunction(pods_install_libraries)
 
 
@@ -139,6 +139,18 @@ function(pods_install_pkg_config_file)
 
     # mark the .pc file for installation to the lib/pkgconfig directory
     install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
+    
+    #find targets that this pkg-config file depends on
+    string(REPLACE " " ";" split_lib ${pc_libs})
+    foreach(lib ${split_lib})
+        string(REPLACE "-l" "" sanitized_lib ${lib})
+        get_target_property(IS_TARGET ${sanitized_lib} LOCATION)
+        if (NOT IS_TARGET STREQUAL "IS_TARGET-NOTFOUND")   
+	    set(PODS_PKG_CONFIG_TARGETS ${PODS_PKG_CONFIG_TARGETS} ${pc_name} ${sanitized_lib} CACHE INTERNAL "pods_pkg_config_targets")
+	    message(STATUS "PODS_PKG_CONFIG_TARGETS: ${PODS_PKG_CONFIG_TARGETS} ")
+        endif() 
+    endforeach()
+    
 endfunction(pods_install_pkg_config_file)
 
 
@@ -252,6 +264,17 @@ macro(pods_use_pkg_config_packages target)
     #    message("ldflags: ${_pods_pkg_ldflags}")
     include_directories(${_pods_pkg_include_flags})
     target_link_libraries(${target} ${_pods_pkg_ldflags})
+   
+    #make the target depend on libraries being installed (so multithreaded build works)
+    foreach(_pkg ${ARGN})
+	list(FIND PODS_PKG_CONFIG_TARGETS ${_pkg} _pkg_ind)
+        if (NOT _pkg_ind LESS 0)
+		math(EXPR _dep_ind ${_pkg_ind}+1)
+		list(GET PODS_PKG_CONFIG_TARGETS _dep_ind _dep)
+		add_dependencies(${target} ${_dep})
+        endif() 
+    endforeach()
+   
     unset(_pods_pkg_include_flags)
     unset(_pods_pkg_ldflags)
 endmacro()
@@ -295,12 +318,12 @@ macro(pods_config_search_paths)
         else(${CMAKE_INSTALL_RPATH})
             set(CMAKE_INSTALL_RPATH ${LIBRARY_INSTALL_PATH})
         endif(${CMAKE_INSTALL_RPATH})
-        set(CMAKE_INSTALL_RPATH ${LIBRARY_OUTPUT_PATH}:${CMAKE_INSTALL_RPATH})
 
         # for osx, which uses "install name" path rather than rpath
-        set(CMAKE_INSTALL_NAME_DIR ${LIBRARY_OUTPUT_PATH})
+        #set(CMAKE_INSTALL_NAME_DIR ${LIBRARY_OUTPUT_PATH})
+        set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_RPATH})
         
-        #hack to force cmake always create install and clean targets 
+        # hack to force cmake always create install and clean targets 
         install(FILES DESTINATION)
         add_custom_target(tmp)
 
