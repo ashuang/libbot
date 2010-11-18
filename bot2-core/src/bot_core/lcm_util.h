@@ -67,7 +67,7 @@ int bot_glib_mainloop_attach_lcm_full(GMainLoop * mainloop, lcm_t *lcm,
 
 
 /**
- * bot_lcm_get_global_with_provider:
+ * bot_lcm_get_global:
  * @provider: The string specifying the LCM network provider. If %NULL, the
  * environment variable "LCM_DEFAULT_URL" is used if it is defined, otherwise
  * the lcm_create default settings are used.
@@ -80,21 +80,8 @@ int bot_glib_mainloop_attach_lcm_full(GMainLoop * mainloop, lcm_t *lcm,
  *
  * Returns: pointer to lcm_t
  */
-lcm_t *bot_lcm_get_global_with_provider(const char *provider);
+lcm_t *bot_lcm_get_global(const char *provider);
 
-
-/**
- * bot_lcm_get_global:
- *
- * The first time this function is invoked, it instantiates and returns new
- * lcm_t instance via lcm_create(NULL).  Every subsequent call just returns the
- * same lcm_t instance.
- *
- * This function is thread-safe, if g_thread_init() has been called.
- *
- * Returns: pointer to lcm_t
- */
-lcm_t *bot_lcm_get_global(void);
 
 #ifdef __cplusplus
 }
