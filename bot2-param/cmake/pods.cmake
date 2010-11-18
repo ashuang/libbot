@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.11.17
+# Distributed with pods version: 10.11.18
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -140,14 +140,13 @@ function(pods_install_pkg_config_file)
     # mark the .pc file for installation to the lib/pkgconfig directory
     install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
     
-    #find targets that this pkg-config file depends on
+    # find targets that this pkg-config file depends on
     string(REPLACE " " ";" split_lib ${pc_libs})
     foreach(lib ${split_lib})
-        string(REPLACE "-l" "" sanitized_lib ${lib})
-        get_target_property(IS_TARGET ${sanitized_lib} LOCATION)
-        if (NOT IS_TARGET STREQUAL "IS_TARGET-NOTFOUND")   
-	    set(PODS_PKG_CONFIG_TARGETS ${PODS_PKG_CONFIG_TARGETS} ${pc_name} ${sanitized_lib} CACHE INTERNAL "pods_pkg_config_targets")
-	    message(STATUS "PODS_PKG_CONFIG_TARGETS: ${PODS_PKG_CONFIG_TARGETS} ")
+        string(REGEX REPLACE "^-l" "" libname ${lib})
+        get_target_property(IS_TARGET ${libname} LOCATION)
+        if (NOT IS_TARGET STREQUAL "IS_TARGET-NOTFOUND")
+            set_property(GLOBAL APPEND PROPERTY "PODS_PKG_CONFIG_TARGETS-${pc_name}" ${libname})
         endif() 
     endforeach()
     
@@ -265,16 +264,18 @@ macro(pods_use_pkg_config_packages target)
     include_directories(${_pods_pkg_include_flags})
     target_link_libraries(${target} ${_pods_pkg_ldflags})
    
-    #make the target depend on libraries being installed (so multithreaded build works)
+    # make the target depend on libraries being installed by this source build
     foreach(_pkg ${ARGN})
-	list(FIND PODS_PKG_CONFIG_TARGETS ${_pkg} _pkg_ind)
-        if (NOT _pkg_ind LESS 0)
-		math(EXPR _dep_ind ${_pkg_ind}+1)
-		list(GET PODS_PKG_CONFIG_TARGETS _dep_ind _dep)
-		add_dependencies(${target} ${_dep})
-        endif() 
+        get_property(_has_dependencies GLOBAL PROPERTY "PODS_PKG_CONFIG_TARGETS-${_pkg}" SET)
+        if(_has_dependencies)
+            get_property(_dependencies GLOBAL PROPERTY "PODS_PKG_CONFIG_TARGETS-${_pkg}")
+            add_dependencies(${target} ${_dependencies})
+            #            message("Found dependencies for ${_pkg}: ${dependencies}")
+        endif()
+        unset(_has_dependencies)
+        unset(_dependencies)
     endforeach()
-   
+
     unset(_pods_pkg_include_flags)
     unset(_pods_pkg_ldflags)
 endmacro()

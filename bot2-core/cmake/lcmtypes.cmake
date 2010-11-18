@@ -274,6 +274,18 @@ function(lcmtypes_build_java)
     string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
     set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar)
 
+    set(java_classpath ${_lcmtypes_java_dir}:${LCM_JAR_FILE})
+
+    # search for lcmtypes_*.jar files in well-known places and add them to the
+    # classpath
+    foreach(pfx /usr /usr/local ${CMAKE_INSTALL_PREFIX})
+        file(GLOB_RECURSE jarfiles ${pfx}/share/java/lcmtypes_*.jar)
+        foreach(jarfile ${jarfiles})
+            set(java_classpath ${java_classpath}:${jarfile})
+            #            message("found ${jarfile}")
+        endforeach()
+    endforeach()
+
     # convert the list of .java filenames to a list of .class filenames
     foreach(javafile ${_lcmtypes_java_files})
         string(REPLACE .java .class __tmp_class_fname ${javafile})
@@ -285,7 +297,7 @@ function(lcmtypes_build_java)
 
     # add a rule to build the .class files from from the .java files
     add_custom_command(OUTPUT ${_lcmtypes_class_files} COMMAND 
-        ${JAVA_COMPILE} -source 6 -cp ${_lcmtypes_java_dir}:${LCM_JAR_FILE} ${_lcmtypes_java_files} 
+        ${JAVA_COMPILE} -source 6 -cp ${java_classpath} ${_lcmtypes_java_files} 
         DEPENDS ${_lcmtypes_java_files} VERBATIM)
 
     # add a rule to build a .jar file from the .class files
