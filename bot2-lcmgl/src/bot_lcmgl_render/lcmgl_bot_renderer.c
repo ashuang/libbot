@@ -178,3 +178,12 @@ bot_lcmgl_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
     g_signal_connect(G_OBJECT(clear_button), "clicked", G_CALLBACK(on_clear_button), self);
     gtk_widget_show_all(renderer->widget);
 }
+
+/*
+ * setup_renderer:
+ * Generic renderer add function for use as a dynamically loaded plugin
+ */
+void add_renderer_to_plugin_viewer(BotViewer *viewer, int render_priority){
+  lcm_t * lcm = bot_lcm_get_global(NULL);
+  bot_lcmgl_add_renderer_to_viewer(viewer,lcm, render_priority);
+}
