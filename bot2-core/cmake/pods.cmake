@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.11.17
+# Distributed with pods version: 10.11.19
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 

@@ -67,7 +67,7 @@
 #
 # ----
 # File: lcmtypes.cmake
-# Distributed with pods version: 10.11.17
+# Distributed with pods version: 10.11.19
 
 cmake_minimum_required(VERSION 2.6.0)
 
@@ -366,7 +366,7 @@ function(lcmtypes_build_python)
     foreach(py_file ${_lcmtypes_python_files})
         set(full_py_fname ${_lcmtypes_python_dir}/${py_file})
         add_custom_command(OUTPUT "${full_py_fname}c" COMMAND 
-            ${PYTHON_EXECUTABLE} -m compileall ${full_py_fname} DEPENDS ${full_py_fname} VERBATIM)
+            ${PYTHON_EXECUTABLE} -m py_compile ${full_py_fname} DEPENDS ${full_py_fname} VERBATIM)
         list(APPEND pyc_files "${full_py_fname}c")
     endforeach()
     add_custom_target(pyc_files ALL DEPENDS ${pyc_files})
