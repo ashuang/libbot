@@ -543,14 +543,22 @@ static int parse_container(Parser * p, BotParamElement * cont, BotParamToken end
 
 static int write_array(BotParamElement * el, int indent, FILE * f)
 {
-  fprintf(f, "%*s%s = [", indent, "", el->name);
+    if (el->num_values == 1) 
+        fprintf(f, "%*s%s = \"%s\";\n", indent, "", el->name, el->values[0]);
+    else {
+        fprintf(f, "%*s%s = [", indent, "", el->name);
 
-  int i;
-  for (i = 0; i < el->num_values; i++) {
-    fprintf(f, "\"%s\", ", el->values[i]);
-  }
-  fprintf(f, "];\n");
-  return 0;
+        if (el->num_values == 0) 
+            fprintf(f, "];\n");
+        else {
+            int i;
+            for (i = 0; i < (el->num_values-1); i++) 
+                fprintf(f, "\"%s\", ", el->values[i]);
+            
+            fprintf(f, "\"%s\"];\n", el->values[i]);
+        }
+    }
+    return 0;
 }
 
 static int write_container(BotParamElement * el, int indent, FILE * f)
@@ -664,19 +672,21 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
 
   //TODO: is there a way to be sure nothing else is subscribed???
   bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
-  for (int i = 0; i < 5; i++) {
-    bot_param_request_t req;
-    req.utime = _timestamp_now();
-    bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
-    lcm_sleep(lcm, 1);
-    if (param->root->children != NULL)
-      break;
+  int64_t utime_start = _timestamp_now();
+  while ((_timestamp_now() - utime_start) < 5E6) {
+      bot_param_request_t req;
+      req.utime = _timestamp_now();
+      bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
+      lcm_sleep(lcm, 1);
+      if (param->root->children != NULL)
+          break;
   }
 
   if (param->root->children == NULL) {
     fprintf(stderr, "WARNING: Could not get parameters from the param-server! did you forget to start one?\n");
     return NULL;
   }
+
   if (keep_updated) {
     bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
     //the handler will update the param structure every time a message arrives
@@ -938,14 +948,13 @@ int bot_param_get_boolean_or_fail(BotParam * param, const char * key)
 
 double bot_param_get_double_or_fail(BotParam *param, const char *key)
 {
-  double v;
-  int res = bot_param_get_double(param, key, &v);
-  if (res) {
-    fprintf(stderr, "Missing config key: %s\n", key);
-    abort();
+  double val;
+  if (bot_param_get_double(param, key, &val) == 0)
+      return val;
+  else {
+      fprintf(stderr, "Missing config key: %s\n", key);
+      abort();
   }
-
-  return v;
 }
 
 char *bot_param_get_str_or_fail(BotParam *param, const char *key)
