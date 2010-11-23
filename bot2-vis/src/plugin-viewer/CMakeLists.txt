@@ -1,5 +1,3 @@
-add_definitions(-std=gnu99)
-
 include_directories(${GTK2_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
     ${GLUT_INCLUDE_DIR}
