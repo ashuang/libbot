@@ -8,7 +8,7 @@
 #include <glib.h>
 
 #include <lcm/lcm.h>
-#include <bot_param_client/param_client.h>
+#include <bot_param/param_client.h>
 #include "lcm_util.h"
 
 #include "../param_client/misc_utils.h"
