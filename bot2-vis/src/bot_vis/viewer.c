@@ -921,6 +921,27 @@ on_renderer_widget_expander_notify (GObject *object, GParamSpec *param_spec,
 }
 
 
+
+static void on_select_perspective_item(GtkMenuItem *mi, void *user)
+{
+  BotViewer* viewer = (BotViewer*) user;
+  BotViewHandler *vhandler = viewer->view_handler;
+  if (vhandler) {
+    vhandler->set_camera_perspective(vhandler, 60);
+  }
+}
+
+static void on_select_orthographic_item(GtkMenuItem *mi, void *user)
+{
+  BotViewer* viewer = (BotViewer*) user;
+  BotViewHandler *vhandler = viewer->view_handler;
+  if (vhandler) {
+    vhandler->set_camera_orthographic(vhandler);
+  }
+}
+
+
+
 // ================
 
 static gint renderer_name_compare_function(gconstpointer _a, gconstpointer _b)
@@ -1106,6 +1127,29 @@ make_menus(BotViewer *viewer, GtkWidget *parent)
         g_signal_connect (G_OBJECT (select_none_mi), "activate",
                           G_CALLBACK (on_select_no_event_handlers_activate), viewer);
     }
+
+
+    //add perspective and orthographic controls...
+    GtkWidget *view_menuitem = gtk_menu_item_new_with_mnemonic("_View");
+    gtk_menu_bar_append(GTK_MENU_BAR(viewer->menu_bar), view_menuitem);
+
+    GtkWidget *view_menu = gtk_menu_new();
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_menuitem), view_menu);
+
+    GSList *view_list = NULL;
+    GtkWidget *perspective_item = gtk_radio_menu_item_new_with_label(view_list, "Perspective");
+    view_list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(perspective_item));
+    gtk_menu_append(GTK_MENU(view_menu), perspective_item);
+    g_signal_connect(G_OBJECT(perspective_item), "activate", G_CALLBACK(on_select_perspective_item), viewer);
+
+    GtkWidget *orthographic_item = gtk_radio_menu_item_new_with_label(view_list, "Orthographic");
+    view_list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(orthographic_item));
+    gtk_menu_append(GTK_MENU(view_menu), orthographic_item);
+    g_signal_connect(G_OBJECT(orthographic_item), "activate", G_CALLBACK(on_select_orthographic_item), viewer);
+
+    gtk_widget_show_all(view_menuitem);
+
+
 }
 
 static void 
