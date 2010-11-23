@@ -5,7 +5,6 @@
 #include "small_linalg.h"
 #include "camtrans.h"
 #include "circular.h"
-#include "conf.h"
 #include "ctrans.h"
 #include "fasttrig.h"
 #include "fileutils.h"
