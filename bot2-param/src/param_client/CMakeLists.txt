@@ -17,7 +17,7 @@ pods_use_pkg_config_packages(${libname} lcm bot2-core glib-2.0)
 set_target_properties(${libname} PROPERTIES SOVERSION 1)
 
 # make the header public
-pods_install_headers(param_client.h DESTINATION bot_param_client)
+pods_install_headers(param_client.h DESTINATION bot_param)
 
 # make the library public
 pods_install_libraries(${libname})
