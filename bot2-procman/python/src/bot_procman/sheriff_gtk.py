@@ -99,7 +99,6 @@ class AddModifyCommandDialog (gtk.Dialog):
         table.attach (self.nickname_te, 1, 2, 2, 3)
         self.nickname_te.connect ("activate", 
                 lambda e: self.response (gtk.RESPONSE_ACCEPT))
-        self.nickname_te.grab_focus ()
 
         # group
         table.attach (gtk.Label ("Group"), 0, 1, 3, 4, 0, 0)
