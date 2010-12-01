@@ -16,12 +16,12 @@ static void
 usage()
 {
     printf(
-            "usage: bot-lcm-logfilter [OPTIONS] <source_logfile1> <source_logfile2> [source_logfile3...] <dest_logfile>\n"
+            "usage: bot-lcm-logsplice [OPTIONS] <source_logfile1> <source_logfile2> [source_logfile3...] <dest_logfile>\n"
                 "\n"
-                "Selectively extract channels from a source logfile to a destination\n"
-                "logfile.\n"
+                "Splice together (filtered) channels from two or more source\n"
+                "log files, and generate a single destination log file.\n"
                 "\n"
-                "Optiosn:\n"
+                "Options:\n"
                 "  -h        prints this help text and exits\n"
                 "  -c CHAN   POSIX regular expression.  Channels matching this expression\n"
                 "            will be copied to the destination logfile.  Defaults to .* if\n"

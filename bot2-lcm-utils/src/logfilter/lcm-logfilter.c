@@ -20,7 +20,7 @@ usage()
            "Selectively extract channels from a source logfile to a destination\n"
            "logfile.\n"
            "\n"
-           "Optiosn:\n"
+           "Options:\n"
            "  -h        prints this help text and exits\n"
            "  -c CHAN   POSIX regular expression.  Channels matching this expression\n"
            "            will be copied to the destination logfile.  Defaults to .* if\n"
