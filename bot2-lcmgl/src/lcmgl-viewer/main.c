@@ -7,6 +7,7 @@
 
 #include <bot_lcmgl_render/lcmgl_bot_renderer.h>
 #include "udp_util.h"
+#include "view_menu.h"
 
 typedef struct {
     BotViewer *viewer;
@@ -51,8 +52,6 @@ logplayer_remote_on_key_press(BotViewer *viewer, BotEventHandler *ehandler,
 }
 
 /////////////////////////////////////////////////////////////
-
-void setup_view_menu(BotViewer *viewer);
 
 int main(int argc, char *argv[])
 {

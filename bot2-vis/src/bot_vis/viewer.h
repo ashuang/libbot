@@ -353,6 +353,7 @@ struct _BotViewer {
     GtkWidget         *file_menu;
     GtkWidget         *renderers_menu;
     GtkWidget         *event_handlers_menu;
+    GtkWidget         *view_menu;
 
     int64_t           last_draw_utime;
     int               redraw_timer_pending;

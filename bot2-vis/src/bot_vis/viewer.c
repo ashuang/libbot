@@ -1133,18 +1133,18 @@ make_menus(BotViewer *viewer, GtkWidget *parent)
     GtkWidget *view_menuitem = gtk_menu_item_new_with_mnemonic("_View");
     gtk_menu_bar_append(GTK_MENU_BAR(viewer->menu_bar), view_menuitem);
 
-    GtkWidget *view_menu = gtk_menu_new();
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_menuitem), view_menu);
+    viewer->view_menu = gtk_menu_new();
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_menuitem), viewer->view_menu);
 
     GSList *view_list = NULL;
     GtkWidget *perspective_item = gtk_radio_menu_item_new_with_label(view_list, "Perspective");
     view_list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(perspective_item));
-    gtk_menu_append(GTK_MENU(view_menu), perspective_item);
+    gtk_menu_append(GTK_MENU(viewer->view_menu), perspective_item);
     g_signal_connect(G_OBJECT(perspective_item), "activate", G_CALLBACK(on_select_perspective_item), viewer);
 
     GtkWidget *orthographic_item = gtk_radio_menu_item_new_with_label(view_list, "Orthographic");
     view_list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(orthographic_item));
-    gtk_menu_append(GTK_MENU(view_menu), orthographic_item);
+    gtk_menu_append(GTK_MENU(viewer->view_menu), orthographic_item);
     g_signal_connect(G_OBJECT(orthographic_item), "activate", G_CALLBACK(on_select_orthographic_item), viewer);
 
     gtk_widget_show_all(view_menuitem);
