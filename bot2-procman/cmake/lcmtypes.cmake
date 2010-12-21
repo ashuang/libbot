@@ -67,7 +67,7 @@
 #
 # ----
 # File: lcmtypes.cmake
-# Distributed with pods version: 10.11.19
+# Distributed with pods version: 10.12.21
 
 cmake_minimum_required(VERSION 2.6.0)
 
@@ -213,6 +213,23 @@ function(lcmtypes_build_c)
     # set some compilation variables
     set(LCMTYPES_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lcmtypes/c PARENT_SCOPE)
     set(LCMTYPES_LIBS ${libname} PARENT_SCOPE)
+
+    # create a pkg-config file
+    set(pc_fname "${CMAKE_BINARY_DIR}/lib/pkgconfig/${libname}.pc")
+    file(WRITE ${pc_fname}
+        "prefix=${CMAKE_INSTALL_PREFIX}\n"
+        "exec_prefix=\${prefix}\n"
+        "libdir=\${exec_prefix}/lib\n"
+        "includedir=\${prefix}/include\n"
+        "\n"
+        "Name: ${libname}\n"
+        "Description: LCM types for ${PROJECT_NAME}\n"
+        "Version: 0.0.0\n"
+        "Requires: lcm\n"
+        "Libs: -L\${exec_prefix}/lib -l${libname}\n")
+
+    # mark the pkg-config file for installation to the lib/pkgconfig directory
+    install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
 
     lcmtypes_add_clean_dir("${PROJECT_SOURCE_DIR}/lcmtypes/c")
 endfunction()

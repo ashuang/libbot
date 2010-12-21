@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.11.19
+# Distributed with pods version: 10.12.21
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -47,7 +47,7 @@ function(pods_install_headers)
     list(GET ARGV -1 dest_dir)
     list(REMOVE_AT ARGV -1)
     list(REMOVE_AT ARGV -1)
-    #copy the headers to the INCLUDE_OUTPUT_PATH (pod-build/include)
+    #copy the headers to the INCLUDE_OUTPUT_PATH (${CMAKE_BINARY_DIR}/include)
     foreach(header ${ARGV})
         get_filename_component(_header_name ${header} NAME)
         configure_file(${header} ${INCLUDE_OUTPUT_PATH}/${dest_dir}/${_header_name} COPYONLY)
@@ -289,10 +289,10 @@ endmacro()
 macro(pods_config_search_paths)
     if(NOT DEFINED __pods_setup)
 		#set where files should be output locally
-	    set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/lib)
-	    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/bin)
-	    set(INCLUDE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/include)
-	    set(PKG_CONFIG_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/pod-build/lib/pkgconfig)
+	    set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+	    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+	    set(INCLUDE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/include)
+	    set(PKG_CONFIG_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib/pkgconfig)
 		
 		#set where files should be installed to
 	    set(LIBRARY_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib)
