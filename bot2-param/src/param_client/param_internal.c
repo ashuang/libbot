@@ -673,17 +673,31 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
   //TODO: is there a way to be sure nothing else is subscribed???
   bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
   int64_t utime_start = _timestamp_now();
+  int64_t last_print_utime = -1;
   while ((_timestamp_now() - utime_start) < 5E6) {
       bot_param_request_t req;
       req.utime = _timestamp_now();
       bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
-      lcm_sleep(lcm, 1);
+      lcm_sleep(lcm, .25);
       if (param->root->children != NULL)
           break;
+      int64_t now = _timestamp_now();
+      if (now - utime_start>5e5){
+        if (last_print_utime<0){
+          fprintf(stderr,"bot_param_client waiting to get parameters from param-server...");
+          last_print_utime = now;
+        }
+        else if (now-last_print_utime>5e5){
+          fprintf(stderr,".");
+          last_print_utime = now;
+        }
+      }
   }
-
+  if (last_print_utime>0){
+    fprintf(stderr,"\n");
+  }
   if (param->root->children == NULL) {
-    fprintf(stderr, "WARNING: Could not get parameters from the param-server! did you forget to start one?\n");
+    fprintf(stderr, "WARNING: bot_param_client could not get parameters from the param-server!\n Did you forget to start one?\n");
     return NULL;
   }
 
