@@ -1371,7 +1371,7 @@ bot_param_client_get_global(lcm_t * lcm,int keep_updated)
 {
     g_static_mutex_lock (&bot_param_global_mutex);
 
-    if (keep_updated && lcm==NULL)
+    if (lcm==NULL)
         lcm = bot_lcm_get_global(NULL);
 
     if (global_param == NULL) {
