@@ -18,6 +18,10 @@
 #include "lcm_tunnel.h"
 #include "lcm_tunnel_server.h"
 
+static inline void check_ret(int ret){
+  assert(ret==0);
+}
+
 LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
   verbose(verbose), regex_inited(false),
   buf_sz(65536), buf((char*)calloc(65536, sizeof(char))),
@@ -31,12 +35,12 @@ LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
   init_regex(lcm_channel);
 
   //sendThread stuff
-  assert(pthread_mutex_init(&sendQueueLock,NULL)==0);
-  assert(pthread_cond_init(&sendQueueCond,NULL)==0);
+  check_ret(pthread_mutex_init(&sendQueueLock,NULL));
+  check_ret(pthread_cond_init(&sendQueueCond,NULL));
 
   pthread_attr_init(&sendThreadAttr);
   pthread_attr_setdetachstate(&sendThreadAttr, PTHREAD_CREATE_JOINABLE);
-  assert(pthread_create(&sendThread, &sendThreadAttr, &sendThreadFunc, (void *) this) == 0);
+  check_ret(pthread_create(&sendThread, &sendThreadAttr, &sendThreadFunc, (void *) this) );
 
 }
 
@@ -96,13 +100,13 @@ LcmTunnel::~LcmTunnel()
     delete ldpc_dec;
 
   //cleanup the sending thread state
-  assert(pthread_mutex_lock(&sendQueueLock)==0);
+  check_ret(pthread_mutex_lock(&sendQueueLock));
   stopSendThread = true;
-  assert(pthread_cond_broadcast(&sendQueueCond)==0);
-  assert(pthread_mutex_unlock(&sendQueueLock)==0);
+  check_ret(pthread_cond_broadcast(&sendQueueCond));
+  check_ret(pthread_mutex_unlock(&sendQueueLock));
   pthread_join(sendThread, NULL); //wait for thread to exit
 
-  assert(pthread_mutex_lock(&sendQueueLock)==0);
+  check_ret(pthread_mutex_lock(&sendQueueLock));
   while (!sendQueue.empty()) {
     delete sendQueue.front();
     sendQueue.pop_front();
@@ -612,11 +616,11 @@ void * LcmTunnel::sendThreadFunc(void *user_data)
 
   LcmTunnel *self = (LcmTunnel*) user_data;
 
-  assert(pthread_mutex_lock(&self->sendQueueLock)==0);
+  check_ret(pthread_mutex_lock(&self->sendQueueLock));
   int64_t nextFlushTime = 0;
   while (!self->stopSendThread) {
     if (self->sendQueue.empty()) {
-      assert(pthread_cond_wait(&self->sendQueueCond,&self->sendQueueLock)==0);
+      check_ret(pthread_cond_wait(&self->sendQueueCond,&self->sendQueueLock));
       nextFlushTime = bot_timestamp_now() + self->tunnel_params->max_delay_ms * 1000;
       continue;
     }
@@ -637,16 +641,16 @@ void * LcmTunnel::sendThreadFunc(void *user_data)
     tmpQueue.swap(self->sendQueue);
     uint32_t bytesInTmpQueue = self->bytesInQueue;
     self->bytesInQueue = 0;
-    assert(pthread_mutex_unlock(&self->sendQueueLock)==0);
+    check_ret(pthread_mutex_unlock(&self->sendQueueLock));
     //release lock for sending
 
     //process whats in the queue
     self->send_lcm_messages(tmpQueue, bytesInTmpQueue);
 
     //reaquire lock to go around the loop
-    assert(pthread_mutex_lock(&self->sendQueueLock)==0);
+    check_ret(pthread_mutex_lock(&self->sendQueueLock));
   }
-  assert(pthread_mutex_unlock(&self->sendQueueLock)==0);
+  check_ret(pthread_mutex_unlock(&self->sendQueueLock));
 
   pthread_exit(NULL);
 }
@@ -665,7 +669,7 @@ void LcmTunnel::send_to_remote(const void *data, uint32_t len, const char *lcm_c
 
 void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_channel)
 {
-  assert(pthread_mutex_lock(&sendQueueLock)==0);
+  check_ret(pthread_mutex_lock(&sendQueueLock));
   bytesInQueue += rbuf->data_size + strlen(lcm_channel) + sizeof(tunnel_lcm_header_t);
   sendQueue.push_back(new TunnelLcmMessage(rbuf, lcm_channel));
   while(bytesInQueue>MAX_SEND_BUFFER_SIZE){
@@ -678,8 +682,8 @@ void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_chann
   }
   //hack to not delay time sync messages
   flushImmediately = strcmp(lcm_channel, "TIMESYNC") == 0;
-  assert(pthread_mutex_unlock(&sendQueueLock)==0);
-  assert(pthread_cond_broadcast(&sendQueueCond)==0); //signal to say there is a message waiting
+  check_ret(pthread_mutex_unlock(&sendQueueLock));
+  check_ret(pthread_cond_broadcast(&sendQueueCond)); //signal to say there is a message waiting
 }
 
 void LcmTunnel::on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, void *user_data)
