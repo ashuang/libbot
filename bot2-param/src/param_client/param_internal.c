@@ -543,22 +543,22 @@ static int parse_container(Parser * p, BotParamElement * cont, BotParamToken end
 
 static int write_array(BotParamElement * el, int indent, FILE * f)
 {
-    if (el->num_values == 1) 
-        fprintf(f, "%*s%s = \"%s\";\n", indent, "", el->name, el->values[0]);
-    else {
-        fprintf(f, "%*s%s = [", indent, "", el->name);
+  if (el->num_values == 1)
+    fprintf(f, "%*s%s = \"%s\";\n", indent, "", el->name, el->values[0]);
+  else {
+    fprintf(f, "%*s%s = [", indent, "", el->name);
 
-        if (el->num_values == 0) 
-            fprintf(f, "];\n");
-        else {
-            int i;
-            for (i = 0; i < (el->num_values-1); i++) 
-                fprintf(f, "\"%s\", ", el->values[i]);
-            
-            fprintf(f, "\"%s\"];\n", el->values[i]);
-        }
+    if (el->num_values == 0)
+      fprintf(f, "];\n");
+    else {
+      int i;
+      for (i = 0; i < (el->num_values - 1); i++)
+        fprintf(f, "\"%s\", ", el->values[i]);
+
+      fprintf(f, "\"%s\"];\n", el->values[i]);
     }
-    return 0;
+  }
+  return 0;
 }
 
 static int write_container(BotParamElement * el, int indent, FILE * f)
@@ -642,9 +642,9 @@ static void _on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, c
   }
   if (msg->server_id == param->server_id) {
     if (msg->sequence_number <= param->sequence_number)
-     	return;
-//    else 
-//	fprintf(stderr, "received NEW params from server:\n");
+      return;
+    //    else
+    //	fprintf(stderr, "received NEW params from server:\n");
   }
   else {
     fprintf(stderr, "WARNING: Got params from a different server! Ignoring them\n");
@@ -671,39 +671,40 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
   BotParam * param = _bot_param_new();
 
   //TODO: is there a way to be sure nothing else is subscribed???
-  bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
+  bot_param_update_t_subscription_t * sub = bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update,
+      (void *) param);
   int64_t utime_start = _timestamp_now();
   int64_t last_print_utime = -1;
   while ((_timestamp_now() - utime_start) < 5E6) {
-      bot_param_request_t req;
-      req.utime = _timestamp_now();
-      bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
-      lcm_sleep(lcm, .25);
-      if (param->root->children != NULL)
-          break;
-      int64_t now = _timestamp_now();
-      if (now - utime_start>5e5){
-        if (last_print_utime<0){
-          fprintf(stderr,"bot_param_client waiting to get parameters from param-server...");
-          last_print_utime = now;
-        }
-        else if (now-last_print_utime>5e5){
-          fprintf(stderr,".");
-          last_print_utime = now;
-        }
+    bot_param_request_t req;
+    req.utime = _timestamp_now();
+    bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
+    lcm_sleep(lcm, .25);
+    if (param->root->children != NULL)
+      break;
+    int64_t now = _timestamp_now();
+    if (now - utime_start > 5e5) {
+      if (last_print_utime < 0) {
+        fprintf(stderr, "bot_param_client waiting to get parameters from param-server...");
+        last_print_utime = now;
       }
+      else if (now - last_print_utime > 5e5) {
+        fprintf(stderr, ".");
+        last_print_utime = now;
+      }
+    }
   }
-  if (last_print_utime>0){
-    fprintf(stderr,"\n");
+  if (last_print_utime > 0) {
+    fprintf(stderr, "\n");
   }
   if (param->root->children == NULL) {
-    fprintf(stderr, "WARNING: bot_param_client could not get parameters from the param-server!\n Did you forget to start one?\n");
+    fprintf(stderr,
+        "WARNING: bot_param_client could not get parameters from the param-server!\n Did you forget to start one?\n");
     return NULL;
   }
 
-  if (keep_updated) {
-    bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update, (void *) param);
-    //the handler will update the param structure every time a message arrives
+  if (!keep_updated) {
+    bot_param_update_t_unsubscribe(lcm, sub);
   }
   return param;
 
@@ -964,10 +965,10 @@ double bot_param_get_double_or_fail(BotParam *param, const char *key)
 {
   double val;
   if (bot_param_get_double(param, key, &val) == 0)
-      return val;
+    return val;
   else {
-      fprintf(stderr, "Missing config key: %s\n", key);
-      abort();
+    fprintf(stderr, "Missing config key: %s\n", key);
+    abort();
   }
 }
 
@@ -1011,18 +1012,16 @@ int bot_param_get_int_array(BotParam * param, const char * key, int * vals, int 
   return i;
 }
 
-
 void bot_param_get_int_array_or_fail(BotParam * param, const char * key, int * vals, int len)
 {
-    int res = bot_param_get_int_array(param, key, vals, len);
-    if (res != len) {
-        fprintf (stderr, "ERROR: BotParam: only read %d of %d integer values for key: %s\n", res, len, key);
-        abort ();
-    }
+  int res = bot_param_get_int_array(param, key, vals, len);
+  if (res != len) {
+    fprintf(stderr, "ERROR: BotParam: only read %d of %d integer values for key: %s\n", res, len, key);
+    abort();
+  }
 
-    return;
+  return;
 }
-
 
 int bot_param_get_boolean_array(BotParam * param, const char * key, int * vals, int len)
 {
@@ -1055,15 +1054,14 @@ int bot_param_get_boolean_array(BotParam * param, const char * key, int * vals, 
 
 void bot_param_get_boolean_array_or_fail(BotParam * param, const char * key, int * vals, int len)
 {
-    int res = bot_param_get_boolean_array(param, key, vals, len);
-    if (res != len) {
-        fprintf (stderr, "ERROR: BotParam: only read %d of %d boolean values for key: %s\n", res, len, key);
-        abort ();
-    }
+  int res = bot_param_get_boolean_array(param, key, vals, len);
+  if (res != len) {
+    fprintf(stderr, "ERROR: BotParam: only read %d of %d boolean values for key: %s\n", res, len, key);
+    abort();
+  }
 
-    return;
+  return;
 }
-
 
 int bot_param_get_double_array(BotParam * param, const char * key, double * vals, int len)
 {
@@ -1095,15 +1093,14 @@ int bot_param_get_double_array(BotParam * param, const char * key, double * vals
 
 void bot_param_get_double_array_or_fail(BotParam * param, const char * key, double * vals, int len)
 {
-    int res = bot_param_get_double_array(param, key, vals, len);
-    if (res != len) {
-        fprintf (stderr, "ERROR: BotParam: only read %d of %d double values for key: %s\n\n", res, len, key);
-        abort ();
-    }
+  int res = bot_param_get_double_array(param, key, vals, len);
+  if (res != len) {
+    fprintf(stderr, "ERROR: BotParam: only read %d of %d double values for key: %s\n\n", res, len, key);
+    abort();
+  }
 
-    return;
+  return;
 }
-
 
 int bot_param_get_array_len(BotParam *param, const char * key)
 {
@@ -1367,29 +1364,28 @@ static BotParam *global_param = NULL;
 static GStaticMutex bot_param_global_mutex = G_STATIC_MUTEX_INIT;
 
 BotParam*
-bot_param_client_get_global(lcm_t * lcm,int keep_updated)
+bot_param_client_get_global(lcm_t * lcm, int keep_updated)
 {
-    g_static_mutex_lock (&bot_param_global_mutex);
+  g_static_mutex_lock(&bot_param_global_mutex);
 
-    if (lcm==NULL)
-        lcm = bot_lcm_get_global(NULL);
+  if (lcm == NULL)
+    lcm = bot_lcm_get_global(NULL);
 
-    if (global_param == NULL) {
-        if (keep_updated)
-            global_param = bot_param_new_from_server (lcm, 1);
-        else
-            global_param = bot_param_new_from_server (lcm, 0);
+  if (global_param == NULL) {
+    if (keep_updated)
+      global_param = bot_param_new_from_server(lcm, 1);
+    else
+      global_param = bot_param_new_from_server(lcm, 0);
 
-        if (!global_param)
-            goto fail;
-    }
+    if (!global_param)
+      goto fail;
+  }
 
-    BotParam *result = global_param;
-    g_static_mutex_unlock (&bot_param_global_mutex);
-    return result;
+  BotParam *result = global_param;
+  g_static_mutex_unlock(&bot_param_global_mutex);
+  return result;
 
- fail:
-    g_static_mutex_unlock (&bot_param_global_mutex);
-    fprintf (stderr, "ERROR: Could not get global BotParam!\n");
-    return NULL;
+  fail: g_static_mutex_unlock(&bot_param_global_mutex);
+  fprintf(stderr, "ERROR: Could not get global BotParam!\n");
+  return NULL;
 }
