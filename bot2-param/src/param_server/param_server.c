@@ -77,7 +77,7 @@ void on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, const bot
 
 void on_param_set(const lcm_recv_buf_t *rbuf, const char * channel, const bot_param_set_t * msg, void * user)
 {
-  fprintf(stderr, "got param set message: %s = %s\n", msg->key, msg->value);
+  fprintf(stderr, "\ngot param set message: %s = %s\n", msg->key, msg->value);
   param_server_t * self = (param_server_t*) user;
   if (bot_param_set_str(self->params, msg->key, msg->value) > 0) {
     self->seqNo++;
