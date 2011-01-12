@@ -12,6 +12,7 @@
 struct _introspect_t
 {
     int ready;
+    int waiting_for_packet;
     lcm_t * lcm;
 
     lcm_subscription_t * subscription;
@@ -63,6 +64,8 @@ on_lcm_tunnel_introspect(const lcm_recv_buf_t *rbuf, const char *channel,
         void *user_data)
 {
     introspect_t *self = (introspect_t*)user_data;
+    if(!self->waiting_for_packet)
+        return;
     int n = sizeof(self->sent_buf);
 
     // sanity check
@@ -79,17 +82,16 @@ on_lcm_tunnel_introspect(const lcm_recv_buf_t *rbuf, const char *channel,
                 "Received introspection packet, but failed validation check\n"
                 "This does not appear to be a udpm LCM network..\n");
         self->ready = 0;
-        lcm_unsubscribe(self->lcm, self->subscription);
         return;
     }
 
     if(rbuf->data_size == n && 0 == memcmp(rbuf->data, self->sent_buf, n)) {
         self->ready = 1;
-        lcm_unsubscribe(self->lcm, self->subscription);
 
         self->sig = packet_sig(channel);
         self->host = self->sig >> 32;
         self->port = self->sig & 0xFFFF;
+        self->waiting_for_packet = 0;
     }
 }
 
@@ -102,6 +104,16 @@ introspect_new(lcm_t * lcm)
     self->ready = 0;
     self->lcm = lcm;
 
+    self->subscription = lcm_subscribe(self->lcm, "LCM_TUNNEL_INTROSPECT",
+            on_lcm_tunnel_introspect, self);
+
+    introspect_send_introspection_packet(self);
+    return self;
+}
+
+void 
+introspect_send_introspection_packet(introspect_t* self)
+{
     // generate a random bitstring
     GRand * rng = g_rand_new();
     for(int i=0, n=sizeof(self->sent_buf); i<n; i++) {
@@ -109,19 +121,17 @@ introspect_new(lcm_t * lcm)
     }
     g_rand_free(rng);
 
-    self->subscription = lcm_subscribe(self->lcm, "LCM_TUNNEL_INTROSPECT",
-            on_lcm_tunnel_introspect, self);
-
     // send the bitstring over LCM
     lcm_publish(self->lcm, "LCM_TUNNEL_INTROSPECT", self->sent_buf,
             sizeof(self->sent_buf));
-
-    return self;
+    self->waiting_for_packet = 1;
 }
 
 void
 introspect_destroy(introspect_t *self)
 {
+    lcm_unsubscribe(self->lcm, self->subscription);
+    self->subscription = NULL;
     free(self);
 }
 

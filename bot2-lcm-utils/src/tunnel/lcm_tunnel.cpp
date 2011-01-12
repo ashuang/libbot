@@ -895,6 +895,14 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
   return;
 }
 
+static gboolean
+on_introspect_timer(void* user_data)
+{
+  introspect_t* ini = (introspect_t*) user_data;
+  introspect_send_introspection_packet(ini);
+  return TRUE;
+}
+
 typedef struct {
   bool connectToServer;
   char server_addr_str[1024];
@@ -1164,6 +1172,10 @@ int main(int argc, char **argv)
 
     free(tunnel_params.channels);
   }
+
+  // periodically send an introspection packet in case network routes change
+  g_timeout_add(30000, on_introspect_timer, LcmTunnelServer::introspect);
+
   // run
   g_main_loop_run(LcmTunnelServer::mainloop);
 

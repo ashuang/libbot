@@ -14,6 +14,8 @@ typedef struct _introspect_t introspect_t;
  */
 introspect_t * introspect_new(lcm_t * lcm);
 
+void introspect_send_introspection_packet(introspect_t* ipi);
+
 void introspect_destroy(introspect_t *ipi);
 
 int introspect_is_message_from_self(introspect_t * ipi,
