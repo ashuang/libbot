@@ -1,13 +1,14 @@
-<pod>
-<name>
-  bot2-procman
-</name>
+This software is constructed according to the Pods software policies and
+templates.  The policies and templates can be found at:
 
-<summary>
-  Tools to manage many processes distributed over several workstations.
-</summary>
+  http://sourceforge.net/projects/pods
 
-<description>
+====
+
+Name:         bot2-procman
+Maintainers:  Albert Huang <albert@csail.mit.edu>
+Summary:      Tools to manage many processes distributed over several workstations
+Description:  
   Procman is a tool for managing many processes distributed over one or more
   comptuers.  There are two ways to use procman:
 
@@ -34,9 +35,8 @@
   bot-procman-sheriff --lone-ranger
 
   or with -l, but --lone-ranger is cooler.
-</description>
 
-<requirements>
+Requirements:
   GLib (>= 2.0)
   LCM  (http://lcm.googlecode.com)
 
@@ -45,5 +45,3 @@
 
   Currently only tested on GNU/Linux.  Some stuff will definitely only work on
   Linux (e.g., the process memory, CPU statistics).
-</requirements>
-</pod>
