@@ -376,7 +376,7 @@ void bot_param_str_array_free ( char **data);
 
 
 /**
- * bot_param_client_get_global:
+ * bot_param_get_global:
  * @lcm: The lcm object for the global_param client to use
  * @keep_updated: Set to 1 to keep the BotParam updated
  *
@@ -390,11 +390,11 @@ void bot_param_str_array_free ( char **data);
  * Returns: pointer to BotParam
  */
 BotParam*
-bot_param_client_get_global(lcm_t * lcm,int keep_updated);
+bot_param_get_global(lcm_t * lcm,int keep_updated);
 
 
-int64_t bot_param_client_get_server_id(BotParam * param);
-int bot_param_client_get_seqno(BotParam * param);
+int64_t bot_param_get_server_id(BotParam * param);
+int bot_param_get_seqno(BotParam * param);
 
 
 #ifdef __cplusplus

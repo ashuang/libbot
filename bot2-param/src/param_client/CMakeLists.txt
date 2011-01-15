@@ -1,30 +1,26 @@
 add_definitions(-std=gnu99)
 
-include_directories(${LCMTYPES_INCLUDE_DIRS})
-
-set(libname bot2-param-client)
-
-add_library(${libname} SHARED
-    param_internal.c)
+add_library(bot2-param-client SHARED
+    param_internal.c param_util.c)
     
-target_link_libraries(${libname}
+target_link_libraries(bot2-param-client
    ${LCMTYPES_LIBS})
 
-pods_use_pkg_config_packages(${libname} lcm bot2-core glib-2.0)
+pods_use_pkg_config_packages(bot2-param-client lcm bot2-core glib-2.0)
 
 # set the library API version.  Increment this every time the public API
 # changes.
-set_target_properties(${libname} PROPERTIES SOVERSION 1)
+set_target_properties(bot2-param-client PROPERTIES SOVERSION 1)
 
 # make the header public
-pods_install_headers(param_client.h DESTINATION bot_param)
+pods_install_headers(param_client.h param_util.h DESTINATION bot_param)
 
 # make the library public
-pods_install_libraries(${libname})
+pods_install_libraries(bot2-param-client)
 
 # create a pkg-config file for the library, to make it for other software to
 # use it.
-pods_install_pkg_config_file(${libname}
-    LIBS -l${libname} -l${LCMTYPES_LIBS}
-    REQUIRES lcm glib-2.0
+pods_install_pkg_config_file(bot2-param-client
+    LIBS -lbot2-param-client -l${LCMTYPES_LIBS}
+    REQUIRES lcm glib-2.0 bot2-core
     VERSION 0.0.1)

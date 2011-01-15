@@ -7,3 +7,4 @@ bot2-procman
 bot2-lcmgl
 bot2-lcm-utils
 bot2-param
+#bot2-coord-frames

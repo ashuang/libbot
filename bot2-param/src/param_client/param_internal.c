@@ -685,7 +685,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
     int64_t now = _timestamp_now();
     if (now - utime_start > 5e5) {
       if (last_print_utime < 0) {
-        fprintf(stderr, "bot_param_client waiting to get parameters from param-server...");
+        fprintf(stderr, "bot_param waiting to get parameters from param-server...");
         last_print_utime = now;
       }
       else if (now - last_print_utime > 5e5) {
@@ -699,7 +699,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
   }
   if (param->root->children == NULL) {
     fprintf(stderr,
-        "WARNING: bot_param_client could not get parameters from the param-server!\n Did you forget to start one?\n");
+        "WARNING: bot_param could not get parameters from the param-server!\n Did you forget to start one?\n");
     return NULL;
   }
 
@@ -1344,7 +1344,7 @@ int bot_param_set_str_array(BotParam * param, const char * key, char ** vals, in
   return ret_val;
 }
 
-int64_t bot_param_client_get_server_id(BotParam * param)
+int64_t bot_param_get_server_id(BotParam * param)
 {
   g_mutex_lock(param->lock);
   int64_t ret = param->server_id;
@@ -1352,7 +1352,7 @@ int64_t bot_param_client_get_server_id(BotParam * param)
   return ret;
 }
 
-int bot_param_client_get_seqno(BotParam * param)
+int bot_param_get_seqno(BotParam * param)
 {
   g_mutex_lock(param->lock);
   int ret = param->sequence_number;
@@ -1364,7 +1364,7 @@ static BotParam *global_param = NULL;
 static GStaticMutex bot_param_global_mutex = G_STATIC_MUTEX_INIT;
 
 BotParam*
-bot_param_client_get_global(lcm_t * lcm, int keep_updated)
+bot_param_get_global(lcm_t * lcm, int keep_updated)
 {
   g_static_mutex_lock(&bot_param_global_mutex);
 

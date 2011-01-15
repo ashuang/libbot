@@ -30,8 +30,8 @@ int main(int argc, char ** argv)
   BotParam * param = bot_param_new_from_server(lcm, 0);
   bot_param_set_t msg;
   msg.utime = _timestamp_now();
-  msg.sequence_number = bot_param_client_get_seqno(param);
-  msg.server_id = bot_param_client_get_server_id(param);
+  msg.sequence_number = bot_param_get_seqno(param);
+  msg.server_id = bot_param_get_server_id(param);
   msg.key = argv[1];
   msg.value = argv[2];
   bot_param_set_t_publish(lcm, PARAM_SET_CHANNEL, &msg);
