@@ -7,4 +7,4 @@ add_executable(coord-frames-test coord_frames_test.c)
 pods_use_pkg_config_packages(coord-frames-test bot2-coord-frames)
 
 # make executable public
-pods_install_executables(coord-frames-test)
+#pods_install_executables(coord-frames-test)
