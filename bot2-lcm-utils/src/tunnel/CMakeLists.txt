@@ -15,6 +15,7 @@ add_executable(bot-lcm-tunnel
     lcm_tunnel_params_t.c
     lcm_tunnel_sub_msg_t.c
     lcm_tunnel_udp_msg_t.c
+    lcm_tunnel_disconnect_msg_t.c
     ssocket.c
     lcm_tunnel.cpp
     lcm_tunnel_server.cpp

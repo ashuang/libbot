@@ -11,6 +11,7 @@
 #include "lcm_tunnel_params_t.h"
 #include "lcm_tunnel_sub_msg_t.h"
 #include "lcm_tunnel_udp_msg_t.h"
+#include "lcm_tunnel_disconnect_msg_t.h"
 
 #include "ssocket.h"
 #include "introspect.h"

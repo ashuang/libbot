@@ -78,6 +78,14 @@ LcmTunnel::~LcmTunnel()
   }
 
   if (udp_fd >= 0) {
+    //send out a disconnect message
+    lcm_tunnel_disconnect_msg_t disc_msg;
+    disc_msg.utime = bot_timestamp_now();
+    int msg_sz = lcm_tunnel_disconnect_msg_t_encoded_size(&disc_msg);
+    uint8_t msg_buf[msg_sz];
+    lcm_tunnel_disconnect_msg_t_encode(msg_buf,0,msg_sz,&disc_msg);
+    send(udp_fd, msg_buf, msg_sz, 0);
+
     //close UDP socket
     close(udp_fd);
     g_io_channel_unref(udp_ioc);
@@ -292,7 +300,19 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
   }
 
   lcm_tunnel_udp_msg_t recv_udp_msg;
-  lcm_tunnel_udp_msg_t_decode(recv_buffer,0,recv_status,&recv_udp_msg);
+  int decode_ret = lcm_tunnel_udp_msg_t_decode(recv_buffer,0,recv_status,&recv_udp_msg);
+  if (decode_ret<0){
+    lcm_tunnel_disconnect_msg_t disc_msg;
+    decode_ret = lcm_tunnel_disconnect_msg_t_decode(recv_buffer,0,recv_status,&disc_msg);
+    if (decode_ret>=0){
+      fprintf(stderr,"Received a disconnect message... disconnecting!\n");
+      LcmTunnelServer::disconnectClient(self);
+    }
+    else{
+      fprintf(stderr,"Received Corrupted UDP packet!\n");
+    }
+
+  }
 
   //  printf("received: %d, %d / %d\n", recv_udp_msg.seqno, recv_udp_msg.fragment, recv_udp_msg.nfrags);
 
@@ -1146,8 +1166,12 @@ int main(int argc, char **argv)
   // periodically send an introspection packet in case network routes change
   g_timeout_add(30000, on_introspect_timer, LcmTunnelServer::introspect);
 
+
   // run
   g_main_loop_run(LcmTunnelServer::mainloop);
+
+  fprintf(stderr,"Destroying the LcmTunnelServer and Exiting\n");
+  LcmTunnelServer::destroyServer();
 
   return 0;
 }
