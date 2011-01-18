@@ -40,6 +40,15 @@
 
 static int g_draws = 0;
 
+// a structure for bookmarked viewpoints
+typedef struct _bookmark_persp bookmark_persp_t;
+struct _bookmark_persp {
+  BotViewer* viewer;
+  double eye[3];
+  double lookat[3];
+  double up[3];
+} bmtemp;
+
 enum {
     LOAD_PREFERENCES_SIGNAL,
     SAVE_PREFERENCES_SIGNAL,
@@ -53,6 +62,9 @@ struct _BotViewerPriv {
     /*< private >*/
     int64_t next_render_utime;
     int64_t render_interval_usec;
+
+    bookmark_persp_t* bookmarks;
+    int num_bookmarks;
 };
 #define BOT_VIEWER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE((o), TYPE_BOT_VIEWER, BotViewerPriv))
 
@@ -768,7 +780,10 @@ _pixel_convert_8u_bgra_to_8u_rgb(uint8_t *dest, int dstride, int dwidth,
 static gboolean
 take_screenshot (void *user_data, char *fname)
 {
+ 
     BotViewer *self = (BotViewer*) user_data;
+    BotViewHandler *vhandler = self->view_handler;
+
     int w = GTK_WIDGET (self->gl_area)->allocation.width;
     int h = GTK_WIDGET (self->gl_area)->allocation.height;
     uint8_t *bgra = (uint8_t*)malloc (w*h*4);
@@ -799,6 +814,7 @@ on_screenshot_clicked (GtkToolButton *ssbt, void *user_data)
     take_screenshot (user_data, fname);
     free (fname);
 }
+
 
 /*
 static gboolean
@@ -920,7 +936,47 @@ on_renderer_widget_expander_notify (GObject *object, GParamSpec *param_spec,
         gtk_widget_hide (renderer->widget);
 }
 
+static void on_select_bookmark_save_view(GtkMenuItem *mi, void *user)
+{
+  bookmark_persp_t *views = user;
+  BotViewer* viewer = views->viewer;
+  BotViewHandler *vhandler = viewer->view_handler;
 
+  //BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) viewer->default_view_handler;
+  //int type = dvh->projection_type;
+  //BotDefaultViewHandler *dvh = bot_default_view_handler_new(viewer);
+  //viewer->default_view_handler = &dvh->vhandler;
+  //fprintf(stderr, "%d\n", type);
+
+  //int type = viewer->default_view_handler->projection_type;
+  
+
+  //int persp =  viewer->view_handler->projection_type;
+  //double persp = bot_gl_view_get_perspectiveness(viewer->glview);
+  //fprintf(stderr, "persp: %f\n", persp);
+  
+  vhandler->get_eye_look(vhandler, views->eye, views->lookat, views->up);
+
+  fprintf(stderr, "saved viewpoint:   eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
+  fprintf(stderr, "saved viewpoint:   lookat: [%f %f %f]\n", views->lookat[0], views->lookat[1], views->lookat[2]);
+  fprintf(stderr, "saved viewpoint:   up: [%f %f %f]\n", views->up[0], views->up[1], views->up[2]);
+}
+
+
+
+static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
+{
+ 
+  bookmark_persp_t *views = user;
+  BotViewer* viewer = views->viewer;
+  BotViewHandler *vhandler = viewer->view_handler;
+
+  vhandler->set_look_at(vhandler,views->eye, views->lookat, views->up);
+
+  fprintf(stderr, "loaded viewpoint:  eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
+  fprintf(stderr, "loaded viewpoint:  lookat: [%f %f %f]\n", views->lookat[0], views->lookat[1], views->lookat[2]);
+  fprintf(stderr, "loaded viewpoint:  up:  [%f %f %f]\n", views->up[0], views->up[1], views->up[2]);
+}
 
 static void on_select_perspective_item(GtkMenuItem *mi, void *user)
 {
@@ -1049,6 +1105,8 @@ destroy_plugins (BotViewer *self)
 static void 
 make_menus(BotViewer *viewer, GtkWidget *parent)
 {
+    BotViewerPriv* priv = BOT_VIEWER_GET_PRIVATE(viewer);
+
     GtkWidget *menubar = gtk_menu_bar_new();
     viewer->menu_bar = menubar;
 
@@ -1147,6 +1205,30 @@ make_menus(BotViewer *viewer, GtkWidget *parent)
     gtk_menu_append(GTK_MENU(viewer->view_menu), orthographic_item);
     g_signal_connect(G_OBJECT(orthographic_item), "activate", G_CALLBACK(on_select_orthographic_item), viewer);
 
+    //add saved viewpoints (bookmarks)
+    GtkWidget *bookmarks_menuitem = gtk_menu_item_new_with_mnemonic("_Bookmarks");
+    gtk_menu_bar_append(GTK_MENU_BAR(viewer->menu_bar), bookmarks_menuitem);
+
+    viewer->bookmarks_menu = gtk_menu_new();
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(bookmarks_menuitem), viewer->bookmarks_menu);
+
+    // create labels for loading and saving bookmarked views
+    for(int i=0; i<priv->num_bookmarks; i++) {
+      char bmlabel[17];
+      sprintf(bmlabel, "Save Viewpoint %i", i);
+      GtkWidget *save_view_item = gtk_menu_item_new_with_label(bmlabel);
+      gtk_menu_append(GTK_MENU(viewer->bookmarks_menu), save_view_item);
+      g_signal_connect(G_OBJECT(save_view_item), "activate", G_CALLBACK(on_select_bookmark_save_view), &priv->bookmarks[i]);
+    }
+    
+    for(int i=0; i<priv->num_bookmarks; i++) {
+      char bmlabel[17];
+      sprintf(bmlabel, "Load Viewpoint %i", i);
+      GtkWidget *load_view_item = gtk_menu_item_new_with_label(bmlabel);
+      gtk_menu_append(GTK_MENU(viewer->bookmarks_menu), load_view_item);
+      g_signal_connect(G_OBJECT(load_view_item), "activate", G_CALLBACK(on_select_bookmark_load_view), &priv->bookmarks[i]);
+    }
+
     gtk_widget_show_all(view_menuitem);
 
 
@@ -1220,8 +1302,12 @@ G_DEFINE_TYPE (BotViewer, bot_viewer, G_TYPE_OBJECT);
 static void
 bot_viewer_finalize (GObject *obj)
 {
-    dbg ("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
     BotViewer *self = BOT_VIEWER (obj);
+    dbg ("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
+
+    BotViewerPriv* priv = BOT_VIEWER_GET_PRIVATE(self);
+    free(priv->bookmarks);
+
     gtk_widget_destroy (GTK_WIDGET (self->window));
 
     G_OBJECT_CLASS (bot_viewer_parent_class)->finalize(obj);
@@ -1288,6 +1374,8 @@ bot_viewer_class_init (BotViewerClass *klass)
 static void
 bot_viewer_init (BotViewer *viewer)
 {
+    BotViewerPriv* priv = BOT_VIEWER_GET_PRIVATE(viewer);
+
     viewer->renderers = g_ptr_array_new();
     viewer->renderers_sorted = g_ptr_array_new();
     viewer->renderers_sorted_with_controls = g_ptr_array_new();
@@ -1299,6 +1387,13 @@ bot_viewer_init (BotViewer *viewer)
     viewer->backgroundColor[1] = 1;
     viewer->backgroundColor[2] = 1;
     viewer->backgroundColor[3] = 1;
+
+    // allocate memory for saved bookmarks
+    priv->num_bookmarks = 6;
+    priv->bookmarks = (bookmark_persp_t*) calloc(priv->num_bookmarks, sizeof(bookmark_persp_t));
+    for(int bk_ind=0; bk_ind<priv->num_bookmarks; bk_ind++) {
+	priv->bookmarks[bk_ind].viewer = viewer;
+    }
 
     viewer->prettier_flag = (getenv("BOT_VIEWER_PRETTIER") != NULL && 
                              atoi(getenv("BOT_VIEWER_PRETTIER"))>0);;
