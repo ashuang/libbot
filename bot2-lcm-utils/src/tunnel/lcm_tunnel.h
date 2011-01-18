@@ -175,8 +175,12 @@ private:
   uint32_t fragment_buf_offset;
   int message_complete;
 
+  //for monitoring the UDP link status
+  void checkUDPSendStatus(int send_status);
   int64_t errorStartTime;
   int64_t lastErrorPrintTime;
+  int numSuccessful;
+
 
   //forward error correction variables
   ldpc_dec_wrapper * ldpc_dec;

@@ -173,7 +173,7 @@ int ldpc_dec_wrapper::processPacket(uint8_t * pktBuf, uint16_t ESI)
 int ldpc_wrapper::getObject(uint8_t * buf)
 {
   if (!(packetNum >= nbDATAPkts && MyFecScheme->IsDecodingComplete((void**) data))) {
-    return 0;
+    return -1;
   }
   else {
     for (int i = 0; i < nbDATA; i++) {
@@ -182,7 +182,7 @@ int ldpc_wrapper::getObject(uint8_t * buf)
         numB = symbolSize;
       memcpy(buf + i * symbolSize, data[i], numB);
     }
-    return 1;
+    return 0;
   }
 
 }

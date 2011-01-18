@@ -28,7 +28,7 @@ LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
   channel_sz(65536), channel((char*)calloc(65536, sizeof(char))),
   recFlags_sz(1024), recFlags((char*)calloc(1024, sizeof(char))),
   ldpc_dec(NULL), udp_fd(-1), server_udp_port(-1), udp_send_seqno(0),
-  stopSendThread(false), bytesInQueue(0),lastErrorPrintTime(-1),errorStartTime(-1)
+  stopSendThread(false), bytesInQueue(0),cur_seqno(0),errorStartTime(-1),numSuccessful(0),lastErrorPrintTime(-1)
 {
   //allocate and initialize things
 
@@ -397,7 +397,7 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
       int dec_done = self->ldpc_dec->processPacket((uint8_t *) recv_buf + recv_buf_offset, hdr->fragment);
       if (dec_done != 0) {
         if (dec_done == 1) {
-          assert(self->ldpc_dec->getObject((uint8_t*) self->buf));
+          check_ret(self->ldpc_dec->getObject((uint8_t*) self->buf));
           //publish all the lcm messages in the buffer
           self->publishLcmMessagesInBuf(hdr->payload_size);
         }
@@ -699,6 +699,32 @@ void LcmTunnel::on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, 
   self->send_to_remote(rbuf, channel);
 }
 
+void LcmTunnel::checkUDPSendStatus(int send_status){
+  int64_t now = bot_timestamp_now();
+  if (send_status < 0) {
+    if (errorStartTime<0)
+      errorStartTime = now;
+    if (now - lastErrorPrintTime>1e6){
+      fprintf(stderr,"errno %d, send_status %d :", errno, send_status);
+      perror("error sending UDP Data: ");
+      errno = 0;
+      lastErrorPrintTime = now;
+    }
+    numSuccessful = 0;
+  }
+  else if(lastErrorPrintTime>0){
+    if (numSuccessful > 3) {
+      fprintf(stderr, "Connection may be back up after %fsec send_status=%d numSuccessful=%d\n", (double) (now - errorStartTime)
+          * 1e-6, send_status,numSuccessful);
+      perror("perror: ");
+      lastErrorPrintTime = -1;
+      errorStartTime = -1;
+      errno = 0;
+    }
+    numSuccessful++;
+  }
+}
+
 void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint32_t bytesInQueue)
 {
   if (udp_fd >= 0) {
@@ -781,23 +807,7 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
           //          printf("sending: %d, %d / %d\n", hdr->seqno, hdr->fragment, hdr->nfrags);
           int send_status = send(udp_fd, packetBuf, packet_buf_offset, 0);
           //          fprintf(stderr,"sent packet\n");
-          if (send_status < 0) {
-            int64_t now = bot_timestamp_now();
-            if (errorStartTime<0)
-              errorStartTime = now;
-            if (now - lastErrorPrintTime>1e6){
-              fprintf(stderr,"errno %d :", errno);
-              perror("error sending UDP Data: ");
-              lastErrorPrintTime = now;
-            }
-          }
-          else if(lastErrorPrintTime>0){
-            fprintf(stderr,"Connection is back up after %fsec send_status=%d\n",
-                (double)(bot_timestamp_now() - errorStartTime)*1e-6,send_status);
-            lastErrorPrintTime = -1;
-            errorStartTime = -1;
-            errno = 0;
-          }
+          checkUDPSendStatus(send_status);
         }
       }
     }
@@ -813,33 +823,14 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
 
       //      printf("sending: %d, %d / %d\n", hdr->seqno, hdr->fragment, hdr->nfrags);
 
-      while (true) {
-        int enc_done = ldpc_enc->getNextPacket(packetBuf + packetBufOffset, &hdr->fragment);
+      int enc_done=0;
+      while (!enc_done) {
+        enc_done = ldpc_enc->getNextPacket(packetBuf + packetBufOffset, &hdr->fragment);
         int send_status = send(udp_fd, packetBuf, packetSize, 0);
-        //        fprintf(stderr,"sent packet\n");
-        if (send_status < 0) {
-          int64_t now = bot_timestamp_now();
-          if (errorStartTime<0)
-            errorStartTime = now;
-          if (now - lastErrorPrintTime>1e6){
-            fprintf(stderr,"errno %d :", errno);
-            perror("error sending UDP Data: ");
-            lastErrorPrintTime = now;
-          }
-        }
-        else if(lastErrorPrintTime>0){
-          fprintf(stderr,"Connection is back up after %fsec send_status=%d\n",
-                          (double)(bot_timestamp_now() - errorStartTime)*1e-6,send_status);
-          lastErrorPrintTime = -1;
-          errorStartTime = -1;
-          errno = 0;
-        }
-        if (enc_done) {
-          //          printf("finished encoding and sending packet %d for channel: %s\n",hdr->seqno,channel);
-          delete ldpc_enc;
-          break;
-        }
+        checkUDPSendStatus(send_status);
       }
+      //          printf("finished encoding and sending packet %d for channel: %s\n",hdr->seqno,channel);
+      delete ldpc_enc;
     }
     free(msgBuf);
   }
