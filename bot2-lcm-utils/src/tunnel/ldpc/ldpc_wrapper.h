@@ -64,7 +64,7 @@ class ldpc_enc_wrapper: public ldpc_wrapper {
 public:
   //encoder stuff:
   ldpc_enc_wrapper(uint8_t * data_to_send, int objSize, int packetSize, double fec_rate); //initializer for encoder
-  int getNextPacket(uint8_t * pktBuf, uint16_t * ESI);
+  int getNextPacket(uint8_t * pktBuf, int16_t * ESI);
   int encodeData(uint8_t * data_to_send);
 };
 
@@ -72,6 +72,6 @@ class ldpc_dec_wrapper: public ldpc_wrapper {
 public:
   //decoder stuff:
   ldpc_dec_wrapper(int objSize, int packetSize, double fec_rate); //initializer for decoder
-  int processPacket(uint8_t * newPkt, uint16_t ESI);
+  int processPacket(uint8_t * newPkt, int16_t ESI);
 };
 #endif /* LDPC_WRAPPER_H_ */

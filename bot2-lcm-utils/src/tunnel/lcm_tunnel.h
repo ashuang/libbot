@@ -9,13 +9,11 @@
 
 #include "ldpc/ldpc_wrapper.h"
 #include "lcm_tunnel_params_t.h"
+#include "lcm_tunnel_sub_msg_t.h"
+#include "lcm_tunnel_udp_msg_t.h"
 
 #include "ssocket.h"
 #include "introspect.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define DEFAULT_PORT 6141
 
@@ -31,56 +29,42 @@ extern "C" {
 
 #define MAX_SEND_BUFFER_SIZE 33554432 //2^25 ~33MB
 
-#define MAX_NUM_FRAGMENTS 65535  //since we're using a uint16_t for the fragment number
+#define MAX_NUM_FRAGMENTS 32768  //since we're using a int16_t for the fragment number
   //and wrap around explicitly at this value
-#define SEQNO_WRAP_VAL 65000
+#define SEQNO_WRAP_VAL 30000
   //at wrap around, the prev once should be at least this much bigger
-#define SEQNO_WRAP_GAP 50000
+#define SEQNO_WRAP_GAP 5000
 
-  typedef struct {
-    uint16_t seqno;
-    uint16_t fragment;
-    uint16_t nfrags;
-    uint32_t payload_size;
-  }__attribute__ ((packed)) tunnel_udp_header_t;
+static inline int getNumFragments(int32_t msgSize){
+  return (int) ceil((float) msgSize / MAX_PAYLOAD_BYTES_PER_FRAGMENT);
+}
 
-  //header for lcm subMessages
-  typedef struct {
-    uint8_t channel_size;
-    uint32_t data_size;
-  }__attribute__ ((packed)) tunnel_lcm_header_t;
-
-
-  typedef struct {
+typedef struct {
     uint16_t port;
     int verbose;
     char lcm_url[1024];
     int startedAsClient;
-  } tunnel_server_params_t;
-
-#ifdef __cplusplus
-}
-#endif
+} tunnel_server_params_t;
 
 
 class  TunnelLcmMessage {
 public:
   TunnelLcmMessage(const lcm_recv_buf_t *rbuf, const char *chan){
-    channel= strdup(chan);
+    sub_msg = (lcm_tunnel_sub_msg_t *) malloc(sizeof(lcm_tunnel_sub_msg_t));
+    sub_msg->channel= strdup(chan);
     recv_utime = rbuf->recv_utime;
-    data_size = rbuf->data_size;
-    data = malloc(data_size);
-    memcpy(data,rbuf->data,data_size);
+    sub_msg->data_size = rbuf->data_size;
+    sub_msg->data = (uint8_t *)malloc(sub_msg->data_size);
+    memcpy(sub_msg->data,rbuf->data,sub_msg->data_size);
+    encoded_size = lcm_tunnel_sub_msg_t_encoded_size(sub_msg);
   }
   ~TunnelLcmMessage(){
-    free(channel);
-    free(data);
+    lcm_tunnel_sub_msg_t_destroy(sub_msg);
   }
 
-  char * channel;
-  uint32_t data_size;
-  void *data;
+  lcm_tunnel_sub_msg_t * sub_msg;
   int64_t recv_utime;
+  int encoded_size;
 } ;
 
 

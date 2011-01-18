@@ -63,7 +63,7 @@ int main(int argc, char * argv[])
     bool decoded = false;
     while (1) {
       sentCount++;
-      uint16_t ESI;
+      int16_t ESI;
       int enc_done = ldpc_enc->getNextPacket(pkt,&ESI);
       //      if (enc_done) {
       //        printf("sentlast packet\n");

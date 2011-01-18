@@ -133,7 +133,7 @@ ldpc_enc_wrapper::ldpc_enc_wrapper(uint8_t * data_to_send, int objSize_, int pac
   encodeData(data_to_send);
 }
 
-int ldpc_enc_wrapper::getNextPacket(uint8_t * pktBuf, uint16_t * ESI)
+int ldpc_enc_wrapper::getNextPacket(uint8_t * pktBuf, int16_t * ESI)
 {
   if (packetNum >= nbPKT) {
     printf("ERROR: can't generate more packets\n");
@@ -142,7 +142,7 @@ int ldpc_enc_wrapper::getNextPacket(uint8_t * pktBuf, uint16_t * ESI)
 
   int ESI_;
   MyFecScheme->BuildPkt(packetNum, (void**) &pktBuf, (void**) data, &ESI_);
-  *ESI = (uint16_t) ESI_;
+  *ESI = (int16_t) ESI_;
   //  printf("PktIdx %i mapped to first symbol ESI %i\n", packetNum, ESI);
 
   packetNum++;
@@ -154,7 +154,7 @@ ldpc_dec_wrapper::ldpc_dec_wrapper(int objSize_, int packetSize, double fec_rate
   init(objSize_, packetSize, fec_rate, FLAG_DECODER);
 }
 
-int ldpc_dec_wrapper::processPacket(uint8_t * pktBuf, uint16_t ESI)
+int ldpc_dec_wrapper::processPacket(uint8_t * pktBuf, int16_t ESI)
 {
   MyFecScheme->DecodingStepWithPkt((void**) data, pktBuf,(uint32_t) ESI, true);
   /* done, incr the step counter now */
