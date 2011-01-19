@@ -250,6 +250,7 @@ for e in log:
     if ((checkIgnore and channelsToIgnore.match(e.channel) and len(channelsToIgnore.match(e.channel).group())==len(e.channel)) \
          or (not channelsToProcess.match(e.channel))):
         if verbose:
+            statusMsg = deleteStatusMsg(statusMsg)
             sys.stderr.write("ignoring channel %s\n" % e.channel)
         ignored_channels.append(e.channel)
         continue
@@ -258,13 +259,15 @@ for e in log:
     lcmtype = type_db.get(packed_fingerprint, None)
     if not lcmtype:
         if verbose:
-            sys.stderr.write("ignoring channel %s\n" % e.channel)
+            statusMsg = deleteStatusMsg(statusMsg)
+            sys.stderr.write("ignoring channel %s -not a known LCM type\n" % e.channel)
         ignored_channels.append(e.channel)
         continue
     try:
         msg = lcmtype.decode(e.data)
     except:
-        sys.stderr.write("error: couldn't decode msg on channel %s" % e.channel)
+        statusMsg = deleteStatusMsg(statusMsg)
+        sys.stderr.write("error: couldn't decode msg on channel %s\n" % e.channel)
         continue
     
     msgCount = msgCount + 1

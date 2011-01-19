@@ -22,7 +22,7 @@ def find_lcmtypes():
             for fname in files:
                 if not fname.endswith(".py"):
                     continue
-
+                
                 mod_basename = fname[:-3]
                 valid_modname = True
                 for c in mod_basename:
@@ -31,7 +31,6 @@ def find_lcmtypes():
                         break
                 if mod_basename[0] not in alpha_chars:
                     valid_modname = False
-                    break
                 if not valid_modname:
                     continue
 
@@ -41,7 +40,7 @@ def find_lcmtypes():
                 contents = open(full_fname, "r").read()
                 if not regex.search(contents):
                     continue
-
+                
                 # More thorough check to see if the file corresponds to a
                 # LCM type module genereated by lcm-gen.  Parse the 
                 # file using pyclbr, and check if it contains a class
@@ -54,6 +53,7 @@ def find_lcmtypes():
                     klass = pyclbr.readmodule(modname)[mod_basename]
                     if "decode" in klass.methods and \
                        "_get_packed_fingerprint" in klass.methods:
+
                         lcmtypes.append(modname)
                 except ImportError:
                     continue
@@ -85,12 +85,16 @@ def make_lcmtype_dictionary():
     result = {}
 
     for lcmtype_name in lcmtypes:
-        __import__(lcmtype_name)
-        mod = sys.modules[lcmtype_name]
-        type_basename = lcmtype_name.split(".")[-1]
-        klass = getattr(mod, type_basename)
-        fingerprint = klass._get_packed_fingerprint()
-        result[fingerprint] = klass
+        try:
+            __import__(lcmtype_name)
+            mod = sys.modules[lcmtype_name]
+            type_basename = lcmtype_name.split(".")[-1]
+            klass = getattr(mod, type_basename)
+            fingerprint = klass._get_packed_fingerprint()
+            result[fingerprint] = klass
+            #print "importing %s" % lcmtype_name
+        except:
+            #print "Error importing %s" % lcmtype_name
     return result
  
 if __name__ == "__main__":
