@@ -94,7 +94,7 @@ def make_lcmtype_dictionary():
             result[fingerprint] = klass
             #print "importing %s" % lcmtype_name
         except:
-            #print "Error importing %s" % lcmtype_name
+            print "Error importing %s" % lcmtype_name
     return result
  
 if __name__ == "__main__":
