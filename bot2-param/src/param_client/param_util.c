@@ -196,12 +196,12 @@ int bot_param_get_quat(BotParam *bot_param, const char *name, double quat[4])
   return -1;
 }
 
-int bot_param_get_trans_vec(BotParam *bot_param, const char *name, double pos[3])
+int bot_param_get_translation(BotParam *bot_param, const char *name, double translation[3])
 {
   char key[256];
-  sprintf(key, "%s.trans_vec", name);
+  sprintf(key, "%s.translation", name);
   if (bot_param_has_key(bot_param, key)) {
-    int sz = bot_param_get_double_array(bot_param, key, pos, 3);
+    int sz = bot_param_get_double_array(bot_param, key, translation, 3);
     assert(sz == 3);
     return 0;
   }
@@ -214,7 +214,7 @@ int bot_param_get_trans(BotParam *bot_param, const char *name, BotTrans * trans)
   if (bot_param_get_quat(bot_param, name, trans->rot_quat))
     return -1;
 
-  if (bot_param_get_trans_vec(bot_param, name, trans->trans_vec))
+  if (bot_param_get_translation(bot_param, name, trans->trans_vec))
     return -1;
 
   return 0;

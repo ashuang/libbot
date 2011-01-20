@@ -10,7 +10,7 @@ extern "C" {
 
   /* ================ general ============== */
 
-  int bot_param_get_trans_vec(BotParam *bot_param, const char *name, double pos[3]);
+  int bot_param_get_translation(BotParam *bot_param, const char *name, double translation[3]);
   int bot_param_get_quat(BotParam * bot_param, const char *name, double quat[4]);
   int bot_param_get_trans(BotParam * bot_param, const char *name, BotTrans *trans);
   int bot_param_get_matrix_4_4(BotParam * bot_param, const char *name, double m[16]);

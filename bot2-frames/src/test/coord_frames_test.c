@@ -7,18 +7,18 @@
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
-#include <bot_coord_frames/coord_frames.h>
+#include <bot_frames/coord_frames.h>
 
 int main(int argc, char ** argv)
 {
 
   lcm_t * lcm = lcm_create(NULL);
   BotParam * param = bot_param_new_from_server(lcm, 0);
-  BotCoordFrames * bcf = bot_coord_frames_get_global(lcm, param);
+  BotFrames * bcf = bot_frames_get_global(lcm, param);
 
   for (int i = 0; i < 100; i++) {
     BotTrans t;
-    bot_coord_frames_get_trans(bcf, "laser", "local", &t);
+    bot_frames_get_trans(bcf, "laser", "local", &t);
     fprintf(stderr, "laser->local= (%f,%f,%f) - (%f,%f,%f,%f)\n", t.trans_vec[0], t.trans_vec[1], t.trans_vec[2],
         t.rot_quat[0], t.rot_quat[1], t.rot_quat[2], t.rot_quat[3]);
     bot_core_isometry_t msg;
