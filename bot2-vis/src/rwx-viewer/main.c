@@ -20,14 +20,20 @@ int main(int argc, char *argv[])
     }
 
     const char *rwx_fname = argv[1];
-
+    
     BotViewer* viewer = bot_viewer_new("RWX Viewer");
+
+    char *fname = g_build_filename(g_get_user_config_dir(), ".rwx-viewerrc", NULL);
+    
+    bot_viewer_load_preferences(viewer, fname);
 
     // setup renderers
     bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
     setup_renderer_rwx(viewer, 1, rwx_fname);
 
     gtk_main();
+
+    bot_viewer_save_preferences(viewer, fname);
 
     bot_viewer_unref(viewer);
 }
