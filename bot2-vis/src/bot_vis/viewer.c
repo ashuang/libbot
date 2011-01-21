@@ -272,12 +272,14 @@ bot_viewer_load_preferences (BotViewer *viewer, const char *fname)
       double bmlist[9];
       double *pointtolist;
       pointtolist = bmlist;
-      pointtolist =  g_key_file_get_double_list(preferences, "__libviewer_bookmarks", str_key, (gsize*) &lngth, &err);
+      if(g_key_file_has_key(preferences, "__libviewer_bookmarks", str_key, NULL)) {
+	 pointtolist =  g_key_file_get_double_list(preferences, "__libviewer_bookmarks", str_key, (gsize*) &lngth, &err);
 
-      for (int i=0; i<3; i++) {
-	priv->bookmarks[bm_indx].eye[i] = *(pointtolist+i);   //bmlist[i]
-	priv->bookmarks[bm_indx].lookat[i] = *(pointtolist+3+i);
-	priv->bookmarks[bm_indx].up[i] = *(pointtolist+6+i);
+	 for (int i=0; i<3; i++) {
+	   priv->bookmarks[bm_indx].eye[i] = *(pointtolist+i);   //bmlist[i]
+	   priv->bookmarks[bm_indx].lookat[i] = *(pointtolist+3+i);
+	   priv->bookmarks[bm_indx].up[i] = *(pointtolist+6+i);
+	 }
       }
     }
    
@@ -311,6 +313,7 @@ bot_viewer_save_preferences (BotViewer *viewer, const char *fname)
     for (int bm_indx=0; bm_indx < priv->num_bookmarks; bm_indx++) { 
       char str_key[12]; 
       sprintf(str_key, "bookmark_%d", bm_indx);
+      //g_strdup_printf(str_key, "bookmark_%d", bm_indx);
       double bmlist[9]; 
       for(int i=0; i<3; i++) {
 	bmlist[i] = priv->bookmarks[bm_indx].eye[i];
@@ -318,7 +321,8 @@ bot_viewer_save_preferences (BotViewer *viewer, const char *fname)
 	bmlist[i+6] = priv->bookmarks[bm_indx].up[i];
 	}
       g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, 9);
-    
+      
+      //g_free(&str_key);
       }
 
     FILE *fp = fopen (fname, "w");
