@@ -65,8 +65,8 @@ Requirements
     
     Additionally, you'll need to install LCM from http://lcm.googlecode.com
 
-Installation
-============
+(Local) Installation
+====================
   libbot2 adheres to the Pods core policy, and makes use of the Pods build tools. 
   For more information about Pods, see: https://sourceforge.net/p/pods/
 
