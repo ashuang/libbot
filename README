@@ -1,4 +1,4 @@
-This is the code base for libbot2
+This is the code base for libbot2. 
 
 Overview
 ========
@@ -67,6 +67,8 @@ Requirements
 
 Installation
 ============
+  libbot2 adheres to the Pods core policy, and makes use of the Pods build tools. 
+  For more information about Pods, see: https://sourceforge.net/p/pods/
 
   You can install libbot2 to your system by running:
 
@@ -76,6 +78,10 @@ Installation
   inside the source directory.  To do this, run:
 
   $ make
+  
+  In this case, the executables, headers, libraries etc. will be installed according to
+  the Pods core policy. If no other "build" directory is found, it will default to:
+  libbot2/build/  
 
 Uninstallation
 ==============
