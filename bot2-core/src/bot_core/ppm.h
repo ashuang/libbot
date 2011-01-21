@@ -24,7 +24,13 @@ extern "C" {
 int bot_ppm_read (FILE *fp, uint8_t **pixels, 
         int *width, int *height, int *rowstride);
 
+int bot_ppm_read_fname(const char* fname, uint8_t** pixels,
+        int* width, int* height, int* rowstride);
+
 int bot_ppm_write (FILE *fp, const uint8_t *pixels,
+        int width, int height, int rowstride);
+
+int bot_ppm_write_fname(const char* fname, const uint8_t* pixels,
         int width, int height, int rowstride);
 
 int bot_ppm_write_bottom_up (FILE *fp, uint8_t *pixels,

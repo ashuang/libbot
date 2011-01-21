@@ -89,6 +89,18 @@ int bot_ppm_read (FILE *fp, uint8_t **pixels,
     return 0;
 }
 
+int 
+bot_ppm_read_fname(const char* fname, uint8_t** pixels,
+        int* width, int* height, int* rowstride)
+{
+    FILE *fp = fopen(fname, "rb");
+    if(!fp)
+        return -1;
+    int result = bot_ppm_read(fp, pixels, width, height, rowstride);
+    fclose(fp);
+    return result;
+}
+
 int bot_ppm_write (FILE *fp, const uint8_t *pixels,
         int width, int height, 
         int rowstride)
@@ -100,6 +112,18 @@ int bot_ppm_write (FILE *fp, const uint8_t *pixels,
         if (1 != count) return -1;
     }
     return 0;
+}
+
+int 
+bot_ppm_write_fname(const char* fname, const uint8_t* pixels,
+        int width, int height, int rowstride)
+{
+    FILE *fp = fopen(fname, "wb");
+    if (!fp)
+        return -1;
+    int result = bot_ppm_write(fp, pixels, width, height, rowstride);
+    fclose(fp);
+    return result;
 }
 
 int bot_ppm_write_bottom_up (FILE *fp, uint8_t *pixels,
