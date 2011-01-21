@@ -308,22 +308,20 @@ bot_viewer_save_preferences (BotViewer *viewer, const char *fname)
                     renderer->name, renderer->expanded);
 	}
     }
- 
+
     // save bookmarks to prefs
+    char *str_key;
     for (int bm_indx=0; bm_indx < priv->num_bookmarks; bm_indx++) { 
-      char str_key[12]; 
-      sprintf(str_key, "bookmark_%d", bm_indx);
-      //g_strdup_printf(str_key, "bookmark_%d", bm_indx);
+      str_key = g_strdup_printf("bookmark_%d", bm_indx);
       double bmlist[9]; 
       for(int i=0; i<3; i++) {
 	bmlist[i] = priv->bookmarks[bm_indx].eye[i];
         bmlist[i+3] = priv->bookmarks[bm_indx].lookat[i];
 	bmlist[i+6] = priv->bookmarks[bm_indx].up[i];
-	}
-      g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, 9);
-      
-      //g_free(&str_key);
       }
+      g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, 9);
+    }
+    g_free(str_key);
 
     FILE *fp = fopen (fname, "w");
     if (!fp) {
@@ -997,6 +995,10 @@ static void on_select_bookmark_save_view(GtkMenuItem *mi, void *user)
   //double persp = bot_gl_view_get_perspectiveness(viewer->glview);
   //fprintf(stderr, "persp: %f\n", persp);
   
+  //int *view_type = &vhandler->get_projection_type(vhandler);
+  //int p_type = vhandler->get_projection_type;
+  //fprintf(stderr, "%d", p_type);
+
   vhandler->get_eye_look(vhandler, views->eye, views->lookat, views->up);
 
   //fprintf(stderr, "saved viewpoint:   eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
@@ -1012,6 +1014,8 @@ static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
   bookmark_persp_t *views = user;
   BotViewer* viewer = views->viewer;
   BotViewHandler *vhandler = viewer->view_handler;
+
+  //TODO: grab view type
 
   vhandler->set_look_at(vhandler,views->eye, views->lookat, views->up);
 
@@ -1248,21 +1252,21 @@ make_menus(BotViewer *viewer, GtkWidget *parent)
     g_signal_connect(G_OBJECT(orthographic_item), "activate", G_CALLBACK(on_select_orthographic_item), viewer);
 
     // create labels for loading and saving bookmarked views
+    char *bmlabel;
     for(int i=0; i<priv->num_bookmarks; i++) {
-      char bmlabel[17];
-      sprintf(bmlabel, "Save Viewpoint %i", i);
+      bmlabel = g_strdup_printf("Save Viewpoint %d", i);
       GtkWidget *save_view_item = gtk_menu_item_new_with_label(bmlabel);
       gtk_menu_append(GTK_MENU(viewer->view_menu), save_view_item);
       g_signal_connect(G_OBJECT(save_view_item), "activate", G_CALLBACK(on_select_bookmark_save_view), &priv->bookmarks[i]);
     }
     
     for(int i=0; i<priv->num_bookmarks; i++) {
-      char bmlabel[17];
-      sprintf(bmlabel, "Load Viewpoint %i", i);
+      bmlabel = g_strdup_printf("Load Viewpoint %d", i);
       GtkWidget *load_view_item = gtk_menu_item_new_with_label(bmlabel);
       gtk_menu_append(GTK_MENU(viewer->view_menu), load_view_item);
       g_signal_connect(G_OBJECT(load_view_item), "activate", G_CALLBACK(on_select_bookmark_load_view), &priv->bookmarks[i]);
     }
+    g_free(bmlabel);
 
     gtk_widget_show_all(view_menuitem);
 
