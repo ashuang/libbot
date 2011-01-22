@@ -79,7 +79,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     sprintf(param_key, "coordinate_frames.%s", frame_name);
     int num_sub_keys = bot_param_get_num_subkeys(self->config, param_key);
     if (num_sub_keys == 0) {
-      printf("%s is a root frame\n", frame_name);
+      //      printf("%s is a root frame\n", frame_name);
       continue;
     }
     //setup the link parameters if this isn't a root frame
@@ -121,9 +121,9 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     BotCTransLink *link = bot_ctrans_link_frames(self->ctrans, frame_name, relative_to, history + 1);
     bot_ctrans_link_update(link, &init_trans, 0);
 
-    BotTrans t = init_trans;
-    fprintf(stderr, "%s->%s= (%f,%f,%f) - (%f,%f,%f,%f)\n", frame_name, relative_to, t.trans_vec[0], t.trans_vec[1],
-        t.trans_vec[2], t.rot_quat[0], t.rot_quat[1], t.rot_quat[2], t.rot_quat[3]);
+    //    BotTrans t = init_trans;
+    //    fprintf(stderr, "%s->%s= (%f,%f,%f) - (%f,%f,%f,%f)\n", frame_name, relative_to, t.trans_vec[0], t.trans_vec[1],
+    //        t.trans_vec[2], t.rot_quat[0], t.rot_quat[1], t.rot_quat[2], t.rot_quat[3]);
 
     //add the frame to the hash table
     frame_handle_t * frame_handle = (frame_handle_t *) g_hash_table_lookup(self->frame_handles_by_name, frame_name);
