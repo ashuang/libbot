@@ -38,9 +38,12 @@ struct BotViewerMode
     GtkMenuItem  *menu_item;
 };
 
-#define FOLLOW_POS 1
-#define FOLLOW_YAW 2
-#define FOLLOW_ORIENTATION 4
+/*
+ * follow_mode bit flags
+ */
+#define BOT_FOLLOW_POS 1
+#define BOT_FOLLOW_YAW 2
+#define BOT_FOLLOW_ORIENTATION 4
 
 /**
  * BotViewHandler:
