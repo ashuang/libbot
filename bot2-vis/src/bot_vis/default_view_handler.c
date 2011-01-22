@@ -428,7 +428,7 @@ static void update_follow_target(BotViewHandler *vhandler, const double pos[3], 
 {
     BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
 
-    if (dvh->have_last && (vhandler->follow_mode & FOLLOW_YAW)) {
+    if (dvh->have_last && (vhandler->follow_mode & BOT_FOLLOW_YAW)) {
 
         // compute the vectors from the vehicle to the lookat and eye
         // point and then project them given the new position of the car/
@@ -458,9 +458,9 @@ static void update_follow_target(BotViewHandler *vhandler, const double pos[3], 
         bot_vector_subtract_3d(pos, v2eye, dvh->eye);
         bot_quat_rotate (q, dvh->up);
 
-        // the above algorithm "builds in" a FOLLOW_POS behavior. 
+        // the above algorithm "builds in" a BOT_FOLLOW_POS behavior.
 
-    } else if (dvh->have_last && (vhandler->follow_mode & FOLLOW_POS)) {
+    } else if (dvh->have_last && (vhandler->follow_mode & BOT_FOLLOW_POS)) {
 
         double dpos[3];
         for (int i = 0; i < 3; i++)
