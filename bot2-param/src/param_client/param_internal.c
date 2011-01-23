@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <bot_core/lcm_util.h>
 #include "param_client.h"
+#include "param_internal.h"
 #include "misc_utils.h"
 #include <lcmtypes/bot2_param.h>
 #include <glib.h>
@@ -671,14 +672,14 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
   BotParam * param = _bot_param_new();
 
   //TODO: is there a way to be sure nothing else is subscribed???
-  bot_param_update_t_subscription_t * sub = bot_param_update_t_subscribe(lcm, PARAM_UPDATE_CHANNEL, _on_param_update,
+  bot_param_update_t_subscription_t * sub = bot_param_update_t_subscribe(lcm, BOT_PARAM_UPDATE_CHANNEL, _on_param_update,
       (void *) param);
   int64_t utime_start = _timestamp_now();
   int64_t last_print_utime = -1;
   while ((_timestamp_now() - utime_start) < 5E6) {
     bot_param_request_t req;
     req.utime = _timestamp_now();
-    bot_param_request_t_publish(lcm, PARAM_REQUEST_CHANNEL, &req);
+    bot_param_request_t_publish(lcm, BOT_PARAM_REQUEST_CHANNEL, &req);
     lcm_sleep(lcm, .25);
     if (param->root->children != NULL)
       break;

@@ -54,7 +54,7 @@ void publish_params(param_server_t *self)
   }
   fclose(tmpF);
 
-  bot_param_update_t_publish(self->lcm, PARAM_UPDATE_CHANNEL, update_msg);
+  bot_param_update_t_publish(self->lcm, BOT_PARAM_UPDATE_CHANNEL, update_msg);
   bot_param_update_t_destroy(update_msg);
 
   fprintf(stderr, ".");
@@ -146,9 +146,9 @@ int main(int argc, char ** argv)
   self->params = bot_param_new_from_file(argv[1]);
   fprintf(stderr, "Loaded params from %s\n", argv[1]);
 
-  bot_param_update_t_subscribe(self->lcm, PARAM_UPDATE_CHANNEL, on_param_update, (void *) self);
-  bot_param_request_t_subscribe(self->lcm, PARAM_REQUEST_CHANNEL, on_param_request, (void *) self);
-  bot_param_set_t_subscribe(self->lcm, PARAM_SET_CHANNEL, on_param_set, (void *) self);
+  bot_param_update_t_subscribe(self->lcm, BOT_PARAM_UPDATE_CHANNEL, on_param_update, (void *) self);
+  bot_param_request_t_subscribe(self->lcm, BOT_PARAM_REQUEST_CHANNEL, on_param_request, (void *) self);
+  bot_param_set_t_subscribe(self->lcm, BOT_PARAM_SET_CHANNEL, on_param_set, (void *) self);
 
   //timer to always publish params every 5sec
   g_timeout_add_full(G_PRIORITY_HIGH, (guint) 5.0 * 1000, on_timer, (gpointer) self, NULL);

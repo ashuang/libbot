@@ -1,5 +1,9 @@
 #include "param_client.h"
 
+#define BOT_PARAM_UPDATE_CHANNEL "PARAM_UPDATE"
+#define BOT_PARAM_REQUEST_CHANNEL "PARAM_REQUEST"
+#define BOT_PARAM_SET_CHANNEL "PARAM_SET"
+
 
 /**
  * bot_param_set_int:

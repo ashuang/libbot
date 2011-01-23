@@ -13,6 +13,7 @@
 #include <lcm/lcm.h>
 #include <bot_param/param_client.h>
 #include <sys/time.h>
+#include "../param_client/param_internal.h"
 #include "../param_client/misc_utils.h"
 
 #include <lcmtypes/bot2_param.h>
@@ -34,7 +35,7 @@ int main(int argc, char ** argv)
   msg.server_id = bot_param_get_server_id(param);
   msg.key = argv[1];
   msg.value = argv[2];
-  bot_param_set_t_publish(lcm, PARAM_SET_CHANNEL, &msg);
+  bot_param_set_t_publish(lcm, BOT_PARAM_SET_CHANNEL, &msg);
 
   return 0;
 }
