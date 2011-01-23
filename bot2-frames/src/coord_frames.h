@@ -18,9 +18,8 @@ extern "C" {
  * For example:
  *
  coordinate_frames {
-   local {
-    #name the root frame, block should be empty
-   }
+   root_frame = "local";                 #a root_frame must be defined
+
    body {
      relative_to = "local";
      history = 1000;                    #number of past transforms to keep around,
@@ -153,6 +152,29 @@ int bot_frames_get_n_trans(BotFrames *bot_frames, const char *from_frame,
 int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame,
         const char *to_frame, int nth_from_latest,
         BotTrans *btrans, int64_t *timestamp);
+
+/**
+ * Returns: the number of frames managed by this instance
+ */
+int bot_frames_get_num_frames(BotFrames * bot_frames);
+
+/**
+ *
+ * Returns: a newly allocated array of strings containing the names of the frames
+ *              the strings and the array must be freed!
+ */
+
+char ** bot_frames_get_frame_names(BotFrames * bot_frames);
+
+/**
+ *
+ * Returns: a newly allocated strings containing the name of the root
+ *              coordinate frame
+ */
+
+char * bot_frames_get_root_name(BotFrames * bot_frames);
+
+
 
 #ifdef __cplusplus
 }

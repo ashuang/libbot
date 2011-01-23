@@ -7,6 +7,8 @@
 #include <GL/gl.h>
 #include <bot_param/param_util.h>
 
+//TOOD:Should figure out a way to add new frames at runtime to enable LCMGLish
+
 typedef struct {
 
   char * frame_name;
@@ -16,6 +18,16 @@ typedef struct {
   int was_updated;
 } frame_handle_t;
 
+static void frame_handle_destroy(lcm_t * lcm,frame_handle_t * fh){
+  if (fh->frame_name!=NULL)
+    free(fh->frame_name);
+  if (fh->update_channel!=NULL)
+      free(fh->update_channel);
+  if (fh->subscription!=NULL)
+    bot_core_isometry_t_unsubscribe(lcm,fh->subscription);
+  free(fh);
+}
+
 struct _BotFrames {
   BotCTrans * ctrans;
   lcm_t *lcm;
@@ -23,6 +35,7 @@ struct _BotFrames {
 
   GMutex * mutex;
 
+  char * root_name;
   GHashTable* frame_handles_by_name;
   GHashTable* frame_handles_by_channel;
 
@@ -68,6 +81,22 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     bot_frames_destroy(self);
     return NULL;
   }
+
+  int ret = bot_param_get_str(self->config,"coordinate_frames.root_frame",&self->root_name);
+  if (ret < 0) {
+    fprintf(stderr, "BotFrames Error: root_frame not defined!\n");
+    goto fail;
+  }
+  bot_ctrans_add_frame(self->ctrans, self->root_name);
+  frame_handle_t * root_handle = (frame_handle_t *) calloc(1, sizeof(frame_handle_t));
+  root_handle->ctrans_link = NULL;
+  root_handle->frame_name = self->root_name;
+  root_handle->was_updated = 0;
+  root_handle->update_channel=NULL;
+  root_handle->subscription = NULL;
+  g_hash_table_insert(self->frame_handles_by_name, (gpointer) self->root_name, (gpointer) root_handle);
+
+
   char ** frame_names = bot_param_get_subkeys(self->config, "coordinate_frames");
 
   for (int i = 0; i < num_frames; i++) {
@@ -79,8 +108,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     sprintf(param_key, "coordinate_frames.%s", frame_name);
     int num_sub_keys = bot_param_get_num_subkeys(self->config, param_key);
     if (num_sub_keys == 0) {
-      //      printf("%s is a root frame\n", frame_name);
-      continue;
+      continue; // probably the root_frame definition
     }
     //setup the link parameters if this isn't a root frame
 
@@ -183,6 +211,19 @@ void bot_frames_destroy(BotFrames * bot_frames)
   g_mutex_free(bot_frames->mutex);
 
   bot_ctrans_destroy(bot_frames->ctrans);
+
+  GHashTableIter iter;
+  gpointer key, value;
+  g_hash_table_iter_init (&iter, bot_frames->frame_handles_by_name);
+  int frame_num;
+  while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+      frame_handle_t * han = (frame_handle_t *) value;
+      frame_handle_destroy(bot_frames->lcm,han);
+    }
+  g_hash_table_destroy(bot_frames->frame_handles_by_name);
+  g_hash_table_destroy(bot_frames->frame_handles_by_channel);
+  free(bot_frames->root_name);
   g_slice_free(BotFrames, bot_frames);
 }
 
@@ -305,6 +346,36 @@ int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, cons
   }
   return status;
 }
+
+
+char * bot_frames_get_root_name(BotFrames * bot_frames){
+  return strdup(bot_frames->root_name);
+}
+
+int bot_frames_get_num_frames(BotFrames * bot_frames){
+  return g_hash_table_size(bot_frames->frame_handles_by_name);
+}
+
+char ** bot_frames_get_frame_names(BotFrames * bot_frames){
+  int num_frames = bot_frames_get_num_frames(bot_frames);
+
+  char ** frames = calloc(num_frames+1,sizeof(char*));
+
+  GHashTableIter iter;
+  gpointer key, value;
+
+  g_hash_table_iter_init (&iter, bot_frames->frame_handles_by_name);
+  int frame_num=0;
+  while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+      frame_handle_t * han = (frame_handle_t *) value;
+      frames[frame_num++] = strdup(han->frame_name);
+    }
+  assert(frame_num==num_frames);
+  return frames;
+}
+
+
 
 static BotFrames *global_bot_frames = NULL;
 static GStaticMutex bot_frames_global_mutex = G_STATIC_MUTEX_INIT;

@@ -144,7 +144,12 @@ int main(int argc, char ** argv)
   self->seqNo = 0;
   self->id = _timestamp_now();
   self->params = bot_param_new_from_file(argv[1]);
-  fprintf(stderr, "Loaded params from %s\n", argv[1]);
+  if (self->params==NULL){
+    fprintf(stderr, "Could not load params from %s\n", argv[1]);
+    exit(1);
+  }
+  else
+    fprintf(stderr, "Loaded params from %s\n", argv[1]);
 
   bot_param_update_t_subscribe(self->lcm, BOT_PARAM_UPDATE_CHANNEL, on_param_update, (void *) self);
   bot_param_request_t_subscribe(self->lcm, BOT_PARAM_REQUEST_CHANNEL, on_param_request, (void *) self);
