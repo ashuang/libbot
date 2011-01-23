@@ -45,18 +45,12 @@ struct BotViewerMode
 #define BOT_FOLLOW_YAW 2
 #define BOT_FOLLOW_ORIENTATION 4
 
-/**
- * BotViewHandler:
- * @update_gl_matrices:
- * @get_eye_look:
- * @update_follow_target:
- * @set_look_at:
- * @set_camera_perspective:
- * @set_camera_orthographic:
- * @destroy:
- * @follow_mode:
- * @user:
- *
+typedef enum {
+  BOT_VIEW_ORTHOGRAPHIC,
+  BOT_VIEW_PERSPECTIVE
+} BotProjectionMode;
+
+/*
  * View updating methods.
  */
 struct _BotViewHandler
@@ -75,6 +69,13 @@ struct _BotViewHandler
     void (*set_camera_perspective) (BotViewHandler *vhandler, double fov_degrees);
 
     void (*set_camera_orthographic) (BotViewHandler *vhandler);
+
+    BotProjectionMode (*get_projection_mode)    (BotViewHandler *vhandler);
+  /**
+  * returns the vertical FOV when the camera is in perspective mode.
+  * Results undefined when the camera is in orthographic mode.
+  */
+    double (*get_perspective_fov)(BotViewHandler *vhandler);
     
     void (*destroy)             (BotViewHandler *vhandler);
 

@@ -40,6 +40,8 @@
 
 static int g_draws = 0;
 
+//BotProjectionMode projection_mode;
+
 // a structure for bookmarked viewpoints
 typedef struct _bookmark_persp bookmark_persp_t;
 struct _bookmark_persp {
@@ -47,6 +49,7 @@ struct _bookmark_persp {
   double eye[3];
   double lookat[3];
   double up[3];
+  BotProjectionMode projection_mode;
 } bmtemp;
 
 enum {
@@ -268,7 +271,7 @@ bot_viewer_load_preferences (BotViewer *viewer, const char *fname)
       char str_key[12];   
       
       sprintf(str_key, "bookmark_%d", bm_indx);
-      double lngth = 9;      
+      double lngth = 10;      
       double bmlist[9];
       double *pointtolist;
       pointtolist = bmlist;
@@ -280,6 +283,7 @@ bot_viewer_load_preferences (BotViewer *viewer, const char *fname)
 	   priv->bookmarks[bm_indx].lookat[i] = *(pointtolist+3+i);
 	   priv->bookmarks[bm_indx].up[i] = *(pointtolist+6+i);
 	 }
+         priv->bookmarks[bm_indx].projection_mode =(int) *(pointtolist+9); 
       }
     }
    
@@ -313,13 +317,14 @@ bot_viewer_save_preferences (BotViewer *viewer, const char *fname)
     char *str_key;
     for (int bm_indx=0; bm_indx < priv->num_bookmarks; bm_indx++) { 
       str_key = g_strdup_printf("bookmark_%d", bm_indx);
-      double bmlist[9]; 
+      double bmlist[10]; 
       for(int i=0; i<3; i++) {
 	bmlist[i] = priv->bookmarks[bm_indx].eye[i];
         bmlist[i+3] = priv->bookmarks[bm_indx].lookat[i];
 	bmlist[i+6] = priv->bookmarks[bm_indx].up[i];
       }
-      g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, 9);
+      bmlist[9] = (double)priv->bookmarks[bm_indx].projection_mode;
+      g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, 10);
     }
     g_free(str_key);
 
@@ -982,22 +987,10 @@ static void on_select_bookmark_save_view(GtkMenuItem *mi, void *user)
   BotViewer* viewer = views->viewer;
   BotViewHandler *vhandler = viewer->view_handler;
 
-  //BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) viewer->default_view_handler;
-  //int type = dvh->projection_type;
-  //BotDefaultViewHandler *dvh = bot_default_view_handler_new(viewer);
-  //viewer->default_view_handler = &dvh->vhandler;
-  //fprintf(stderr, "%d\n", type);
+  BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
 
-  //int type = viewer->default_view_handler->projection_type;
-  
-
-  //int persp =  viewer->view_handler->projection_type;
-  //double persp = bot_gl_view_get_perspectiveness(viewer->glview);
-  //fprintf(stderr, "persp: %f\n", persp);
-  
-  //int *view_type = &vhandler->get_projection_type(vhandler);
-  //int p_type = vhandler->get_projection_type;
-  //fprintf(stderr, "%d", p_type);
+  // figure out projection mode  
+  views->projection_mode = vhandler->get_projection_mode(vhandler);
 
   vhandler->get_eye_look(vhandler, views->eye, views->lookat, views->up);
 
@@ -1015,8 +1008,12 @@ static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
   BotViewer* viewer = views->viewer;
   BotViewHandler *vhandler = viewer->view_handler;
 
-  //TODO: grab view type
-
+  // get projection type
+  if (views->projection_mode == BOT_VIEW_ORTHOGRAPHIC)
+    vhandler->set_camera_orthographic(vhandler);
+  if (views->projection_mode == BOT_VIEW_PERSPECTIVE)
+    vhandler->set_camera_perspective(vhandler, vhandler->get_perspective_fov(vhandler));
+  
   vhandler->set_look_at(vhandler,views->eye, views->lookat, views->up);
 
   //fprintf(stderr, "loaded viewpoint:  eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);

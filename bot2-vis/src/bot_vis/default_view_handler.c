@@ -21,8 +21,10 @@
 #define EYE_MAX_DIST 10000
 #define EYE_ZOOM_INC (EYE_MAX_DIST - EYE_MIN_DIST) / 100
 
+#define PROJECTION_ORTHOGRAPHIC 0
 #define PROJECTION_PERSPECTIVE  1
-#define PROJECTION_ORTHOGRAPHIC 2
+
+BotProjectionMode projection_mode;
 
 // column-major (opengl compatible) order.  We need this because we
 // need to be able to recompute the model matrix without requiring the
@@ -374,6 +376,24 @@ static void set_camera_orthographic (BotViewHandler *vhandler)
     dvh->projection_type = PROJECTION_ORTHOGRAPHIC;
 }
 
+static BotProjectionMode get_projection_mode (BotViewHandler *vhandler)
+{
+  BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
+
+  if (dvh->projection_type == PROJECTION_PERSPECTIVE)
+    projection_mode = BOT_VIEW_PERSPECTIVE;
+  if (dvh->projection_type == PROJECTION_ORTHOGRAPHIC)
+    projection_mode = BOT_VIEW_ORTHOGRAPHIC;
+  return projection_mode;
+}
+
+static double get_perspective_fov (BotViewHandler *vhandler)
+{
+  BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
+
+  return dvh->fov_degrees;
+}
+
 static void update_gl_matrices(BotViewer *viewer, BotViewHandler *vhandler)
 {
     BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
@@ -524,6 +544,8 @@ BotDefaultViewHandler *bot_default_view_handler_new(BotViewer *viewer)
     dvh->vhandler.update_follow_target = update_follow_target;
     dvh->vhandler.set_camera_perspective = set_camera_perspective;
     dvh->vhandler.set_camera_orthographic = set_camera_orthographic;
+    dvh->vhandler.get_projection_mode = get_projection_mode;
+    dvh->vhandler.get_perspective_fov = get_perspective_fov;
     dvh->vhandler.user = dvh;
 
     dvh->ehandler.name = "Camera Control";
