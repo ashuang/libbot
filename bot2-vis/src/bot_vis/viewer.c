@@ -40,7 +40,6 @@
 
 static int g_draws = 0;
 
-//BotProjectionMode projection_mode;
 
 // a structure for bookmarked viewpoints
 typedef struct _bookmark_persp bookmark_persp_t;
@@ -50,6 +49,7 @@ struct _bookmark_persp {
   double lookat[3];
   double up[3];
   BotProjectionMode projection_mode;
+  int saved;
 } bmtemp;
 
 enum {
@@ -265,30 +265,37 @@ bot_viewer_load_preferences (BotViewer *viewer, const char *fname)
     }
     
     // load bookmarks to preferences
-    for (int bm_indx=0; bm_indx < priv->num_bookmarks; bm_indx++) {
-      
-      GError *err = NULL;
-      char str_key[12];   
-      
-      sprintf(str_key, "bookmark_%d", bm_indx);
-      double lngth = 10;      
-      double bmlist[9];
-      double *pointtolist;
-      pointtolist = bmlist;
-      if(g_key_file_has_key(preferences, "__libviewer_bookmarks", str_key, NULL)) {
-	 pointtolist =  g_key_file_get_double_list(preferences, "__libviewer_bookmarks", str_key, (gsize*) &lngth, &err);
+    if(g_key_file_has_group(preferences, "__libviewer_bookmarks"))
+    {
+	for (int bm_indx=0; bm_indx < priv->num_bookmarks; bm_indx++)
+	{
 
-	 for (int i=0; i<3; i++) {
-	   priv->bookmarks[bm_indx].eye[i] = *(pointtolist+i);   //bmlist[i]
-	   priv->bookmarks[bm_indx].lookat[i] = *(pointtolist+3+i);
-	   priv->bookmarks[bm_indx].up[i] = *(pointtolist+6+i);
-	 }
-         priv->bookmarks[bm_indx].projection_mode =(int) *(pointtolist+9); 
-      }
-    }
-   
-    g_signal_emit (G_OBJECT(viewer), bot_viewer_signals[LOAD_PREFERENCES_SIGNAL], 0,
-            preferences);
+	  GError *err = NULL;
+	  char *str_key;   
+          str_key = g_strdup_printf("bookmark_%d", bm_indx);
+	  
+	  int bmlist_len = 11;      
+	  double bmlist[bmlist_len];
+	  double *pointtolist;
+	  pointtolist = bmlist;
+	  if(g_key_file_has_key(preferences, "__libviewer_bookmarks", str_key, NULL))
+	  {
+	     pointtolist =  g_key_file_get_double_list(preferences, "__libviewer_bookmarks", str_key, (gsize*) &bmlist_len, &err);
+
+	     for (int i=0; i<3; i++)
+	     {
+	       priv->bookmarks[bm_indx].eye[i] = *(pointtolist+i);   //bmlist[i]
+	       priv->bookmarks[bm_indx].lookat[i] = *(pointtolist+3+i);
+	       priv->bookmarks[bm_indx].up[i] = *(pointtolist+6+i);
+	     }
+	     priv->bookmarks[bm_indx].projection_mode =(int) *(pointtolist+9);
+	     priv->bookmarks[bm_indx].saved = *(pointtolist+10);
+	  }
+	  g_free(str_key);
+
+	}
+	} 
+    g_signal_emit (G_OBJECT(viewer), bot_viewer_signals[LOAD_PREFERENCES_SIGNAL], 0, preferences);
 
 done:
     g_key_file_free (preferences);
@@ -314,17 +321,19 @@ bot_viewer_save_preferences (BotViewer *viewer, const char *fname)
     }
 
     // save bookmarks to prefs
+    int bmlist_len = 11;
     char *str_key;
     for (int bm_indx=0; bm_indx < priv->num_bookmarks; bm_indx++) { 
       str_key = g_strdup_printf("bookmark_%d", bm_indx);
-      double bmlist[10]; 
+      double bmlist[bmlist_len]; 
       for(int i=0; i<3; i++) {
 	bmlist[i] = priv->bookmarks[bm_indx].eye[i];
         bmlist[i+3] = priv->bookmarks[bm_indx].lookat[i];
 	bmlist[i+6] = priv->bookmarks[bm_indx].up[i];
       }
       bmlist[9] = (double)priv->bookmarks[bm_indx].projection_mode;
-      g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, 10);
+      bmlist[10] = priv->bookmarks[bm_indx].saved;
+      g_key_file_set_double_list(preferences, "__libviewer_bookmarks", str_key, bmlist, bmlist_len);
     }
     g_free(str_key);
 
@@ -992,6 +1001,7 @@ static void on_select_bookmark_save_view(GtkMenuItem *mi, void *user)
   // figure out projection mode  
   views->projection_mode = vhandler->get_projection_mode(vhandler);
 
+  views->saved = 1;
   vhandler->get_eye_look(vhandler, views->eye, views->lookat, views->up);
 
   //fprintf(stderr, "saved viewpoint:   eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
@@ -1008,14 +1018,15 @@ static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
   BotViewer* viewer = views->viewer;
   BotViewHandler *vhandler = viewer->view_handler;
 
-  // get projection type
-  if (views->projection_mode == BOT_VIEW_ORTHOGRAPHIC)
-    vhandler->set_camera_orthographic(vhandler);
-  if (views->projection_mode == BOT_VIEW_PERSPECTIVE)
-    vhandler->set_camera_perspective(vhandler, vhandler->get_perspective_fov(vhandler));
-  
-  vhandler->set_look_at(vhandler,views->eye, views->lookat, views->up);
+  if(views->saved) {
+    // get projection type
+    if (views->projection_mode == BOT_VIEW_ORTHOGRAPHIC)
+      vhandler->set_camera_orthographic(vhandler);
+    if (views->projection_mode == BOT_VIEW_PERSPECTIVE)
+      vhandler->set_camera_perspective(vhandler, vhandler->get_perspective_fov(vhandler));
 
+    vhandler->set_look_at(vhandler,views->eye, views->lookat, views->up);
+  }
   //fprintf(stderr, "loaded viewpoint:  eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
   //fprintf(stderr, "loaded viewpoint:  lookat: [%f %f %f]\n", views->lookat[0], views->lookat[1], views->lookat[2]);
   //fprintf(stderr, "loaded viewpoint:  up:  [%f %f %f]\n", views->up[0], views->up[1], views->up[2]);
@@ -1429,6 +1440,12 @@ bot_viewer_init (BotViewer *viewer)
     priv->bookmarks = (bookmark_persp_t*) calloc(priv->num_bookmarks, sizeof(bookmark_persp_t));
     for(int bk_ind=0; bk_ind<priv->num_bookmarks; bk_ind++) {
 	priv->bookmarks[bk_ind].viewer = viewer;
+        //default views
+	//for (int i=0; i<3; i++) {
+	//  priv->bookmarks[bk_ind].eye[i] = *(defaultbmview_eye+i);
+	//  priv->bookmarks[bk_ind].lookat[i] = *(defaultbmview_lookat+i);
+	//  priv->bookmarks[bk_ind].up[i] = *(defaultbmview_up+i);
+	// }
     }
 
     viewer->prettier_flag = (getenv("BOT_VIEWER_PRETTIER") != NULL && 
