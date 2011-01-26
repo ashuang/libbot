@@ -10,12 +10,20 @@
 #include <unistd.h>
 #include <string.h>
 #include <glib.h>
+#include <sys/time.h>
 
-#include "glib_util.h"
 #include "tictoc.h"
-#include "timestamp.h"
 
 //simple, quick and dirty profiling tool...
+
+static int64_t _timestamp_now()
+{
+    struct timeval tv;
+    gettimeofday (&tv, NULL);
+    return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+
 typedef struct
 {
     int64_t t;
@@ -164,7 +172,7 @@ bot_tictoc_full(const char *description, double ema_alpha, int64_t * ema)
 
     }
 
-    int64_t tictoctime = bot_timestamp_now();
+    int64_t tictoctime = _timestamp_now();
     _tictoc_t * entry = (_tictoc_t *) g_hash_table_lookup(_tictoc_table,
             description);
     if (entry == NULL) {
@@ -204,6 +212,14 @@ bot_tictoc_full(const char *description, double ema_alpha, int64_t * ema)
     return ret;
 }
 
+static void
+_get_all_vals_helper (gpointer key, gpointer value, gpointer user_data)
+{
+    GList ** vals = (GList **) user_data;
+    *vals = g_list_prepend (*vals, value);
+}
+
+
 void
 bot_tictoc_print_stats(bot_tictoc_sort_type_t sortType)
 {
@@ -215,7 +231,8 @@ bot_tictoc_print_stats(bot_tictoc_sort_type_t sortType)
         g_static_mutex_unlock(&tictoc_mutex); //release
         return;
     }
-    GList * list = bot_g_hash_table_get_vals(_tictoc_table);
+    GList * list = NULL;
+    g_hash_table_foreach (_tictoc_table, _get_all_vals_helper, &list);
     printf("\n--------------------------------------------\n");
     printf("tictoc Statistics, sorted by ");
     switch (sortType)
