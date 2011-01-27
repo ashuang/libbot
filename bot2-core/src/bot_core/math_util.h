@@ -65,6 +65,14 @@ static inline int bot_theta_to_int(double theta, int max)
 
 #define bot_sq(a) ((a)*(a))
 
+#define bot_clamp(x,min,max) (x < min ? min : (x > max ? max : x))
+
+#define bot_sgn(v)((v>=0) ? 1 : -1)
+
+#define bot_min(a,b)((a < b) ? a : b)
+#define bot_max(a,b)((a > b) ? a : b)
+
+
 /**
  * @}
  */

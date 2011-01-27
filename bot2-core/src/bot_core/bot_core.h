@@ -23,6 +23,8 @@
 #include "timespec.h"
 #include "timestamp.h"
 #include "trans.h"
+#include "color_util.h"
+#include "rand_util.h"
 
 #include <lcmtypes/bot_core_image_t.h>
 #include <lcmtypes/bot_core_image_sync_t.h>

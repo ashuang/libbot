@@ -26,6 +26,7 @@
 #define PARAM_PATH_RENDER_MODE "Render Path"
 #define PARAM_MAXPOSES "Max Hist"
 #define PARAM_DECIMATE_PATH "Decimate Hist"
+#define PARAM_PATH_COLOR "Path Color"
 
 #define MAX_HIST   10000
 
@@ -152,6 +153,8 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
 
+  float * path_color = bot_color_util_jet(bot_gtk_param_widget_get_double(self->pw,PARAM_PATH_COLOR));
+
   switch (bot_gtk_param_widget_get_enum(self->pw, PARAM_PATH_RENDER_MODE)) {
   case PATH_MODE_AXES:
     {
@@ -164,7 +167,7 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
     }
   case PATH_MODE_FLOOR:
     {
-      glColor4f(0, 1, 0, 0.75);
+      glColor4f(path_color[0], path_color[1], path_color[2], 0.75);
       glLineWidth(2);
       glBegin(GL_LINE_STRIP);
       glVertex3f(last_coord->trans_vec[0], last_coord->trans_vec[1], 0);
@@ -201,7 +204,7 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
     //don't break, so that we draw the normal line as well
   case PATH_MODE_NORMAL:
     {
-      glColor4f(0, 1, 0, 0.75);
+      glColor4f(path_color[0], path_color[1], path_color[2], 0.75);
       glLineWidth(2);
       glBegin(GL_LINE_STRIP);
       glVertex3dv(last_coord->trans_vec);
@@ -427,6 +430,8 @@ void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority)
   bot_gtk_param_widget_add_enum(self->pw, PARAM_PATH_RENDER_MODE, BOT_GTK_PARAM_WIDGET_DEFAULTS, 0, "Line",
       PATH_MODE_NORMAL, "Line On floor", PATH_MODE_FLOOR, "Curtain", PATH_MODE_CURTAIN, "Axes", PATH_MODE_AXES, NULL);
 
+
+  bot_gtk_param_widget_add_double(self->pw, PARAM_PATH_COLOR, BOT_GTK_PARAM_WIDGET_SLIDER, 0, 1, .01, .3);
   bot_gtk_param_widget_add_double(self->pw, PARAM_DECIMATE_PATH, BOT_GTK_PARAM_WIDGET_SPINBOX, 0, 100, .01, .1);
 
   bot_gtk_param_widget_add_int(self->pw, PARAM_MAXPOSES, BOT_GTK_PARAM_WIDGET_SLIDER, 0, MAX_HIST, 100, 1000);
