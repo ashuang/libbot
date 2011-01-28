@@ -18,13 +18,14 @@ typedef struct {
   int was_updated;
 } frame_handle_t;
 
-static void frame_handle_destroy(lcm_t * lcm,frame_handle_t * fh){
-  if (fh->frame_name!=NULL)
+static void frame_handle_destroy(lcm_t * lcm, frame_handle_t * fh)
+{
+  if (fh->frame_name != NULL)
     free(fh->frame_name);
-  if (fh->update_channel!=NULL)
-      free(fh->update_channel);
-  if (fh->subscription!=NULL)
-    bot_core_isometry_t_unsubscribe(lcm,fh->subscription);
+  if (fh->update_channel != NULL)
+    free(fh->update_channel);
+  if (fh->subscription != NULL)
+    bot_core_isometry_t_unsubscribe(lcm, fh->subscription);
   free(fh);
 }
 
@@ -49,8 +50,7 @@ static void on_frame_update(const lcm_recv_buf_t *rbuf, const char *channel, con
   BotTrans link_transf;
   bot_trans_set_from_quat_trans(&link_transf, msg->quat, msg->trans);
 
-  frame_handle_t * frame_handle = (frame_handle_t *) g_hash_table_lookup(bot_frames->frame_handles_by_channel,
-      channel);
+  frame_handle_t * frame_handle = (frame_handle_t *) g_hash_table_lookup(bot_frames->frame_handles_by_channel, channel);
   assert(frame_handle != NULL);
   frame_handle->was_updated = 1;
   bot_ctrans_link_update(frame_handle->ctrans_link, &link_transf, msg->utime);
@@ -82,7 +82,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     return NULL;
   }
 
-  int ret = bot_param_get_str(self->config,"coordinate_frames.root_frame",&self->root_name);
+  int ret = bot_param_get_str(self->config, "coordinate_frames.root_frame", &self->root_name);
   if (ret < 0) {
     fprintf(stderr, "BotFrames Error: root_frame not defined!\n");
     goto fail;
@@ -92,10 +92,9 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
   root_handle->ctrans_link = NULL;
   root_handle->frame_name = self->root_name;
   root_handle->was_updated = 0;
-  root_handle->update_channel=NULL;
+  root_handle->update_channel = NULL;
   root_handle->subscription = NULL;
   g_hash_table_insert(self->frame_handles_by_name, (gpointer) self->root_name, (gpointer) root_handle);
-
 
   char ** frame_names = bot_param_get_subkeys(self->config, "coordinate_frames");
 
@@ -126,8 +125,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     int history;
     ret = bot_param_get_int(self->config, param_key, &history);
     if (ret < 0) {
-      fprintf(stderr, "BotFrames Error: could not get history size for frame %s\n", frame_name);
-      goto fail;
+      history = 0;//assume it's a static transformation
     }
 
     //get the initial transform
@@ -164,7 +162,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     frame_handle->ctrans_link = link;
     frame_handle->frame_name = frame_name;
     frame_handle->was_updated = 0;
-    frame_handle->update_channel=NULL;
+    frame_handle->update_channel = NULL;
     frame_handle->subscription = NULL;
     g_hash_table_insert(self->frame_handles_by_name, (gpointer) frame_name, (gpointer) frame_handle);
 
@@ -181,8 +179,8 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
       //add the entry to the update_channel hash table
       frame_handle_t * entry = (frame_handle_t *) g_hash_table_lookup(self->frame_handles_by_channel, update_channel);
       if (entry != NULL) {
-        fprintf(stderr, "BotFrames Error: update_channel %s for frame %s already used for frame %s\n",
-            update_channel, frame_name, entry->frame_name);
+        fprintf(stderr, "BotFrames Error: update_channel %s for frame %s already used for frame %s\n", update_channel,
+            frame_name, entry->frame_name);
         goto fail;
       }
       //first time around, allocate and set the timer goin...
@@ -214,21 +212,20 @@ void bot_frames_destroy(BotFrames * bot_frames)
 
   GHashTableIter iter;
   gpointer key, value;
-  g_hash_table_iter_init (&iter, bot_frames->frame_handles_by_name);
+  g_hash_table_iter_init(&iter, bot_frames->frame_handles_by_name);
   int frame_num;
-  while (g_hash_table_iter_next (&iter, &key, &value))
-    {
-      frame_handle_t * han = (frame_handle_t *) value;
-      frame_handle_destroy(bot_frames->lcm,han);
-    }
+  while (g_hash_table_iter_next(&iter, &key, &value)) {
+    frame_handle_t * han = (frame_handle_t *) value;
+    frame_handle_destroy(bot_frames->lcm, han);
+  }
   g_hash_table_destroy(bot_frames->frame_handles_by_name);
   g_hash_table_destroy(bot_frames->frame_handles_by_channel);
   free(bot_frames->root_name);
   g_slice_free(BotFrames, bot_frames);
 }
 
-int bot_frames_get_trans_with_utime(BotFrames *bot_frames, const char *from_frame,
-    const char *to_frame, int64_t utime, BotTrans *result)
+int bot_frames_get_trans_with_utime(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int64_t utime,
+    BotTrans *result)
 {
   g_mutex_lock(bot_frames->mutex);
   int status = bot_ctrans_get_trans(bot_frames->ctrans, from_frame, to_frame, utime, result);
@@ -236,8 +233,7 @@ int bot_frames_get_trans_with_utime(BotFrames *bot_frames, const char *from_fram
   return status;
 }
 
-int bot_frames_get_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    BotTrans *result)
+int bot_frames_get_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame, BotTrans *result)
 {
   g_mutex_lock(bot_frames->mutex);
   int status = bot_ctrans_get_trans_latest(bot_frames->ctrans, from_frame, to_frame, result);
@@ -245,8 +241,7 @@ int bot_frames_get_trans(BotFrames *bot_frames, const char *from_frame, const ch
   return status;
 }
 
-int bot_frames_get_trans_mat_3x4(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    double mat[12])
+int bot_frames_get_trans_mat_3x4(BotFrames *bot_frames, const char *from_frame, const char *to_frame, double mat[12])
 {
   BotTrans bt;
   if (!bot_frames_get_trans(bot_frames, from_frame, to_frame, &bt))
@@ -255,8 +250,8 @@ int bot_frames_get_trans_mat_3x4(BotFrames *bot_frames, const char *from_frame, 
   return 1;
 }
 
-int bot_frames_get_trans_mat_3x4_with_utime(BotFrames *bot_frames, const char *from_frame,
-    const char *to_frame, int64_t utime, double mat[12])
+int bot_frames_get_trans_mat_3x4_with_utime(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
+    int64_t utime, double mat[12])
 {
   BotTrans bt;
   if (!bot_frames_get_trans_with_utime(bot_frames, from_frame, to_frame, utime, &bt))
@@ -265,8 +260,7 @@ int bot_frames_get_trans_mat_3x4_with_utime(BotFrames *bot_frames, const char *f
   return 1;
 }
 
-int bot_frames_get_trans_mat_4x4(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    double mat[12])
+int bot_frames_get_trans_mat_4x4(BotFrames *bot_frames, const char *from_frame, const char *to_frame, double mat[12])
 {
   BotTrans bt;
   if (!bot_frames_get_trans(bot_frames, from_frame, to_frame, &bt))
@@ -275,8 +269,8 @@ int bot_frames_get_trans_mat_4x4(BotFrames *bot_frames, const char *from_frame, 
   return 1;
 }
 
-int bot_frames_get_trans_mat_4x4_with_utime(BotFrames *bot_frames, const char *from_frame,
-    const char *to_frame, int64_t utime, double mat[12])
+int bot_frames_get_trans_mat_4x4_with_utime(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
+    int64_t utime, double mat[12])
 {
   BotTrans bt;
   if (!bot_frames_get_trans_with_utime(bot_frames, from_frame, to_frame, utime, &bt))
@@ -285,8 +279,8 @@ int bot_frames_get_trans_mat_4x4_with_utime(BotFrames *bot_frames, const char *f
   return 1;
 }
 
-int bot_frames_get_trans_latest_timestamp(BotFrames *bot_frames, const char *from_frame,
-    const char *to_frame, int64_t *timestamp)
+int bot_frames_get_trans_latest_timestamp(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
+    int64_t *timestamp)
 {
   g_mutex_lock(bot_frames->mutex);
   int status = bot_ctrans_get_trans_latest_timestamp(bot_frames->ctrans, from_frame, to_frame, timestamp);
@@ -302,8 +296,8 @@ int bot_frames_have_trans(BotFrames *bot_frames, const char *from_frame, const c
   return status;
 }
 
-int bot_frames_transform_vec(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    const double src[3], double dst[3])
+int bot_frames_transform_vec(BotFrames *bot_frames, const char *from_frame, const char *to_frame, const double src[3],
+    double dst[3])
 {
   BotTrans rbtrans;
   if (!bot_frames_get_trans(bot_frames, from_frame, to_frame, &rbtrans))
@@ -312,8 +306,8 @@ int bot_frames_transform_vec(BotFrames *bot_frames, const char *from_frame, cons
   return 1;
 }
 
-int bot_frames_rotate_vec(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    const double src[3], double dst[3])
+int bot_frames_rotate_vec(BotFrames *bot_frames, const char *from_frame, const char *to_frame, const double src[3],
+    double dst[3])
 {
   BotTrans rbtrans;
   if (!bot_frames_get_trans(bot_frames, from_frame, to_frame, &rbtrans))
@@ -322,8 +316,7 @@ int bot_frames_rotate_vec(BotFrames *bot_frames, const char *from_frame, const c
   return 1;
 }
 
-int bot_frames_get_n_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    int nth_from_latest)
+int bot_frames_get_n_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int nth_from_latest)
 {
   BotCTransLink *link = bot_ctrans_get_link(bot_frames->ctrans, from_frame, to_frame);
   if (!link)
@@ -334,8 +327,8 @@ int bot_frames_get_n_trans(BotFrames *bot_frames, const char *from_frame, const 
 /**
  * Returns: 1 on success, 0 on failure
  */
-int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame,
-    int nth_from_latest, BotTrans *btrans, int64_t *timestamp)
+int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int nth_from_latest,
+    BotTrans *btrans, int64_t *timestamp)
 {
   BotCTransLink *link = bot_ctrans_get_link(bot_frames->ctrans, from_frame, to_frame);
   if (!link)
@@ -347,35 +340,34 @@ int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, cons
   return status;
 }
 
-
-char * bot_frames_get_root_name(BotFrames * bot_frames){
+char * bot_frames_get_root_name(BotFrames * bot_frames)
+{
   return strdup(bot_frames->root_name);
 }
 
-int bot_frames_get_num_frames(BotFrames * bot_frames){
+int bot_frames_get_num_frames(BotFrames * bot_frames)
+{
   return g_hash_table_size(bot_frames->frame_handles_by_name);
 }
 
-char ** bot_frames_get_frame_names(BotFrames * bot_frames){
+char ** bot_frames_get_frame_names(BotFrames * bot_frames)
+{
   int num_frames = bot_frames_get_num_frames(bot_frames);
 
-  char ** frames = calloc(num_frames+1,sizeof(char*));
+  char ** frames = calloc(num_frames + 1, sizeof(char*));
 
   GHashTableIter iter;
   gpointer key, value;
 
-  g_hash_table_iter_init (&iter, bot_frames->frame_handles_by_name);
-  int frame_num=0;
-  while (g_hash_table_iter_next (&iter, &key, &value))
-    {
-      frame_handle_t * han = (frame_handle_t *) value;
-      frames[frame_num++] = strdup(han->frame_name);
-    }
+  g_hash_table_iter_init(&iter, bot_frames->frame_handles_by_name);
+  int frame_num = 0;
+  while (g_hash_table_iter_next(&iter, &key, &value)) {
+    frame_handle_t * han = (frame_handle_t *) value;
+    frames[frame_num++] = strdup(han->frame_name);
+  }
   assert(frame_num==num_frames);
   return frames;
 }
-
-
 
 static BotFrames *global_bot_frames = NULL;
 static GStaticMutex bot_frames_global_mutex = G_STATIC_MUTEX_INIT;
