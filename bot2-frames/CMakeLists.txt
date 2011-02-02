@@ -4,6 +4,12 @@ cmake_minimum_required(VERSION 2.6.0)
 set(POD_NAME bot2-frames)
 include(cmake/pods.cmake)
 
+find_package(OpenGL REQUIRED)
+
+list(APPEND OPENGL_LIBRARIES GL )
+set(GLUT_CFLAGS "")
+set(GLUT_LIBRARIES -lglut)
+
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)

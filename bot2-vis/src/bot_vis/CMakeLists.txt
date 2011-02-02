@@ -13,7 +13,8 @@ target_link_libraries(bot2-vis
     ${GTK2_LDFLAGS}
     ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
-    ${BOT2_CORE_LDFLAGS})
+    ${BOT2_CORE_LDFLAGS}
+    z)
 
 # set the library API version.  Increment this every time the public API
 # changes.
@@ -24,6 +25,6 @@ pods_install_libraries(bot2-vis)
 pods_install_headers(${h_files} DESTINATION bot_vis)
 
 pods_install_pkg_config_file(${PROJECT_NAME}
-    LIBS -lbot2-vis
+    LIBS -lbot2-vis -lz
     REQUIRES gtk+-2.0 lcm bot2-core 
     VERSION 0.0.1)
