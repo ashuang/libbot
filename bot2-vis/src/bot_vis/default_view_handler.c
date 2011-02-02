@@ -21,9 +21,6 @@
 #define EYE_MAX_DIST 10000
 #define EYE_ZOOM_INC (EYE_MAX_DIST - EYE_MIN_DIST) / 100
 
-#define PROJECTION_ORTHOGRAPHIC 0
-#define PROJECTION_PERSPECTIVE  1
-
 BotProjectionMode projection_mode;
 
 // column-major (opengl compatible) order.  We need this because we
@@ -365,7 +362,7 @@ static void set_camera_perspective (BotViewHandler *vhandler, double fov_degrees
 {
     BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
 
-    dvh->projection_type = PROJECTION_PERSPECTIVE;
+    dvh->projection_type = BOT_VIEW_PERSPECTIVE;
     dvh->fov_degrees = fov_degrees;
 }
 
@@ -373,17 +370,14 @@ static void set_camera_orthographic (BotViewHandler *vhandler)
 {
     BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
 
-    dvh->projection_type = PROJECTION_ORTHOGRAPHIC;
+    dvh->projection_type = BOT_VIEW_ORTHOGRAPHIC;
 }
 
 static BotProjectionMode get_projection_mode (BotViewHandler *vhandler)
 {
   BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
 
-  if (dvh->projection_type == PROJECTION_PERSPECTIVE)
-    projection_mode = BOT_VIEW_PERSPECTIVE;
-  if (dvh->projection_type == PROJECTION_ORTHOGRAPHIC)
-    projection_mode = BOT_VIEW_ORTHOGRAPHIC;
+  projection_mode = dvh->projection_type;
   return projection_mode;
 }
 
@@ -406,7 +400,7 @@ static void update_gl_matrices(BotViewer *viewer, BotViewHandler *vhandler)
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
 
-    if (dvh->projection_type == PROJECTION_ORTHOGRAPHIC) {
+    if (dvh->projection_type == BOT_VIEW_ORTHOGRAPHIC) {
         double le[3];
         bot_vector_subtract_3d (dvh->eye, dvh->lookat, le);
         double dist = bot_vector_magnitude_3d (le) *
@@ -522,7 +516,7 @@ BotDefaultViewHandler *bot_default_view_handler_new(BotViewer *viewer)
 
     dvh->fov_degrees = 60;
     dvh->aspect_ratio = 1;
-    dvh->projection_type = PROJECTION_PERSPECTIVE;
+    dvh->projection_type = BOT_VIEW_PERSPECTIVE;
 
     dvh->lookat[0] = 0;
     dvh->lookat[1] = 0;
