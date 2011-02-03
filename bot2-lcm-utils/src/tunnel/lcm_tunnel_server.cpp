@@ -11,10 +11,10 @@
 
 #include <lcm/lcm.h>
 
-#include <bot_core/bot_core.h>
-
 #include "lcm_tunnel_server.h"
 #include "ssocket.h"
+#include "signal_pipe.h"
+#include "lcm_util.h"
 #include "lcm_tunnel_params_t.h"
 #include "lcm_tunnel.h"
 #include "ldpc/ldpc_wrapper.h"

@@ -19,6 +19,8 @@ add_executable(bot-lcm-tunnel
     ssocket.c
     lcm_tunnel.cpp
     lcm_tunnel_server.cpp
+    signal_pipe.c 
+    lcm_util.c
     ${ldpc_sources}
     )
 
@@ -27,10 +29,10 @@ add_executable(ldpc-wrapper-test
     ${ldpc_sources}
     )
 
-set_source_files_properties(introspect.c lcm_tunnel_params_t.c ssocket.c 
+set_source_files_properties(introspect.c lcm_tunnel_params_t.c ssocket.c signal_pipe.c lcm_util.c
     PROPERTIES COMPILE_FLAGS "-std=gnu99")
 
 pods_use_pkg_config_packages(bot-lcm-tunnel 
-    bot2-core lcm glib-2.0)
+    lcm glib-2.0)
 
 pods_install_executables(bot-lcm-tunnel)

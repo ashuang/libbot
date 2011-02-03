@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <getopt.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -11,14 +12,44 @@
 
 #include <lcm/lcm.h>
 
-#include <bot_core/bot_core.h>
-
 #include "ssocket.h"
 #include "lcm_tunnel.h"
 #include "lcm_tunnel_server.h"
 
 static inline void check_ret(int ret){
   assert(ret==0);
+}
+
+static inline int64_t _timestamp_now()
+{
+    struct timeval tv;
+    gettimeofday (&tv, NULL);
+    return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+static inline void _timestamp_to_timespec(int64_t v, struct timespec *ts)
+{
+    ts->tv_sec  = v/1000000;
+    ts->tv_nsec = v%1000000;
+}
+
+static int _fileutils_write_fully(int fd, const void *b, int len)
+{
+  int cnt=0;
+  int thiscnt;
+  unsigned char *bb=(unsigned char*) b;
+
+  while (cnt<len)
+    {
+      thiscnt=write(fd, &bb[cnt], len-cnt);
+      if (thiscnt<0) {
+        perror ("write");
+        return -1;
+      }
+      cnt+=thiscnt;
+    }
+
+  return cnt;
 }
 
 LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
@@ -80,7 +111,7 @@ LcmTunnel::~LcmTunnel()
   if (udp_fd >= 0) {
     //send out a disconnect message
     lcm_tunnel_disconnect_msg_t disc_msg;
-    disc_msg.utime = bot_timestamp_now();
+    disc_msg.utime = _timestamp_now();
     int msg_sz = lcm_tunnel_disconnect_msg_t_encoded_size(&disc_msg);
     uint8_t msg_buf[msg_sz];
     lcm_tunnel_disconnect_msg_t_encode(msg_buf,0,msg_sz,&disc_msg);
@@ -233,14 +264,14 @@ int LcmTunnel::connectToServer(lcm_t * lcm_, introspect_t *introspect_, GMainLoo
   uint8_t * msg = (uint8_t *) calloc(msg_sz,sizeof(uint8_t));
   lcm_tunnel_params_t_encode(msg, 0, msg_sz, tun_params_to_send);
   uint32_t msg_sz_n = htonl(msg_sz);
-  if (4 != bot_fileutils_write_fully(ssocket_get_fd(tcp_sock), &msg_sz_n, 4)) {
+  if (4 != _fileutils_write_fully(ssocket_get_fd(tcp_sock), &msg_sz_n, 4)) {
     perror("sending subscription data");
     ssocket_destroy(tcp_sock);
     free(msg);
     lcm_tunnel_params_t_destroy(tun_params_to_send);
     return 0;
   }
-  if (msg_sz != bot_fileutils_write_fully(ssocket_get_fd(tcp_sock), msg, msg_sz)) {
+  if (msg_sz != _fileutils_write_fully(ssocket_get_fd(tcp_sock), msg, msg_sz)) {
     perror("sending subscription data");
     ssocket_destroy(tcp_sock);
     free(msg);
@@ -507,12 +538,12 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
         uint8_t msg[msg_sz];
         lcm_tunnel_params_t_encode(msg, 0, msg_sz, &tp_port_msg);
         uint32_t msg_sz_n = htonl(msg_sz);
-        if (4 != bot_fileutils_write_fully(ssocket_get_fd(self->tcp_sock), &msg_sz_n, 4)) {
+        if (4 != _fileutils_write_fully(ssocket_get_fd(self->tcp_sock), &msg_sz_n, 4)) {
           perror("sending subscription data");
           LcmTunnelServer::disconnectClient(self);
           return FALSE;
         }
-        if (msg_sz != bot_fileutils_write_fully(ssocket_get_fd(self->tcp_sock), msg, msg_sz)) {
+        if (msg_sz != _fileutils_write_fully(ssocket_get_fd(self->tcp_sock), msg, msg_sz)) {
           perror("sending subscription data");
           LcmTunnelServer::disconnectClient(self);
           return FALSE;
@@ -629,14 +660,14 @@ void * LcmTunnel::sendThreadFunc(void *user_data)
   while (!self->stopSendThread) {
     if (self->sendQueue.empty()) {
       check_ret(pthread_cond_wait(&self->sendQueueCond,&self->sendQueueLock));
-      nextFlushTime = bot_timestamp_now() + self->tunnel_params->max_delay_ms * 1000;
+      nextFlushTime = _timestamp_now() + self->tunnel_params->max_delay_ms * 1000;
       continue;
     }
-    int64_t now = bot_timestamp_now();
+    int64_t now = _timestamp_now();
     if (self->tunnel_params->max_delay_ms > 0 && self->bytesInQueue < NUM_BYTES_TO_SEND_IMMEDIATELY && nextFlushTime
         > now && !self->flushImmediately) {
       struct timespec next_timeout;
-      bot_timestamp_to_timespec(nextFlushTime, &next_timeout);
+      _timestamp_to_timespec(nextFlushTime, &next_timeout);
       int ret = pthread_cond_timedwait(&self->sendQueueCond, &self->sendQueueLock, &next_timeout);
       assert(ret==0 || ret==ETIMEDOUT ||ret==EINVAL);
       continue;
@@ -709,7 +740,7 @@ void LcmTunnel::on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, 
 }
 
 void LcmTunnel::checkUDPSendStatus(int send_status){
-  int64_t now = bot_timestamp_now();
+  int64_t now = _timestamp_now();
   if (send_status < 0) {
     if (errorStartTime<0)
       errorStartTime = now;
@@ -841,7 +872,7 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
       TunnelLcmMessage * msg = msgQueue.front();
       msgQueue.pop_front();
 
-      int64_t now = bot_timestamp_now();
+      int64_t now = _timestamp_now();
       double age_ms = (now - msg->recv_utime) * 1.0e-3;
       if (tunnel_params->tcp_max_age_ms > 0 && age_ms > tunnel_params->tcp_max_age_ms) {
         // message has been queued up for too long.  Drop it.
@@ -852,12 +883,12 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
         // send channel
         int chan_len = strlen(msg->sub_msg->channel);
         uint32_t chan_len_n = htonl(chan_len);
-        if (4 != bot_fileutils_write_fully(cfd, &chan_len_n, 4)){
+        if (4 != _fileutils_write_fully(cfd, &chan_len_n, 4)){
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
         }
-        if (chan_len != bot_fileutils_write_fully(cfd, msg->sub_msg->channel, chan_len)){
+        if (chan_len != _fileutils_write_fully(cfd, msg->sub_msg->channel, chan_len)){
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
@@ -865,12 +896,12 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
 
         // send data
         int data_size_n = htonl(msg->sub_msg->data_size);
-        if (4 != bot_fileutils_write_fully(cfd, &data_size_n, 4)){
+        if (4 != _fileutils_write_fully(cfd, &data_size_n, 4)){
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
         }
-        if (msg->sub_msg->data_size != bot_fileutils_write_fully(cfd, msg->sub_msg->data, msg->sub_msg->data_size)){
+        if (msg->sub_msg->data_size != _fileutils_write_fully(cfd, msg->sub_msg->data, msg->sub_msg->data_size)){
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
