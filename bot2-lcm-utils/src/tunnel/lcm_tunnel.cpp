@@ -27,10 +27,10 @@ static inline int64_t _timestamp_now()
     return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-static inline void _timestamp_to_timespec(int64_t v, struct timespec *ts)
+static inline void _timestamp_to_GTimeVal(int64_t v, GTimeVal *ts)
 {
     ts->tv_sec  = v/1000000;
-    ts->tv_nsec = v%1000000;
+    ts->tv_usec = v%1000000;
 }
 
 static int _fileutils_write_fully(int fd, const void *b, int len)
@@ -65,12 +65,9 @@ LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
   init_regex(lcm_channel);
 
   //sendThread stuff
-  check_ret(pthread_mutex_init(&sendQueueLock,NULL));
-  check_ret(pthread_cond_init(&sendQueueCond,NULL));
-
-  pthread_attr_init(&sendThreadAttr);
-  pthread_attr_setdetachstate(&sendThreadAttr, PTHREAD_CREATE_JOINABLE);
-  check_ret(pthread_create(&sendThread, &sendThreadAttr, &sendThreadFunc, (void *) this) );
+  sendQueueLock = g_mutex_new();
+  sendQueueCond = g_cond_new();
+  sendThread = g_thread_create(sendThreadFunc, (void *) this,1,NULL );
 
 }
 
@@ -138,21 +135,20 @@ LcmTunnel::~LcmTunnel()
     delete ldpc_dec;
 
   //cleanup the sending thread state
-  check_ret(pthread_mutex_lock(&sendQueueLock));
+  g_mutex_lock(sendQueueLock);
   stopSendThread = true;
-  check_ret(pthread_cond_broadcast(&sendQueueCond));
-  check_ret(pthread_mutex_unlock(&sendQueueLock));
-  pthread_join(sendThread, NULL); //wait for thread to exit
+  g_cond_broadcast(sendQueueCond);
+  g_mutex_unlock(sendQueueLock);
+  g_thread_join(sendThread); //wait for thread to exit
 
-  check_ret(pthread_mutex_lock(&sendQueueLock));
+  g_mutex_lock(sendQueueLock);
   while (!sendQueue.empty()) {
     delete sendQueue.front();
     sendQueue.pop_front();
   }
 
-  pthread_mutex_destroy(&sendQueueLock);
-  pthread_cond_destroy(&sendQueueCond);
-  pthread_attr_destroy(&sendThreadAttr);
+  g_mutex_free(sendQueueLock);
+  g_cond_free(sendQueueCond);
 
 }
 
@@ -650,26 +646,27 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
   return ret;
 }
 
-void * LcmTunnel::sendThreadFunc(void *user_data)
+
+gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
 {
 
   LcmTunnel *self = (LcmTunnel*) user_data;
 
-  check_ret(pthread_mutex_lock(&self->sendQueueLock));
+  g_mutex_lock(self->sendQueueLock);
   int64_t nextFlushTime = 0;
   while (!self->stopSendThread) {
     if (self->sendQueue.empty()) {
-      check_ret(pthread_cond_wait(&self->sendQueueCond,&self->sendQueueLock));
+      g_cond_wait(self->sendQueueCond,self->sendQueueLock);
       nextFlushTime = _timestamp_now() + self->tunnel_params->max_delay_ms * 1000;
       continue;
     }
     int64_t now = _timestamp_now();
     if (self->tunnel_params->max_delay_ms > 0 && self->bytesInQueue < NUM_BYTES_TO_SEND_IMMEDIATELY && nextFlushTime
         > now && !self->flushImmediately) {
-      struct timespec next_timeout;
-      _timestamp_to_timespec(nextFlushTime, &next_timeout);
-      int ret = pthread_cond_timedwait(&self->sendQueueCond, &self->sendQueueLock, &next_timeout);
-      assert(ret==0 || ret==ETIMEDOUT ||ret==EINVAL);
+      GTimeVal next_timeout;
+      _timestamp_to_GTimeVal(nextFlushTime, &next_timeout);
+      g_cond_timed_wait(self->sendQueueCond, self->sendQueueLock, &next_timeout);
+
       continue;
     }
     //there is stuff in the queue that we need to handle
@@ -680,18 +677,18 @@ void * LcmTunnel::sendThreadFunc(void *user_data)
     tmpQueue.swap(self->sendQueue);
     uint32_t bytesInTmpQueue = self->bytesInQueue;
     self->bytesInQueue = 0;
-    check_ret(pthread_mutex_unlock(&self->sendQueueLock));
+    g_mutex_unlock(self->sendQueueLock);
     //release lock for sending
 
     //process whats in the queue
     self->send_lcm_messages(tmpQueue, bytesInTmpQueue);
 
     //reaquire lock to go around the loop
-    check_ret(pthread_mutex_lock(&self->sendQueueLock));
+    g_mutex_lock(self->sendQueueLock);
   }
-  check_ret(pthread_mutex_unlock(&self->sendQueueLock));
+  g_mutex_unlock(self->sendQueueLock);
 
-  pthread_exit(NULL);
+  g_thread_exit(NULL);
 }
 
 void LcmTunnel::send_to_remote(const void *data, uint32_t len, const char *lcm_channel)
@@ -708,7 +705,7 @@ void LcmTunnel::send_to_remote(const void *data, uint32_t len, const char *lcm_c
 
 void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_channel)
 {
-  check_ret(pthread_mutex_lock(&sendQueueLock));
+  g_mutex_lock(sendQueueLock);
   TunnelLcmMessage * new_msg = new TunnelLcmMessage(rbuf, lcm_channel);
   bytesInQueue += new_msg->encoded_size;
   sendQueue.push_back(new_msg);
@@ -722,8 +719,8 @@ void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_chann
   }
   //hack to not delay time sync messages
   flushImmediately = strcmp(lcm_channel, "TIMESYNC") == 0;
-  check_ret(pthread_mutex_unlock(&sendQueueLock));
-  check_ret(pthread_cond_broadcast(&sendQueueCond)); //signal to say there is a message waiting
+  g_mutex_unlock(sendQueueLock);
+  g_cond_broadcast(sendQueueCond); //signal to say there is a message waiting
 }
 
 void LcmTunnel::on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, void *user_data)

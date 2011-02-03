@@ -3,7 +3,6 @@
 
 #include <inttypes.h>
 #include <deque>
-#include <pthread.h>
 #include <regex.h>
 #include <glib.h>
 
@@ -88,7 +87,7 @@ public:
   ~LcmTunnel();
 
   static void on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, void *user_data);
-  static void * sendThreadFunc(void *user_data);
+  static gpointer sendThreadFunc(gpointer user_data);
   void send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue,uint32_t bytesInQueue);
   static int on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_data);
   static int on_udp_data(GIOChannel * source, GIOCondition cond, void *user_data);
@@ -128,11 +127,10 @@ private:
   bool stopSendThread;
   uint32_t bytesInQueue;
   uint32_t minBytesToSendImmediately;
-  pthread_t sendThread;
-  pthread_attr_t sendThreadAttr;
+  GThread * sendThread;
   std::deque<TunnelLcmMessage *> sendQueue;
-  pthread_mutex_t sendQueueLock;
-  pthread_cond_t sendQueueCond; //thread waits on this
+  GMutex * sendQueueLock;
+  GCond* sendQueueCond; //thread waits on this
   bool flushImmediately;
 
 
