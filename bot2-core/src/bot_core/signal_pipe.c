@@ -64,7 +64,7 @@ static void
 bot_signal_handler (int signal)
 {
     dbg("bot_signal_pipe: caught signal %d\n", signal);
-    write (g_sp.fds[1], &signal, sizeof(int));
+    int ignored = write (g_sp.fds[1], &signal, sizeof(int));
 }
 
 static int
