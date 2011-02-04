@@ -437,6 +437,54 @@ static void set_look_at (BotViewHandler *vhandler, const double eye[3], const do
 
     look_at_changed(dvh);
 }
+
+static gboolean 
+set_look_at_smooth_func (BotViewHandler *vhandler)
+{
+    BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;  
+
+    gboolean end_timeout = TRUE;
+    
+    double elapsed_ms = (bot_timestamp_now() - dvh->viewpath_timer_start) * 1e-3;
+    double time_param = elapsed_ms / dvh->viewpath_duration_ms;
+    
+    if (time_param >= 1) {
+      time_param = 1;
+      end_timeout = FALSE;
+    }
+    
+    for (int i=0; i<3; i++) {
+      dvh->eye[i]    = dvh->origin_eye[i]    + time_param * (dvh->goal_eye[i]    - dvh->origin_eye[i]);
+      dvh->lookat[i] = dvh->origin_lookat[i] + time_param * (dvh->goal_lookat[i] - dvh->origin_lookat[i]);
+      dvh->up[i]     = dvh->origin_up[i]     + time_param * (dvh->goal_up[i]     - dvh->origin_up[i]);
+    }
+
+    look_at_changed(dvh);
+    bot_viewer_request_redraw(dvh->viewer);
+
+    return end_timeout;
+}
+
+static void set_look_at_smooth (BotViewHandler *vhandler, const double eye[3], const double lookat[3], const double up[3], double duration_ms)
+{
+    BotDefaultViewHandler *dvh = (BotDefaultViewHandler*) vhandler->user;
+    dvh->viewpath_duration_ms = duration_ms;
+
+    dvh->viewpath_timer_start = bot_timestamp_now();
+
+    // get the origin for the view path, and set the goal
+    vhandler->get_eye_look(vhandler, dvh->origin_eye, dvh->origin_lookat, dvh->origin_up);
+    memcpy(dvh->goal_eye, eye, 3 * sizeof(double));
+    memcpy(dvh->goal_lookat, lookat, 3 * sizeof(double));
+    double up_norm = sqrt(up[0]*up[0] + up[1]*up[1] + up[2]*up[2]);
+    dvh->goal_up[0] = up[0] / up_norm;
+    dvh->goal_up[1] = up[1] / up_norm;
+    dvh->goal_up[2] = up[2] / up_norm;
+//    memcpy(dvh->goal_up, up, 3 * sizeof(double));
+
+    // periodically update the viewpoint until the goal viewpoint is reached
+    g_timeout_add(30, (GSourceFunc)set_look_at_smooth_func, vhandler); 
+}
    
 static void update_follow_target(BotViewHandler *vhandler, const double pos[3], const double quat[4])
 {
@@ -535,6 +583,7 @@ BotDefaultViewHandler *bot_default_view_handler_new(BotViewer *viewer)
     dvh->vhandler.update_gl_matrices = update_gl_matrices;
     dvh->vhandler.get_eye_look = get_eye_look;
     dvh->vhandler.set_look_at = set_look_at;
+    dvh->vhandler.set_look_at_smooth = set_look_at_smooth;
     dvh->vhandler.update_follow_target = update_follow_target;
     dvh->vhandler.set_camera_perspective = set_camera_perspective;
     dvh->vhandler.set_camera_orthographic = set_camera_orthographic;
@@ -550,6 +599,8 @@ BotDefaultViewHandler *bot_default_view_handler_new(BotViewer *viewer)
     dvh->ehandler.key_press = key_press;
     dvh->ehandler.enabled = 1;
     dvh->ehandler.user = dvh;
+
+    dvh->viewer = viewer;
     
     bot_viewer_set_view_handler(viewer, &dvh->vhandler);
     bot_viewer_add_event_handler(viewer, &dvh->ehandler, -10000);

@@ -1017,6 +1017,9 @@ static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
   BotViewer* viewer = views->viewer;
   BotViewHandler *vhandler = viewer->view_handler;
 
+  //HARDCODE: duration of smooth transition
+  int duration_ms = 500;  //milliseconds
+
   if(views->saved) {
     // get projection type
     if (views->projection_mode == BOT_VIEW_ORTHOGRAPHIC)
@@ -1024,7 +1027,8 @@ static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
     if (views->projection_mode == BOT_VIEW_PERSPECTIVE)
       vhandler->set_camera_perspective(vhandler, vhandler->get_perspective_fov(vhandler));
 
-    vhandler->set_look_at(vhandler,views->eye, views->lookat, views->up);
+    vhandler->set_look_at_smooth(vhandler, views->eye, views->lookat, views->up, duration_ms);
+    bot_viewer_request_redraw(viewer);
   }
   //fprintf(stderr, "loaded viewpoint:  eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
   //fprintf(stderr, "loaded viewpoint:  lookat: [%f %f %f]\n", views->lookat[0], views->lookat[1], views->lookat[2]);

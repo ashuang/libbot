@@ -62,7 +62,9 @@ struct _BotViewHandler
 
     void (*update_follow_target)(BotViewHandler *vhandler, const double pos[3], 
                                  const double quat[4]);
-
+  
+  void (*set_look_at_smooth) (BotViewHandler *vhandler, const double eye[3], const double lookat[3], const double up[3], double duration_ms);
+   
     void (*set_look_at)         (BotViewHandler *vhandler, const double eye[3], 
                                  const double lookat[3], const double up[3]);
     
@@ -178,7 +180,7 @@ struct _BotEventHandler
                           const GdkEventMotion *event);
 
     int (*mouse_scroll)  (BotViewer *viewer, BotEventHandler *ehandler,
-                          const double ray_start[3], const double ray_dir[3], 
+                          const double ray_start[3], const double ray_dir[3],
                           const GdkEventScroll *event);
 
     int  (*key_press)     (BotViewer *viewer, BotEventHandler *ehandler, 

@@ -12,6 +12,20 @@ struct _BotDefaultViewHandler
 {
     BotEventHandler ehandler;
     BotViewHandler  vhandler;
+    BotViewer* viewer;
+    
+    //goal view
+    double goal_eye[3];  
+    double goal_lookat[3];
+    double goal_up[3];
+
+    //initial view
+    double origin_eye[3];
+    double origin_lookat[3];
+    double origin_up[3];
+
+    double viewpath_duration_ms;
+    int64_t viewpath_timer_start;
 
     int width, height;
     double aspect_ratio;
@@ -22,7 +36,7 @@ struct _BotDefaultViewHandler
     double last_mouse_y;
 
     int projection_type;
-
+ 
     // these three variables determine the position and orientation of
     // the camera.
     double lookat[3];
