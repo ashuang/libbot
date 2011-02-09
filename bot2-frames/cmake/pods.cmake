@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 10.12.21
+# Distributed with pods version: 11.02.09
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -306,8 +306,8 @@ macro(pods_config_search_paths)
         set(ENV{PKG_CONFIG_PATH} ${PKG_CONFIG_OUTPUT_PATH}:$ENV{PKG_CONFIG_PATH})
 
         # add build/include to the compiler include path
+        include_directories(BEFORE ${INCLUDE_OUTPUT_PATH})
         include_directories(${INCLUDE_INSTALL_PATH})
-        include_directories(${INCLUDE_OUTPUT_PATH})
 
         # add build/lib to the link path
         link_directories(${LIBRARY_INSTALL_PATH})

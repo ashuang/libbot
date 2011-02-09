@@ -67,7 +67,7 @@
 #
 # ----
 # File: lcmtypes.cmake
-# Distributed with pods version: 11.01.14
+# Distributed with pods version: 11.02.09
 
 cmake_minimum_required(VERSION 2.6.0)
 
@@ -163,11 +163,12 @@ function(lcmtypes_build_c)
     file(GLOB _lcmtypes_c_files ${_lcmtypes_c_dir}/*.c)
     file(GLOB _lcmtypes_h_files ${_lcmtypes_c_dir}/*.h)
 
+    include_directories(BEFORE ${PROJECT_SOURCE_DIR}/lcmtypes/c)
     include_directories(${LCM_INCLUDE_DIRS})
 
     # aggregate into a static library
     add_library(${libname} STATIC ${_lcmtypes_c_files})
-    set_source_files_properties(${_lcmtypes_c_files} PROPERTIES COMPILE_FLAGS "-I${PROJECT_SOURCE_DIR}/lcmtypes/c -fPIC")
+    set_source_files_properties(${_lcmtypes_c_files} PROPERTIES COMPILE_FLAGS "-fPIC")
     #    set_target_properties("${libname}-static" PROPERTIES OUTPUT_NAME "${libname}")
     set_target_properties(${libname} PROPERTIES PREFIX "lib")
     set_target_properties(${libname} PROPERTIES CLEAN_DIRECT_OUTPUT 1)
