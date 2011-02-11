@@ -1,7 +1,7 @@
 add_definitions(-std=gnu99)
 # Create a shared library libbot2-frames.so with a single source file
 add_library(bot2-frames SHARED
-    coord_frames.c)
+    bot_frames.c)
     
 pods_use_pkg_config_packages(bot2-frames bot2-core bot2-param-client)
 
@@ -11,7 +11,7 @@ set_target_properties(bot2-frames PROPERTIES SOVERSION 1)
 
 # make the header public
 # install it to include/bot2-frames
-pods_install_headers(coord_frames.h DESTINATION bot_frames)
+pods_install_headers(bot_frames.h DESTINATION bot_frames)
 
 # make the library public
 pods_install_libraries(bot2-frames)

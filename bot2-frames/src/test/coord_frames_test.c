@@ -7,7 +7,7 @@
 
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
-#include <bot_frames/coord_frames.h>
+#include <bot_frames/bot_frames.h>
 
 void update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, void *user)
 {

@@ -3,7 +3,7 @@
 #include <glib.h>
 
 #include <lcm/lcm.h>
-#include "coord_frames.h"
+#include "bot_frames.h"
 #include <GL/gl.h>
 #include <bot_param/param_util.h>
 

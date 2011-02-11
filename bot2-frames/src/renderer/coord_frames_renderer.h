@@ -5,7 +5,7 @@
  *      Author: abachrac
  */
 #include <bot_vis/bot_vis.h>
-#include <bot_param/param_client.h>
+#include <bot_frames/bot_frames.h>
 
 #ifndef COORD_FRAMES_RENDERER_H_
 #define COORD_FRAMES_RENDERER_H_
@@ -14,8 +14,7 @@
 extern "C" {
 #endif
 
-  void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority,
-      lcm_t * lcm, BotParam * bot_param);
+  void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames);
 
 #ifdef __cplusplus
 }

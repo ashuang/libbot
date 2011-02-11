@@ -14,7 +14,7 @@
 #include <bot_vis/bot_vis.h>
 #include <bot_vis/viewer.h>
 #include <bot_param/param_client.h>
-#include <bot_frames/coord_frames.h>
+#include <bot_frames/bot_frames.h>
 
 #define RENDERER_NAME "Coord Frames"
 
@@ -370,7 +370,7 @@ static void frames_update_handler(BotFrames *bot_frames, const char *frame, cons
   bot_viewer_request_redraw(self->viewer);
 }
 
-void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, lcm_t * lcm, BotParam * bot_param)
+void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames)
 {
   RendererFrames *self = (RendererFrames*) calloc(1, sizeof(RendererFrames));
 
@@ -396,7 +396,7 @@ void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, l
   ehandler->user = self;
 
   self->viewer = viewer;
-  self->frames = bot_frames_get_global(lcm, bot_param);
+  self->frames = frames;
   bot_frames_add_update_subscriber(self->frames, frames_update_handler, (void *) self);
 
   self->pw = BOT_GTK_PARAM_WIDGET(bot_gtk_param_widget_new());
