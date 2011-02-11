@@ -381,9 +381,9 @@ int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, cons
   return status;
 }
 
-char * bot_frames_get_root_name(BotFrames * bot_frames)
+const char * bot_frames_get_root_name(BotFrames * bot_frames)
 {
-  return strdup(bot_frames->root_name);
+  return bot_frames->root_name;
 }
 
 int bot_frames_get_num_frames(BotFrames * bot_frames)

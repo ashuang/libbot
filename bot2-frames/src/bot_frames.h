@@ -184,11 +184,10 @@ char ** bot_frames_get_frame_names(BotFrames * bot_frames);
 
 /**
  *
- * Returns: a newly allocated strings containing the name of the root
+ * Returns: a string containing the name of the root
  *              coordinate frame
  */
-
-char * bot_frames_get_root_name(BotFrames * bot_frames);
+const char * bot_frames_get_root_name(BotFrames * bot_frames);
 
 
 
