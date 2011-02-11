@@ -9,12 +9,18 @@
 #include <bot_param/param_client.h>
 #include <bot_frames/coord_frames.h>
 
+void update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, void *user)
+{
+  printf("link %s->%s was updated, user = %p\n", frame, relative_to,user);
+}
+
 int main(int argc, char ** argv)
 {
 
   lcm_t * lcm = lcm_create(NULL);
   BotParam * param = bot_param_new_from_server(lcm, 0);
   BotFrames * bcf = bot_frames_get_global(lcm, param);
+  bot_frames_add_update_subscriber(bcf,update_handler,NULL);
 
   for (int i = 0; i < 100; i++) {
     BotTrans t;

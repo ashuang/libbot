@@ -12,16 +12,24 @@
 typedef struct {
 
   char * frame_name;
+  char * relative_to;
   char * update_channel;
   bot_core_isometry_t_subscription_t * subscription;
   BotCTransLink * ctrans_link;
   int was_updated;
 } frame_handle_t;
 
+typedef struct {
+  bot_frames_link_update_handler_t * callback_func;
+  void * user;
+} update_handler_t;
+
 static void frame_handle_destroy(lcm_t * lcm, frame_handle_t * fh)
 {
   if (fh->frame_name != NULL)
     free(fh->frame_name);
+  if (fh->relative_to != NULL)
+    free(fh->relative_to);
   if (fh->update_channel != NULL)
     free(fh->update_channel);
   if (fh->subscription != NULL)
@@ -32,13 +40,15 @@ static void frame_handle_destroy(lcm_t * lcm, frame_handle_t * fh)
 struct _BotFrames {
   BotCTrans * ctrans;
   lcm_t *lcm;
-  BotParam *config;
+  BotParam *bot_param;
 
   GMutex * mutex;
 
   char * root_name;
   GHashTable* frame_handles_by_name;
   GHashTable* frame_handles_by_channel;
+
+  GList * update_callbacks;
 
 };
 
@@ -56,15 +66,21 @@ static void on_frame_update(const lcm_recv_buf_t *rbuf, const char *channel, con
   bot_ctrans_link_update(frame_handle->ctrans_link, &link_transf, msg->utime);
   g_mutex_unlock(bot_frames->mutex);
 
+  GList * p = bot_frames->update_callbacks;
+  for (p; p != NULL; p = g_list_next(p)) {
+    update_handler_t * uh = (update_handler_t *) p->data;
+    uh->callback_func(bot_frames, frame_handle->frame_name, frame_handle->relative_to, uh->user);
+  }
+
 }
 
 BotFrames *
-bot_frames_new(lcm_t *lcm, BotParam *config)
+bot_frames_new(lcm_t *lcm, BotParam *bot_param)
 {
   BotFrames *self = g_slice_new0(BotFrames);
 
   self->lcm = lcm;
-  self->config = config;
+  self->bot_param = bot_param;
   self->mutex = g_mutex_new();
 
   g_mutex_lock(self->mutex);
@@ -75,14 +91,17 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
   self->frame_handles_by_name = g_hash_table_new(g_str_hash, g_str_equal);
   self->frame_handles_by_channel = g_hash_table_new(g_str_hash, g_str_equal);
 
-  int num_frames = bot_param_get_num_subkeys(self->config, "coordinate_frames");
+  //create the callback lists
+  self->update_callbacks = NULL;
+
+  int num_frames = bot_param_get_num_subkeys(self->bot_param, "coordinate_frames");
   if (num_frames <= 0) {
     fprintf(stderr, "BotFrames Error: param file does not contain a 'coordinate_frames' block\n");
     bot_frames_destroy(self);
     return NULL;
   }
 
-  int ret = bot_param_get_str(self->config, "coordinate_frames.root_frame", &self->root_name);
+  int ret = bot_param_get_str(self->bot_param, "coordinate_frames.root_frame", &self->root_name);
   if (ret < 0) {
     fprintf(stderr, "BotFrames Error: root_frame not defined!\n");
     goto fail;
@@ -91,12 +110,13 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
   frame_handle_t * root_handle = (frame_handle_t *) calloc(1, sizeof(frame_handle_t));
   root_handle->ctrans_link = NULL;
   root_handle->frame_name = self->root_name;
+  root_handle->relative_to = NULL;
   root_handle->was_updated = 0;
   root_handle->update_channel = NULL;
   root_handle->subscription = NULL;
   g_hash_table_insert(self->frame_handles_by_name, (gpointer) self->root_name, (gpointer) root_handle);
 
-  char ** frame_names = bot_param_get_subkeys(self->config, "coordinate_frames");
+  char ** frame_names = bot_param_get_subkeys(self->bot_param, "coordinate_frames");
 
   for (int i = 0; i < num_frames; i++) {
     char * frame_name = strdup(frame_names[i]);
@@ -105,7 +125,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
 
     char param_key[2048];
     sprintf(param_key, "coordinate_frames.%s", frame_name);
-    int num_sub_keys = bot_param_get_num_subkeys(self->config, param_key);
+    int num_sub_keys = bot_param_get_num_subkeys(self->bot_param, param_key);
     if (num_sub_keys == 0) {
       continue; // probably the root_frame definition
     }
@@ -114,7 +134,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     //get which frame this is relative to
     sprintf(param_key, "coordinate_frames.%s.relative_to", frame_name);
     char * relative_to;
-    int ret = bot_param_get_str(self->config, param_key, &relative_to);
+    int ret = bot_param_get_str(self->bot_param, param_key, &relative_to);
     if (ret < 0) {
       fprintf(stderr, "BotFrames Error: frame %s does not have a 'relative_to' field block\n", frame_name);
       goto fail;
@@ -123,21 +143,21 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     //get the history size
     sprintf(param_key, "coordinate_frames.%s.history", frame_name);
     int history;
-    ret = bot_param_get_int(self->config, param_key, &history);
+    ret = bot_param_get_int(self->bot_param, param_key, &history);
     if (ret < 0) {
       history = 0;//assume it's a static transformation
     }
 
     //get the initial transform
     sprintf(param_key, "coordinate_frames.%s.initial_transform", frame_name);
-    if (bot_param_get_num_subkeys(self->config, param_key) != 2) {
+    if (bot_param_get_num_subkeys(self->bot_param, param_key) != 2) {
       fprintf(stderr,
           "BotFrames Error: frame %s does not have the right number of fields in the 'initial_transform' block\n",
           frame_name);
       goto fail;
     }
     BotTrans init_trans;
-    ret = bot_param_get_trans(self->config, param_key, &init_trans);
+    ret = bot_param_get_trans(self->bot_param, param_key, &init_trans);
     if (ret < 0) {
       fprintf(stderr, "BotFrames Error: could not get 'initial_transform' for frame %s\n", frame_name);
       goto fail;
@@ -161,6 +181,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     frame_handle = (frame_handle_t *) calloc(1, sizeof(frame_handle_t));
     frame_handle->ctrans_link = link;
     frame_handle->frame_name = frame_name;
+    frame_handle->relative_to = relative_to;
     frame_handle->was_updated = 0;
     frame_handle->update_channel = NULL;
     frame_handle->subscription = NULL;
@@ -170,7 +191,7 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
     char * update_channel = NULL;
     if (history > 0) {
       sprintf(param_key, "coordinate_frames.%s.update_channel", frame_name);
-      ret = bot_param_get_str(self->config, param_key, &update_channel);
+      ret = bot_param_get_str(self->bot_param, param_key, &update_channel);
       if (ret < 0) {
         fprintf(stderr, "BotFrames Error: could not get 'update_channel' for frame %s\n", frame_name);
         goto fail;
@@ -191,7 +212,6 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
 
     }
 
-    free(relative_to);
   }
   g_strfreev(frame_names);
   g_mutex_unlock(self->mutex);
@@ -201,6 +221,11 @@ bot_frames_new(lcm_t *lcm, BotParam *config)
   bot_frames_destroy(self);
   return NULL;
 
+}
+
+static void _update_handler_t_destroy(void * data, void * user)
+{
+  g_slice_free(update_handler_t, data);
 }
 
 void bot_frames_destroy(BotFrames * bot_frames)
@@ -221,7 +246,23 @@ void bot_frames_destroy(BotFrames * bot_frames)
   g_hash_table_destroy(bot_frames->frame_handles_by_name);
   g_hash_table_destroy(bot_frames->frame_handles_by_channel);
   free(bot_frames->root_name);
+
+  if (bot_frames->update_callbacks != NULL) {
+    g_list_foreach(bot_frames->update_callbacks, _update_handler_t_destroy, NULL);
+    g_list_free(bot_frames->update_callbacks);
+  }
+
   g_slice_free(BotFrames, bot_frames);
+}
+
+void bot_frames_add_update_subscriber(BotFrames *bot_frames, bot_frames_link_update_handler_t * callback_func,
+    void * user)
+{
+  update_handler_t * uh = g_slice_new0(update_handler_t);
+  uh->callback_func = callback_func;
+  uh->user = user;
+  bot_frames->update_callbacks = g_list_append(bot_frames->update_callbacks, uh);
+
 }
 
 int bot_frames_get_trans_with_utime(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int64_t utime,
@@ -373,16 +414,16 @@ static BotFrames *global_bot_frames = NULL;
 static GStaticMutex bot_frames_global_mutex = G_STATIC_MUTEX_INIT;
 
 BotFrames*
-bot_frames_get_global(lcm_t *lcm, BotParam *config)
+bot_frames_get_global(lcm_t *lcm, BotParam *bot_param)
 {
   if (lcm == NULL)
     lcm = bot_lcm_get_global(NULL);
-  if (config == NULL)
-    config = bot_param_get_global(lcm, 0);
+  if (bot_param == NULL)
+    bot_param = bot_param_get_global(lcm, 0);
 
   g_static_mutex_lock(&bot_frames_global_mutex);
   if (global_bot_frames == NULL) {
-    global_bot_frames = bot_frames_new(lcm, config);
+    global_bot_frames = bot_frames_new(lcm, bot_param);
     if (!global_bot_frames)
       goto fail;
   }

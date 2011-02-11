@@ -36,8 +36,6 @@ typedef struct _RendererFrames {
   BotViewer *viewer;
   BotGtkParamWidget *pw;
 
-  lcm_t * lc;
-  BotParam * param;
   BotFrames * frames;
 
   BotPtrCircular *path; // elements: double[3]
@@ -153,7 +151,7 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_DEPTH_TEST);
 
-  float * path_color = bot_color_util_jet(bot_gtk_param_widget_get_double(self->pw,PARAM_PATH_COLOR));
+  float * path_color = bot_color_util_jet(bot_gtk_param_widget_get_double(self->pw, PARAM_PATH_COLOR));
 
   switch (bot_gtk_param_widget_get_enum(self->pw, PARAM_PATH_RENDER_MODE)) {
   case PATH_MODE_AXES:
@@ -366,7 +364,13 @@ static void on_save_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user
   bot_gtk_param_widget_save_to_key_file(self->pw, keyfile, RENDERER_NAME);
 }
 
-void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority)
+static void frames_update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, void *user)
+{
+  RendererFrames *self = (RendererFrames *) user;
+  bot_viewer_request_redraw(self->viewer);
+}
+
+void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, lcm_t * lcm, BotParam * bot_param)
 {
   RendererFrames *self = (RendererFrames*) calloc(1, sizeof(RendererFrames));
 
@@ -392,9 +396,8 @@ void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority)
   ehandler->user = self;
 
   self->viewer = viewer;
-  self->lc = bot_lcm_get_global(NULL);
-  self->param = bot_param_get_global(self->lc, 0);
-  self->frames = bot_frames_get_global(self->lc, self->param);
+  self->frames = bot_frames_get_global(lcm, bot_param);
+  bot_frames_add_update_subscriber(self->frames, frames_update_handler, (void *) self);
 
   self->pw = BOT_GTK_PARAM_WIDGET(bot_gtk_param_widget_new());
   self->path = bot_ptr_circular_new(MAX_HIST, free_path_element, NULL);
@@ -429,7 +432,6 @@ void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority)
 
   bot_gtk_param_widget_add_enum(self->pw, PARAM_PATH_RENDER_MODE, BOT_GTK_PARAM_WIDGET_DEFAULTS, 0, "Line",
       PATH_MODE_NORMAL, "Line On floor", PATH_MODE_FLOOR, "Curtain", PATH_MODE_CURTAIN, "Axes", PATH_MODE_AXES, NULL);
-
 
   bot_gtk_param_widget_add_double(self->pw, PARAM_PATH_COLOR, BOT_GTK_PARAM_WIDGET_SLIDER, 0, 1, .01, .3);
   bot_gtk_param_widget_add_double(self->pw, PARAM_DECIMATE_PATH, BOT_GTK_PARAM_WIDGET_SPINBOX, 0, 100, .01, .1);

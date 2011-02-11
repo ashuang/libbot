@@ -53,13 +53,29 @@ extern "C" {
  */
 typedef struct _BotFrames BotFrames;
 
-BotFrames * bot_frames_new(lcm_t *lcm, BotParam *config);
+/*
+ * Constructor
+ */
+BotFrames * bot_frames_new(lcm_t *lcm, BotParam *bot_param);
 
+/*
+ * Destructor
+ */
 void bot_frames_destroy(BotFrames * bot_frames);
 
+/*
+ * Conveniance function to get a globally shared frames object
+ */
+BotFrames * bot_frames_get_global(lcm_t *lcm, BotParam *bot_param);
 
 
-BotFrames * bot_frames_get_global(lcm_t *lcm, BotParam *config);
+typedef void(bot_frames_link_update_handler_t)(BotFrames *bot_frames,
+             const char *frame, const char * relative_to, void *user);
+/*
+ * add a callback handler to get called when a link is updated
+ */
+void bot_frames_add_update_subscriber(BotFrames *bot_frames,
+    bot_frames_link_update_handler_t * callback_func, void * user);
 
 
 /**

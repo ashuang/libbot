@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 //    exit(1);
 //  }
   lcm_t * lcm = bot_lcm_get_global(NULL);
+  BotParam * param = bot_param_get_global(lcm,0);
   bot_glib_mainloop_attach_lcm(lcm);
 
   BotViewer* viewer = bot_viewer_new("Quad Viewer");
@@ -55,7 +56,7 @@ int main(int argc, char *argv[])
   // setup renderers
   bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
   bot_lcmgl_add_renderer_to_viewer(viewer,lcm, 1);
-  bot_frames_add_renderer_to_viewer(viewer,1);
+  bot_frames_add_renderer_to_viewer(viewer,1,lcm,param);
 
   //load the renderer params from the config file.
   char *fname = g_build_filename(g_get_user_config_dir(), ".quad-viewerrc", NULL);
