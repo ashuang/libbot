@@ -16,49 +16,47 @@
 #include "lcm_tunnel.h"
 #include "lcm_tunnel_server.h"
 
-static inline void check_ret(int ret){
+static inline void check_ret(int ret)
+{
   assert(ret==0);
 }
 
 static inline int64_t _timestamp_now()
 {
-    struct timeval tv;
-    gettimeofday (&tv, NULL);
-    return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 static inline void _timestamp_to_GTimeVal(int64_t v, GTimeVal *ts)
 {
-    ts->tv_sec  = v/1000000;
-    ts->tv_usec = v%1000000;
+  ts->tv_sec = v / 1000000;
+  ts->tv_usec = v % 1000000;
 }
 
 static int _fileutils_write_fully(int fd, const void *b, int len)
 {
-  int cnt=0;
+  int cnt = 0;
   int thiscnt;
-  unsigned char *bb=(unsigned char*) b;
+  unsigned char *bb = (unsigned char*) b;
 
-  while (cnt<len)
-    {
-      thiscnt=write(fd, &bb[cnt], len-cnt);
-      if (thiscnt<0) {
-        perror ("write");
-        return -1;
-      }
-      cnt+=thiscnt;
+  while (cnt < len) {
+    thiscnt = write(fd, &bb[cnt], len - cnt);
+    if (thiscnt < 0) {
+      perror("write");
+      return -1;
     }
+    cnt += thiscnt;
+  }
 
   return cnt;
 }
 
 LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
-  verbose(verbose), regex_inited(false),
-  buf_sz(65536), buf((char*)calloc(65536, sizeof(char))),
-  channel_sz(65536), channel((char*)calloc(65536, sizeof(char))),
-  recFlags_sz(1024), recFlags((char*)calloc(1024, sizeof(char))),
-  ldpc_dec(NULL), udp_fd(-1), server_udp_port(-1), udp_send_seqno(0),
-  stopSendThread(false), bytesInQueue(0),cur_seqno(0),errorStartTime(-1),numSuccessful(0),lastErrorPrintTime(-1)
+  verbose(verbose), regex_inited(false), buf_sz(65536), buf((char*) calloc(65536, sizeof(char))), channel_sz(65536),
+      channel((char*) calloc(65536, sizeof(char))), recFlags_sz(1024), recFlags((char*) calloc(1024, sizeof(char))),
+      ldpc_dec(NULL), udp_fd(-1), server_udp_port(-1), udp_send_seqno(0), stopSendThread(false), bytesInQueue(0),
+      cur_seqno(0), errorStartTime(-1), numSuccessful(0), lastErrorPrintTime(-1)
 {
   //allocate and initialize things
 
@@ -67,26 +65,24 @@ LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
   //sendThread stuff
   sendQueueLock = g_mutex_new();
   sendQueueCond = g_cond_new();
-  sendThread = g_thread_create(sendThreadFunc, (void *) this,1,NULL );
+  sendThread = g_thread_create(sendThreadFunc, (void *) this, 1, NULL);
 
 }
 
 void LcmTunnel::init_regex(const char *lcm_channel)
 {
-  if (lcm_channel && strlen(lcm_channel))
-  {
-    char *rchannel = (char*)calloc(strlen(lcm_channel)+3, sizeof(char));
+  if (lcm_channel && strlen(lcm_channel)) {
+    char *rchannel = (char*) calloc(strlen(lcm_channel) + 3, sizeof(char));
     sprintf(rchannel, "%c%s%c", '^', lcm_channel, '$');
 
-    if (regex_inited)
-    {
+    if (regex_inited) {
       if (verbose)
         printf("Replacing regex with \"%s\"\n", rchannel);
       regfree(&regex);
       regex_inited = false;
     }
 
-    if (regcomp (&regex, rchannel, REG_NOSUB | REG_EXTENDED))
+    if (regcomp(&regex, rchannel, REG_NOSUB | REG_EXTENDED))
       fprintf(stderr, "Invalid regex: \"%s\"\n", rchannel);
     else
       regex_inited = true;
@@ -111,7 +107,7 @@ LcmTunnel::~LcmTunnel()
     disc_msg.utime = _timestamp_now();
     int msg_sz = lcm_tunnel_disconnect_msg_t_encoded_size(&disc_msg);
     uint8_t msg_buf[msg_sz];
-    lcm_tunnel_disconnect_msg_t_encode(msg_buf,0,msg_sz,&disc_msg);
+    lcm_tunnel_disconnect_msg_t_encode(msg_buf, 0, msg_sz, &disc_msg);
     send(udp_fd, msg_buf, msg_sz, 0);
 
     //close UDP socket
@@ -152,19 +148,19 @@ LcmTunnel::~LcmTunnel()
 
 }
 
-void LcmTunnel::closeTCPSocket(){
-  fprintf(stderr,"closing TCP socket\n");
-    if (tcp_sock!=NULL)
-      ssocket_destroy(tcp_sock);
-    tcp_sock = NULL;
-    if (tcp_ioc!=NULL)
-      g_io_channel_unref(tcp_ioc);
-    tcp_ioc = NULL;
-    if (tcp_sid>0)
-      g_source_remove(tcp_sid);
-    tcp_sid=-1;
-  }
-
+void LcmTunnel::closeTCPSocket()
+{
+  fprintf(stderr, "closing TCP socket\n");
+  if (tcp_sock != NULL)
+    ssocket_destroy(tcp_sock);
+  tcp_sock = NULL;
+  if (tcp_ioc != NULL)
+    g_io_channel_unref(tcp_ioc);
+  tcp_ioc = NULL;
+  if (tcp_sid > 0)
+    g_source_remove(tcp_sid);
+  tcp_sid = -1;
+}
 
 int LcmTunnel::connectToClient(lcm_t * lcm_, introspect_t *introspect_, GMainLoop * mainloop_, ssocket_t * sock_,
     tunnel_server_params_t * server_params_)
@@ -194,8 +190,7 @@ int LcmTunnel::connectToClient(lcm_t * lcm_, introspect_t *introspect_, GMainLoo
 }
 
 int LcmTunnel::connectToServer(lcm_t * lcm_, introspect_t *introspect_, GMainLoop * mainloop_, char * server_addr_str,
-    int port, char * channels_to_recv, lcm_tunnel_params_t * tunnel_params_,
-    tunnel_server_params_t * server_params_)
+    int port, char * channels_to_recv, lcm_tunnel_params_t * tunnel_params_, tunnel_server_params_t * server_params_)
 { //for a client that should initiate a connection with a server
 
   tunnel_params = lcm_tunnel_params_t_copy(tunnel_params_);
@@ -249,7 +244,7 @@ int LcmTunnel::connectToServer(lcm_t * lcm_, introspect_t *introspect_, GMainLoo
   getpeername(tcp_sock->socket, (struct sockaddr*) &server_addr, &addrlen);
   uint32_t server_port = ntohs(server_addr.sin_port);
   snprintf(name, sizeof(name), "%s:%d", inet_ntoa(server_addr.sin_addr), server_port);
-  fprintf(stderr,"Connected to %s\n", name);
+  fprintf(stderr, "Connected to %s\n", name);
 
   // transmit subscription information
   lcm_tunnel_params_t * tun_params_to_send = lcm_tunnel_params_t_copy(tunnel_params);
@@ -257,7 +252,7 @@ int LcmTunnel::connectToServer(lcm_t * lcm_, introspect_t *introspect_, GMainLoo
   free(tun_params_to_send->channels);
   tun_params_to_send->channels = strdup(channels_to_recv);
   int msg_sz = lcm_tunnel_params_t_encoded_size(tun_params_to_send);
-  uint8_t * msg = (uint8_t *) calloc(msg_sz,sizeof(uint8_t));
+  uint8_t * msg = (uint8_t *) calloc(msg_sz, sizeof(uint8_t));
   lcm_tunnel_params_t_encode(msg, 0, msg_sz, tun_params_to_send);
   uint32_t msg_sz_n = htonl(msg_sz);
   if (4 != _fileutils_write_fully(ssocket_get_fd(tcp_sock), &msg_sz_n, 4)) {
@@ -276,7 +271,6 @@ int LcmTunnel::connectToServer(lcm_t * lcm_, introspect_t *introspect_, GMainLoo
   }
   lcm_tunnel_params_t_destroy(tun_params_to_send);
   free(msg);
-
 
   //set state for tcp receptions
   bytes_to_read = 4;
@@ -300,7 +294,7 @@ int LcmTunnel::publishLcmMessagesInBuf(int numBytes)
   while (msgOffset < numBytes) {
     //decode
     lcm_tunnel_sub_msg_t p;
-    msgOffset +=lcm_tunnel_sub_msg_t_decode(buf, msgOffset, numBytes-msgOffset, &p);
+    msgOffset += lcm_tunnel_sub_msg_t_decode(buf, msgOffset, numBytes - msgOffset, &p);
     // and publish
     LcmTunnelServer::check_and_send_to_tunnels(p.channel, p.data, p.data_size, this);
     lcm_publish(lcm, p.channel, p.data, p.data_size);
@@ -318,7 +312,7 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
 
   uint8_t recv_buffer[65535];
 
-  int recv_status = recv(self->udp_fd, recv_buffer, sizeof(recv_buffer), 0);
+  int recv_status = recv(self->udp_fd, recv_buffer, 65535, 0);
 
   if (recv_status < 0) {
     perror("recv error: ");
@@ -326,32 +320,32 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
     //    LcmTunnelServer::disconnectClient(self);
   }
 
-  lcm_tunnel_udp_msg_t recv_udp_msg;
-  int decode_ret = lcm_tunnel_udp_msg_t_decode(recv_buffer,0,recv_status,&recv_udp_msg);
-  if (decode_ret<0){
+  lcm_tunnel_udp_msg_t * recv_udp_msg = (lcm_tunnel_udp_msg_t *) calloc(1, sizeof(lcm_tunnel_udp_msg_t));
+  int decode_ret = lcm_tunnel_udp_msg_t_decode(recv_buffer, 0, recv_status, recv_udp_msg);
+  if (decode_ret < 0) {
     lcm_tunnel_disconnect_msg_t disc_msg;
-    decode_ret = lcm_tunnel_disconnect_msg_t_decode(recv_buffer,0,recv_status,&disc_msg);
-    if (decode_ret>=0){
-      fprintf(stderr,"Received a disconnect message... disconnecting!\n");
+    decode_ret = lcm_tunnel_disconnect_msg_t_decode(recv_buffer, 0, recv_status, &disc_msg);
+    if (decode_ret >= 0) {
+      fprintf(stderr, "Received a disconnect message... disconnecting!\n");
       LcmTunnelServer::disconnectClient(self);
     }
-    else{
-      fprintf(stderr,"Received Corrupted UDP packet!\n");
+    else {
+      fprintf(stderr, "Received Corrupted UDP packet!\n");
     }
 
   }
 
-  //  printf("received: %d, %d / %d\n", recv_udp_msg.seqno, recv_udp_msg.fragment, recv_udp_msg.nfrags);
+  //  printf("received: %d, %d / %d\n", recv_udp_msg->seqno, recv_udp_msg->fragment, recv_udp_msg->nfrags);
 
 
-  if (self->verbose, recv_udp_msg.seqno < self->cur_seqno) {
+  if (self->verbose, recv_udp_msg->seqno < self->cur_seqno) {
     printf("Got Out of order packet!\n");
   }
 
   // start of a new message?
-  if (recv_udp_msg.seqno > self->cur_seqno || recv_udp_msg.seqno < (int32_t) self->cur_seqno - SEQNO_WRAP_GAP) { //handle wrap-around with second part
-    if (!self->message_complete && self->cur_seqno > 0 || recv_udp_msg.seqno > (self->cur_seqno + 1)) {
-      printf("packets %d to %d dropped! with %d of %d fragments received, ", self->cur_seqno, recv_udp_msg.seqno - 1,
+  if (recv_udp_msg->seqno > self->cur_seqno || recv_udp_msg->seqno < (int32_t) self->cur_seqno - SEQNO_WRAP_GAP) { //handle wrap-around with second part
+    if (!self->message_complete && self->cur_seqno > 0 || recv_udp_msg->seqno > (self->cur_seqno + 1)) {
+      printf("packets %d to %d dropped! with %d of %d fragments received, ", self->cur_seqno, recv_udp_msg->seqno - 1,
           self->numFragsRec, self->nfrags);
       if (self->tunnel_params->fec > 1 && self->nfrags >= MIN_NUM_FRAGMENTS_FOR_FEC) {
         printf("was FECed\n");
@@ -359,8 +353,8 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
       else
         printf("not FECed\n");
     }
-    self->cur_seqno = recv_udp_msg.seqno;
-    self->nfrags = getNumFragments(recv_udp_msg.payload_size);
+    self->cur_seqno = recv_udp_msg->seqno;
+    self->nfrags = getNumFragments(recv_udp_msg->payload_size);
     self->numFragsRec = 0;
     //increase the recFlags buffers
     if (self->recFlags_sz < self->nfrags) {
@@ -371,7 +365,7 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
     self->completeTo_fragno = 0;
     self->fragment_buf_offset = 0;
 
-    int messageSize = recv_udp_msg.payload_size;
+    int messageSize = recv_udp_msg->payload_size;
     // increase buffer size if needed, also make enough space for the channel in case we're using FEC
     if (self->buf_sz < messageSize) {
       self->buf = (char *) realloc(self->buf, messageSize);
@@ -390,19 +384,20 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
     self->message_complete = 0;
   }
 
-  if (!self->message_complete && recv_udp_msg.seqno == self->cur_seqno && getNumFragments(recv_udp_msg.payload_size) == self->nfrags) {
+  if (!self->message_complete && recv_udp_msg->seqno == self->cur_seqno && getNumFragments(recv_udp_msg->payload_size)
+      == self->nfrags) {
     self->numFragsRec++;
     if (self->tunnel_params->fec < 1 || self->nfrags < MIN_NUM_FRAGMENTS_FOR_FEC) { //we're not using FEC for this message
       // have we already received this fragment?
-      if (recv_udp_msg.fragno < self->nfrags && !self->recFlags[recv_udp_msg.fragno]) {
-        self->recFlags[recv_udp_msg.fragno] = 1;
+      if (recv_udp_msg->fragno < self->nfrags && !self->recFlags[recv_udp_msg->fragno]) {
+        self->recFlags[recv_udp_msg->fragno] = 1;
 
         //copy everything to the app->buf
-        int64_t pos_start = recv_udp_msg.fragno * MAX_PAYLOAD_BYTES_PER_FRAGMENT;
-        int64_t pos_end = MIN(recv_udp_msg.payload_size, (recv_udp_msg.fragno + 1) * MAX_PAYLOAD_BYTES_PER_FRAGMENT);
+        int64_t pos_start = recv_udp_msg->fragno * MAX_PAYLOAD_BYTES_PER_FRAGMENT;
+        int64_t pos_end = MIN(recv_udp_msg->payload_size, (recv_udp_msg->fragno + 1) * MAX_PAYLOAD_BYTES_PER_FRAGMENT);
         int64_t curPayloadSize = pos_end - pos_start;
-        assert(recv_udp_msg.data_size==curPayloadSize);
-        memcpy(self->buf + pos_start, recv_udp_msg.data, curPayloadSize);
+        assert(recv_udp_msg->data_size==curPayloadSize);
+        memcpy(self->buf + pos_start, recv_udp_msg->data, curPayloadSize);
 
         self->message_complete = 1;
         for (int i = self->completeTo_fragno; i < self->nfrags; i++) {
@@ -416,25 +411,25 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
 
         if (self->message_complete) {
           //publish all the lcm messages in the buffer
-          self->publishLcmMessagesInBuf(recv_udp_msg.payload_size);
+          self->publishLcmMessagesInBuf(recv_udp_msg->payload_size);
         }
 
       }
       else if (self->verbose) {
         printf("ignoring udp packet\n");
         //        printf("seqno: %d (%d)  fragment: %d (%d) nfrags: %d (%d)\n",
-        //                recv_udp_msg.seqno, app->cur_seqno,
-        //                recv_udp_msg.fragment, app->expected_fragno,
-        //                recv_udp_msg.nfrags, app->nfrags);
+        //                recv_udp_msg->seqno, app->cur_seqno,
+        //                recv_udp_msg->fragment, app->expected_fragno,
+        //                recv_udp_msg->nfrags, app->nfrags);
       }
     }
     else { //we're using FEC
-      int dec_done = self->ldpc_dec->processPacket(recv_udp_msg.data, recv_udp_msg.fragno);
+      int dec_done = self->ldpc_dec->processPacket(recv_udp_msg->data, recv_udp_msg->fragno);
       if (dec_done != 0) {
         if (dec_done == 1) {
           check_ret(self->ldpc_dec->getObject((uint8_t*) self->buf));
           //publish all the lcm messages in the buffer
-          self->publishLcmMessagesInBuf(recv_udp_msg.payload_size);
+          self->publishLcmMessagesInBuf(recv_udp_msg->payload_size);
         }
         else {
           fprintf(stderr, "ldpc got all the sent packets, but couldn't reconstruct... this shouldn't happen!\n");
@@ -446,10 +441,13 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
     }
   }
   else if (self->verbose && !self->message_complete) {
-    //    if (!self->message_complete && recv_udp_msg.seqno == self->cur_seqno && recv_udp_msg.nfrags == self->nfrags) {
-    printf("ignoring udp packet seqno=%d, nfrag =%d, \t self-> seqno=%d, nfrags=%d\n", recv_udp_msg.seqno,
-        getNumFragments(recv_udp_msg.payload_size), self->cur_seqno, self->nfrags);
+    //    if (!self->message_complete && recv_udp_msg->seqno == self->cur_seqno && recv_udp_msg->nfrags == self->nfrags) {
+    printf("ignoring udp packet seqno=%d, nfrag =%d, \t self-> seqno=%d, nfrags=%d\n", recv_udp_msg->seqno,
+        getNumFragments(recv_udp_msg->payload_size), self->cur_seqno, self->nfrags);
   }
+
+
+  lcm_tunnel_udp_msg_t_destroy(recv_udp_msg);
 
   return TRUE;
 }
@@ -466,8 +464,8 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
     self->buf_sz = self->bytes_to_read;
   }
 
-  ssize_t nread =
-      read(ssocket_get_fd(self->tcp_sock), self->buf + self->bytes_read, self->bytes_to_read - self->bytes_read);
+  ssize_t nread = read(ssocket_get_fd(self->tcp_sock), self->buf + self->bytes_read, self->bytes_to_read
+      - self->bytes_read);
 
   if (nread <= 0) {
     perror("tcp receive error: ");
@@ -558,17 +556,16 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
       self->bytes_to_read = 4;
 
       //      if (self->server_params->verbose)
-      fprintf(stderr,"%s subscribed to \"%s\" -- ",self->name, self->tunnel_params->channels);
+      fprintf(stderr, "%s subscribed to \"%s\" -- ", self->name, self->tunnel_params->channels);
 
-      if (self->udp_fd>=0){
-      fprintf(stderr,"UDP with FEC rate of %.2f and max_delay of %dms\n",self->tunnel_params->fec,
-          self->tunnel_params->max_delay_ms);
+      if (self->udp_fd >= 0) {
+        fprintf(stderr, "UDP with FEC rate of %.2f and max_delay of %dms\n", self->tunnel_params->fec,
+            self->tunnel_params->max_delay_ms);
       }
-      else{
-        fprintf(stderr,"TCP with max_delay of %dms and tcp_max_age_ms of %d\n",
-            self->tunnel_params->max_delay_ms,self->tunnel_params->tcp_max_age_ms);
+      else {
+        fprintf(stderr, "TCP with max_delay of %dms and tcp_max_age_ms of %d\n", self->tunnel_params->max_delay_ms,
+            self->tunnel_params->tcp_max_age_ms);
       }
-
 
       self->init_regex(self->tunnel_params->channels);
 
@@ -602,7 +599,7 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
       connect(self->udp_fd, (struct sockaddr*) &client_addr, sizeof(client_addr));
 
       //now we can subscribe to LCM
-      fprintf(stderr,"%s subscribed to \"%s\" \n",self->name, self->tunnel_params->channels);
+      fprintf(stderr, "%s subscribed to \"%s\" \n", self->name, self->tunnel_params->channels);
       self->subscription = lcm_subscribe(self->lcm, self->tunnel_params->channels, on_lcm_message, self);
 
       //we're done setting up the UDP connection...Disconnect tcp socket
@@ -646,7 +643,6 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
   return ret;
 }
 
-
 gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
 {
 
@@ -656,7 +652,7 @@ gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
   int64_t nextFlushTime = 0;
   while (!self->stopSendThread) {
     if (self->sendQueue.empty()) {
-      g_cond_wait(self->sendQueueCond,self->sendQueueLock);
+      g_cond_wait(self->sendQueueCond, self->sendQueueLock);
       nextFlushTime = _timestamp_now() + self->tunnel_params->max_delay_ms * 1000;
       continue;
     }
@@ -694,7 +690,7 @@ gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
 void LcmTunnel::send_to_remote(const void *data, uint32_t len, const char *lcm_channel)
 {
   lcm_recv_buf_t rbuf;
-  rbuf.data = (void*)malloc(len);
+  rbuf.data = (void*) malloc(len);
   rbuf.data_size = len;
   rbuf.recv_utime = 0;
   rbuf.lcm = this->lcm;
@@ -709,8 +705,8 @@ void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_chann
   TunnelLcmMessage * new_msg = new TunnelLcmMessage(rbuf, lcm_channel);
   bytesInQueue += new_msg->encoded_size;
   sendQueue.push_back(new_msg);
-  while(bytesInQueue>MAX_SEND_BUFFER_SIZE){
-    fprintf(stderr,"Warning: send queue is too big (%dMB), dropping messages\n",bytesInQueue/(2<<20));
+  while (bytesInQueue > MAX_SEND_BUFFER_SIZE) {
+    fprintf(stderr, "Warning: send queue is too big (%dMB), dropping messages\n", bytesInQueue / (2 << 20));
     //need to drop some stuff
     TunnelLcmMessage * drop_msg = sendQueue.front();
     sendQueue.pop_front();
@@ -726,8 +722,7 @@ void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_chann
 void LcmTunnel::on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, void *user_data)
 {
   LcmTunnel *self = (LcmTunnel*) user_data;
-  if (introspect_is_message_from_self(self->introspect, rbuf, channel))
-  {
+  if (introspect_is_message_from_self(self->introspect, rbuf, channel)) {
     if (self->verbose && !LcmTunnelServer::matches_a_client(channel))
       printf("Warning: Got message from self. There's a loop scenario.\n");
     return;
@@ -736,23 +731,24 @@ void LcmTunnel::on_lcm_message(const lcm_recv_buf_t *rbuf, const char *channel, 
   self->send_to_remote(rbuf, channel);
 }
 
-void LcmTunnel::checkUDPSendStatus(int send_status){
+void LcmTunnel::checkUDPSendStatus(int send_status)
+{
   int64_t now = _timestamp_now();
   if (send_status < 0) {
-    if (errorStartTime<0)
+    if (errorStartTime < 0)
       errorStartTime = now;
-    if (now - lastErrorPrintTime>1e6){
-      fprintf(stderr,"errno %d, send_status %d :", errno, send_status);
+    if (now - lastErrorPrintTime > 1e6) {
+      fprintf(stderr, "errno %d, send_status %d :", errno, send_status);
       perror("error sending UDP Data: ");
       errno = 0;
       lastErrorPrintTime = now;
     }
     numSuccessful = 0;
   }
-  else if(lastErrorPrintTime>0){
+  else if (lastErrorPrintTime > 0) {
     if (numSuccessful > 3) {
-      fprintf(stderr, "Connection may be back up after %fsec send_status=%d numSuccessful=%d\n", (double) (now - errorStartTime)
-          * 1e-6, send_status,numSuccessful);
+      fprintf(stderr, "Connection may be back up after %fsec send_status=%d numSuccessful=%d\n", (double) (now
+          - errorStartTime) * 1e-6, send_status, numSuccessful);
       perror("perror: ");
       lastErrorPrintTime = -1;
       errorStartTime = -1;
@@ -779,11 +775,13 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
         > MAX_NUM_FRAGMENTS / tunnel_params->fec)) {
       uint32_t maxMsgSize;
       if (tunnel_params->fec > 0)
-        maxMsgSize = MAX_PAYLOAD_BYTES_PER_FRAGMENT* MAX_NUM_FRAGMENTS / tunnel_params->fec;
+        maxMsgSize = MAX_PAYLOAD_BYTES_PER_FRAGMENT * MAX_NUM_FRAGMENTS / tunnel_params->fec;
       else
-        maxMsgSize= MAX_PAYLOAD_BYTES_PER_FRAGMENT* MAX_NUM_FRAGMENTS;
-      fprintf(stderr, "WARNING! Queue contains more than the max message size of %d bytes... we're WAY behind, dropping msgs\n",maxMsgSize);
-      while (msgSize<maxMsgSize){
+        maxMsgSize = MAX_PAYLOAD_BYTES_PER_FRAGMENT * MAX_NUM_FRAGMENTS;
+      fprintf(stderr,
+          "WARNING! Queue contains more than the max message size of %d bytes... we're WAY behind, dropping msgs\n",
+          maxMsgSize);
+      while (msgSize < maxMsgSize) {
         //drop messages
         TunnelLcmMessage * drop_msg = msgQueue.front();
         msgQueue.pop_front();
@@ -792,12 +790,12 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
       }
     }
     //put the entire queue into 1 big buffer
-    uint8_t * msgBuf = (uint8_t *) malloc(msgSize*sizeof(uint8_t));
+    uint8_t * msgBuf = (uint8_t *) malloc(msgSize * sizeof(uint8_t));
     uint32_t msgBufOffset = 0;
     while (!msgQueue.empty()) {
       TunnelLcmMessage * msg = msgQueue.front();
       msgQueue.pop_front();
-      lcm_tunnel_sub_msg_t_encode(msgBuf,msgBufOffset,msgSize-msgBufOffset,msg->sub_msg);
+      lcm_tunnel_sub_msg_t_encode(msgBuf, msgBufOffset, msgSize - msgBufOffset, msg->sub_msg);
       msgBufOffset += msg->encoded_size;
       delete msg;
     }
@@ -823,7 +821,7 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
 
           int msg_sz = lcm_tunnel_udp_msg_t_encoded_size(&msg);
           uint8_t msg_buf[msg_sz];
-          lcm_tunnel_udp_msg_t_encode(msg_buf,0,msg_sz,&msg);
+          lcm_tunnel_udp_msg_t_encode(msg_buf, 0, msg_sz, &msg);
           //          printf("sending: %d, %d / %d\n", msg.seqno, msg.fragment, msg.nfrags);
           int send_status = send(udp_fd, msg_buf, msg_sz, 0);
           //          fprintf(stderr,"sent packet\n");
@@ -839,10 +837,9 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
       msg.seqno = udp_send_seqno;
       msg.payload_size = msgSize;
 
+      //      printf("sending: %d, %d / %d\n", recv_udp_msg->seqno, recv_udp_msg->fragment, recv_udp_msg->nfrags);
 
-      //      printf("sending: %d, %d / %d\n", recv_udp_msg.seqno, recv_udp_msg.fragment, recv_udp_msg.nfrags);
-
-      int enc_done=0;
+      int enc_done = 0;
       while (!enc_done) {
         uint8_t data_buf[MAX_PAYLOAD_BYTES_PER_FRAGMENT];
         msg.data_size = MAX_PAYLOAD_BYTES_PER_FRAGMENT;
@@ -851,12 +848,12 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
 
         int msg_sz = lcm_tunnel_udp_msg_t_encoded_size(&msg);
         uint8_t msg_buf[msg_sz];
-        lcm_tunnel_udp_msg_t_encode(msg_buf,0,msg_sz,&msg);
+        lcm_tunnel_udp_msg_t_encode(msg_buf, 0, msg_sz, &msg);
         //          printf("sending: %d, %d / %d\n", msg.seqno, msg.fragment, msg.nfrags);
         int send_status = send(udp_fd, msg_buf, msg_sz, 0);
         checkUDPSendStatus(send_status);
       }
-      //          printf("finished encoding and sending packet %d for channel: %s\n",recv_udp_msg.seqno,channel);
+      //          printf("finished encoding and sending packet %d for channel: %s\n",recv_udp_msg->seqno,channel);
       delete ldpc_enc;
     }
     free(msgBuf);
@@ -874,18 +871,19 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
       if (tunnel_params->tcp_max_age_ms > 0 && age_ms > tunnel_params->tcp_max_age_ms) {
         // message has been queued up for too long.  Drop it.
         if (verbose)
-          fprintf(stderr,"%s message too old (age = %d, param = %d), dropping.\n", msg->sub_msg->channel,(int)age_ms,tunnel_params->tcp_max_age_ms);
+          fprintf(stderr, "%s message too old (age = %d, param = %d), dropping.\n", msg->sub_msg->channel,
+              (int) age_ms, tunnel_params->tcp_max_age_ms);
       }
-      else{
+      else {
         // send channel
         int chan_len = strlen(msg->sub_msg->channel);
         uint32_t chan_len_n = htonl(chan_len);
-        if (4 != _fileutils_write_fully(cfd, &chan_len_n, 4)){
+        if (4 != _fileutils_write_fully(cfd, &chan_len_n, 4)) {
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
         }
-        if (chan_len != _fileutils_write_fully(cfd, msg->sub_msg->channel, chan_len)){
+        if (chan_len != _fileutils_write_fully(cfd, msg->sub_msg->channel, chan_len)) {
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
@@ -893,12 +891,12 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
 
         // send data
         int data_size_n = htonl(msg->sub_msg->data_size);
-        if (4 != _fileutils_write_fully(cfd, &data_size_n, 4)){
+        if (4 != _fileutils_write_fully(cfd, &data_size_n, 4)) {
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
         }
-        if (msg->sub_msg->data_size != _fileutils_write_fully(cfd, msg->sub_msg->data, msg->sub_msg->data_size)){
+        if (msg->sub_msg->data_size != _fileutils_write_fully(cfd, msg->sub_msg->data, msg->sub_msg->data_size)) {
           LcmTunnelServer::disconnectClient(this);
           delete msg;
           return;
@@ -913,8 +911,7 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
   return;
 }
 
-static gboolean
-on_introspect_timer(void* user_data)
+static gboolean on_introspect_timer(void* user_data)
 {
   introspect_t* ini = (introspect_t*) user_data;
   introspect_send_introspection_packet(ini);
@@ -1144,14 +1141,13 @@ int main(int argc, char **argv)
     }
   }
 
-  if (params.connectToServer){
-    fprintf(stderr,"Sending:   \"%s\"\n", params.channels_send);
-    fprintf(stderr,"Recieving: \"%s\"\n", params.channels_recv);
+  if (params.connectToServer) {
+    fprintf(stderr, "Sending:   \"%s\"\n", params.channels_send);
+    fprintf(stderr, "Recieving: \"%s\"\n", params.channels_recv);
   }
-  else{
-    fprintf(stderr,"Not connecting to any Servers\n");
+  else {
+    fprintf(stderr, "Not connecting to any Servers\n");
   }
-
 
   // block SIGPIPE (allow write() to return -1 on broken pipe)
   sigset_t toblock;
@@ -1194,11 +1190,10 @@ int main(int argc, char **argv)
   // periodically send an introspection packet in case network routes change
   g_timeout_add(30000, on_introspect_timer, LcmTunnelServer::introspect);
 
-
   // run
   g_main_loop_run(LcmTunnelServer::mainloop);
 
-  fprintf(stderr,"Destroying the LcmTunnelServer and Exiting\n");
+  fprintf(stderr, "Destroying the LcmTunnelServer and Exiting\n");
   LcmTunnelServer::destroyServer();
 
   return 0;
