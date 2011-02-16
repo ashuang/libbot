@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
     bot_frames_get_trans(bcf, "laser", "local", &t);
     fprintf(stderr, "laser->local= (%f,%f,%f) - (%f,%f,%f,%f)\n", t.trans_vec[0], t.trans_vec[1], t.trans_vec[2],
         t.rot_quat[0], t.rot_quat[1], t.rot_quat[2], t.rot_quat[3]);
-    bot_core_isometry_t msg;
+    bot_core_rigid_transform_t msg;
     msg.utime = bot_timestamp_now();
     msg.trans[0] = ((float) rand()) / (RAND_MAX + 1.0);
     msg.trans[1] = ((float) rand()) / (RAND_MAX + 1.0);
@@ -39,7 +39,7 @@ int main(int argc, char ** argv)
     rod[2] = ((float) rand()) / (RAND_MAX + 1.0);
     bot_rodrigues_to_quat(rod, msg.quat);
 
-    bot_core_isometry_t_publish(lcm, "BODY_TO_LOCAL", &msg);
+    bot_core_rigid_transform_t_publish(lcm, "BODY_TO_LOCAL", &msg);
     lcm_handle(lcm);
   }
 

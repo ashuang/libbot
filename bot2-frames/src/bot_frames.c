@@ -14,7 +14,7 @@ typedef struct {
   char * frame_name;
   char * relative_to;
   char * update_channel;
-  bot_core_isometry_t_subscription_t * subscription;
+  bot_core_rigid_transform_t_subscription_t * subscription;
   BotCTransLink * ctrans_link;
   int was_updated;
 } frame_handle_t;
@@ -33,7 +33,7 @@ static void frame_handle_destroy(lcm_t * lcm, frame_handle_t * fh)
   if (fh->update_channel != NULL)
     free(fh->update_channel);
   if (fh->subscription != NULL)
-    bot_core_isometry_t_unsubscribe(lcm, fh->subscription);
+    bot_core_rigid_transform_t_unsubscribe(lcm, fh->subscription);
   free(fh);
 }
 
@@ -52,7 +52,7 @@ struct _BotFrames {
 
 };
 
-static void on_frame_update(const lcm_recv_buf_t *rbuf, const char *channel, const bot_core_isometry_t *msg,
+static void on_frame_update(const lcm_recv_buf_t *rbuf, const char *channel, const bot_core_rigid_transform_t *msg,
     void *user_data)
 {
   BotFrames * bot_frames = (BotFrames *) user_data;
@@ -206,7 +206,7 @@ bot_frames_new(lcm_t *lcm, BotParam *bot_param)
       }
       //first time around, allocate and set the timer goin...
       frame_handle->update_channel = update_channel;
-      frame_handle->subscription = bot_core_isometry_t_subscribe(self->lcm, update_channel, on_frame_update,
+      frame_handle->subscription = bot_core_rigid_transform_t_subscribe(self->lcm, update_channel, on_frame_update,
           (void*) self);
       g_hash_table_insert(self->frame_handles_by_channel, (gpointer) update_channel, (gpointer) frame_handle);
 

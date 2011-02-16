@@ -31,7 +31,7 @@
 #include <lcmtypes/bot_core_planar_lidar_t.h>
 #include <lcmtypes/bot_core_pose_t.h>
 #include <lcmtypes/bot_core_raw_t.h>
-#include <lcmtypes/bot_core_isometry_t.h>
+#include <lcmtypes/bot_core_rigid_transform_t.h>
 
 /**
  * @defgroup BotCore Bot Core

@@ -1,6 +1,6 @@
 package bot_core;
 
-struct isometry_t
+struct rigid_transform_t
 {
     int64_t utime;              // utime that the actual measurement took place
 
