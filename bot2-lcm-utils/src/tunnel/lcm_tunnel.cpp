@@ -142,6 +142,7 @@ LcmTunnel::~LcmTunnel()
     delete sendQueue.front();
     sendQueue.pop_front();
   }
+  g_mutex_unlock(sendQueueLock);
 
   g_mutex_free(sendQueueLock);
   g_cond_free(sendQueueCond);
