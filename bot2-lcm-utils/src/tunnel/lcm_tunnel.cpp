@@ -560,8 +560,14 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
       fprintf(stderr, "%s subscribed to \"%s\" -- ", self->name, self->tunnel_params->channels);
 
       if (self->udp_fd >= 0) {
-        fprintf(stderr, "UDP with FEC rate of %.2f and max_delay of %dms\n", self->tunnel_params->fec,
-            self->tunnel_params->max_delay_ms);
+        if (self->tunnel_params->fec > 1)
+          fprintf(stderr, "UDP with FEC rate of %.2f and max_delay of %dms\n", self->tunnel_params->fec,
+              self->tunnel_params->max_delay_ms);
+        else if (self->tunnel_params->fec < -1)
+          fprintf(stderr, "UDP with DUP rate of %d and max_delay of %dms\n", (int)-self->tunnel_params->fec,
+              self->tunnel_params->max_delay_ms);
+        else
+          fprintf(stderr, "UDP with a max_delay of %dms\n", self->tunnel_params->max_delay_ms);
       }
       else {
         fprintf(stderr, "TCP with max_delay of %dms and tcp_max_age_ms of %d\n", self->tunnel_params->max_delay_ms,
@@ -965,14 +971,14 @@ static void usage(const char *progname)
     "                              indefinitely.  This option is not used when -u\n"
     "                              is specified.  Default: 10000\n"
     "\n"
-    "    -f, --fec=FEC             Request server to UDP packets with Forward\n"
+    "    -f, --fec=FEC             Request server to use UDP packets with Forward\n"
     "                              Error Correction applied at a rate of FEC \n"
-    "                              (must be >1) small messages will be sent \n"
+    "                              (must be >1) small messages will be duplicated \n"
     "                              ceil(FEC) times instead of coding.       \n"
-    "                              if FEC<-1 just send ceil(FEC) duplicates \n"
     "\n"
     "    -d, --dup=NDUP            Request server to use UDP packets with each\n"
-    "                              packet sent NDUP times (for error resiliency\n"
+    "                              packet sent NDUP times for drop resiliency\n"
+    "                              --fec and --dup cannot be used together\n"
     "\n"
     "\n"
     "    -w, --wait-time-ms=TIME   Request server to queue up lcm messages for\n"
@@ -1098,8 +1104,10 @@ int main(int argc, char **argv)
     case 'f':
       {
         char *e;
+        if (params.fec < 0)
+          usage(argv[0]);
         params.fec = strtod(optarg, &e);
-        if (*e != '\0' || params.fec < 1)
+        if (*e != '\0' || params.fec <= 1)
           usage(argv[0]);
         params.udp = 1; //use udp to send FEC data
         break;
@@ -1107,11 +1115,13 @@ int main(int argc, char **argv)
     case 'd':
       {
         char *e;
-        params.fec = strtol(optarg, &e, 0);
-        if (*e != '\0' || params.fec < 1)
+        if (params.fec > 0)
+          usage(argv[0]);
+        params.fec = strtod(optarg, &e);
+        if (*e != '\0' || params.fec < 2)
           usage(argv[0]);
         params.udp = 1; //use udp to send FEC data
-        params.fec = -params.fec; //if fec is negative, its handled as duplicates
+        params.fec = -round(params.fec); //if fec is negative, its handled as duplicates
         break;
       }
 
