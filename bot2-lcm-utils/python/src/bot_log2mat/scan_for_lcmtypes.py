@@ -37,7 +37,10 @@ def find_lcmtypes():
                 # quick regex test -- check if the file contains the 
                 # word "_get_packed_fingerprint"
                 full_fname = os.path.join(root, fname)
-                contents = open(full_fname, "r").read()
+		try: 
+               	    contents = open(full_fname, "r").read()
+		except IOError:
+                    continue
                 if not regex.search(contents):
                     continue
                 
