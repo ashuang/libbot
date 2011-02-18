@@ -691,9 +691,9 @@ gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
 void LcmTunnel::send_to_remote(const void *data, uint32_t len, const char *lcm_channel)
 {
   lcm_recv_buf_t rbuf;
-  rbuf.data = (void*) malloc(len);
+  rbuf.data = (void*) malloc(len); //TODO: this extra copy probably isn't necessary
   rbuf.data_size = len;
-  rbuf.recv_utime = 0;
+  rbuf.recv_utime = _timestamp_now(); //use current timestamp, should be close to when received...
   rbuf.lcm = this->lcm;
   memcpy(rbuf.data, data, len);
   send_to_remote(&rbuf, lcm_channel);
