@@ -40,7 +40,7 @@ typedef struct _RendererFrames {
 
   BotPtrCircular *path; // elements: double[3]
 
-  char * rootFrame;
+  const char * rootFrame;
   int numFrames;
   char ** frameNames;
   int * frameNums;
@@ -364,9 +364,10 @@ static void on_save_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user
   bot_gtk_param_widget_save_to_key_file(self->pw, keyfile, RENDERER_NAME);
 }
 
-static void frames_update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, void *user)
+static void frames_update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, int64_t utime, void *user)
 {
   RendererFrames *self = (RendererFrames *) user;
+  //TODO: handle adding coordinate frames!
   bot_viewer_request_redraw(self->viewer);
 }
 

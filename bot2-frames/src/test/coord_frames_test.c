@@ -9,7 +9,7 @@
 #include <bot_param/param_client.h>
 #include <bot_frames/bot_frames.h>
 
-void update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, void *user)
+void update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, int64_t utime, void *user)
 {
   printf("link %s->%s was updated, user = %p\n", frame, relative_to,user);
 }

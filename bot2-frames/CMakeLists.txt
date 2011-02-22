@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 2.6.0)
 set(POD_NAME bot2-frames)
 include(cmake/pods.cmake)
 
+include(cmake/lcmtypes.cmake)
+lcmtypes_build()
+
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)

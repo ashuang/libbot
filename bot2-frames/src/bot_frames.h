@@ -13,6 +13,14 @@ extern "C" {
  *
  * BotFrames is intended to be a one-stop shop for coordinate frame transformations.
  *
+ * The coordinate frames are constructed from the "coordinate_frames" block of the param file. The
+ * param block should be laid out as shown below.
+ *
+ * frames can be updated by one of three ways:
+ *      1) publishing a bot frames update using the bot_frames_update_frame() function
+ *      2) defining an update_channel name, which should receive bot_core_rigid_transform_t messages
+ *      3) defining a pose_update_channel, where bot_core_pose_t messages will be listened for
+ *
  *
  * It assumes that there is a block in the param file specifying the layout of the coordinate frames.
  * For example:
@@ -23,16 +31,16 @@ extern "C" {
    body {
      relative_to = "local";
      history = 1000;                    #number of past transforms to keep around,
-     update_channel = "BODY_TO_LOCAL";  #transform updates will be listened for on this channel
+     pose_update_channel = "POSE";      #bot_core_pose_t messages will be listened for this channel
      initial_transform{
-       translation = [ 0, 0, 0 ];         #(x,y,z) translation vector
+       translation = [ 0, 0, 0 ];       #(x,y,z) translation vector
        quat = [ 1, 0, 0, 0 ];           #may be specified as a quaternion, rpy, rodrigues, or axis-angle
      }
    }
    laser {
      relative_to = "body";
-     history = 0;                       #if set to 0, transform will not be updated
-     update_channel = "";               #ignored since history=0
+     history = 0;
+     update_channel = "LASER_TO_BODY";               #specify an update_channel to listen on
      initial_transform{
        translation = [ 0, 0, 0 ];
        rpy = [ 0, 0, 0 ];
@@ -69,8 +77,14 @@ void bot_frames_destroy(BotFrames * bot_frames);
 BotFrames * bot_frames_get_global(lcm_t *lcm, BotParam *bot_param);
 
 
+/*
+ * Publish a frame update message
+ */
+void bot_frames_update_frame(BotFrames * bot_frames, const char * frame_name,
+    const char * relative_to, const BotTrans * trans, int64_t utime);
+
 typedef void(bot_frames_link_update_handler_t)(BotFrames *bot_frames,
-             const char *frame, const char * relative_to, void *user);
+             const char *frame, const char * relative_to, int64_t utime, void *user);
 /*
  * add a callback handler to get called when a link is updated
  */
