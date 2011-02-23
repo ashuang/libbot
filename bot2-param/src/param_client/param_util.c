@@ -3,50 +3,191 @@
 #include <string.h>
 #include "param_util.h"
 
-/* ================ cameras ============== */
+#define PLANAR_LIDAR_PREFIX "planar_lidars"
+#define CAMERA_PREFIX "cameras"
+
+//utility functions for cameras and lidars
+//get all sensor names
+char**
+bot_param_get_all_camera_names(BotParam *param)
+{
+  return bot_param_get_subkeys(param, CAMERA_PREFIX);
+}
+char**
+bot_param_get_all_planar_lidar_names(BotParam *param)
+{
+  return bot_param_get_subkeys(param, PLANAR_LIDAR_PREFIX);
+}
+
+//get prefix for the sensors
+int bot_param_get_camera_prefix(BotParam *param, const char *cam_name, char *result, int result_size)
+{
+  int n = snprintf(result, result_size, "%s.%s", CAMERA_PREFIX, cam_name);
+  if (n >= result_size)
+    return -1;
+  if (param)
+    return bot_param_has_key(param, result) ? 0 : -1;
+  else
+    return 0;
+}
+
+int bot_param_get_planar_lidar_prefix(BotParam *param, const char *plidar_name, char *result, int result_size)
+{
+  int n = snprintf(result, result_size, "%s.%s", PLANAR_LIDAR_PREFIX, plidar_name);
+  if (n >= result_size)
+    return -1;
+  if (param)
+    return bot_param_has_key(param, result) ? 0 : -1;
+  else
+    return 0;
+}
+
+char * bot_param_get_sensor_name_from_lcm_channel(BotParam *param, const char * prefix, const char *channel)
+{
+  char * sensor_name = NULL;
+  char **sensor_names = bot_param_get_subkeys(param, prefix);
+  for (int i = 0; sensor_names && sensor_names[i]; i++) {
+    char key[2048];
+    snprintf(key, sizeof(key), "%s.%s.lcm_channel", prefix, sensor_names[i]);
+    char *lcm_channel_str = NULL;
+    int key_status = bot_param_get_str(param, key, &lcm_channel_str);
+
+    if ((0 == key_status) && (0 == strcmp(channel, lcm_channel_str))) {
+      strcpy(sensor_name, sensor_names[i]);
+      free(lcm_channel_str);
+      break;
+    }
+    else {
+      free(lcm_channel_str);
+    }
+  }
+  g_strfreev(sensor_names);
+
+  return sensor_name;
+}
+
+char * bot_param_get_camera_name_from_lcm_channel(BotParam *param, const char *channel)
+{
+  return bot_param_get_sensor_name_from_lcm_channel(param, CAMERA_PREFIX, channel);
+}
+
+char * bot_param_get_planar_lidar_name_from_lcm_channel(BotParam *param, const char *channel)
+{
+  return bot_param_get_sensor_name_from_lcm_channel(param, PLANAR_LIDAR_PREFIX, channel);
+}
+
+char *
+bot_param_get_camera_coord_frame(BotParam *bot_param, const char *camera_name)
+{
+  char key[1024];
+  snprintf(key, sizeof(key), "%s.%s.coord_frame", CAMERA_PREFIX, camera_name);
+  return bot_param_get_str_or_fail(bot_param, key);
+}
+char *
+bot_param_get_planar_lidar_coord_frame(BotParam *bot_param, const char *lidar_name)
+{
+  char key[1024];
+  snprintf(key, sizeof(key), "%s.%s.coord_frame", PLANAR_LIDAR_PREFIX, lidar_name);
+  return bot_param_get_str_or_fail(bot_param, key);
+}
+
 char *
 bot_param_get_camera_thumbnail_channel(BotParam *bot_param, const char *camera_name)
 {
   char key[1024];
-  snprintf(key, sizeof(key), "cameras.%s.thumbnail_channel", camera_name);
+  snprintf(key, sizeof(key), "%s.%s.thumbnail_channel", CAMERA_PREFIX, camera_name);
   return bot_param_get_str_or_fail(bot_param, key);
 }
 
-char**
-bot_param_get_all_camera_names(BotParam *bot_param)
+/* ================ general ============== */
+int bot_param_get_quat(BotParam *param, const char *name, double quat[4])
 {
-  return bot_param_get_subkeys(bot_param, "cameras");
+  char key[2048];
+  sprintf(key, "%s.quat", name);
+  if (bot_param_has_key(param, key)) {
+    int sz = bot_param_get_double_array(param, key, quat, 4);
+    assert(sz == 4);
+    return 0;
+  }
+
+  sprintf(key, "%s.rpy", name);
+  if (bot_param_has_key(param, key)) {
+    double rpy[3];
+    int sz = bot_param_get_double_array(param, key, rpy, 3);
+    assert(sz == 3);
+    for (int i = 0; i < 3; i++)
+      rpy[i] = bot_to_radians (rpy[i]);
+    bot_roll_pitch_yaw_to_quat(rpy, quat);
+    return 0;
+  }
+
+  sprintf(key, "%s.rodrigues", name);
+  if (bot_param_has_key(param, key)) {
+    double rod[3];
+    int sz = bot_param_get_double_array(param, key, rod, 3);
+    assert(sz == 3);
+    bot_rodrigues_to_quat(rod, quat);
+    return 0;
+  }
+
+  sprintf(key, "%s.angleaxis", name);
+  if (bot_param_has_key(param, key)) {
+    double aa[4];
+    int sz = bot_param_get_double_array(param, key, aa, 4);
+    assert(sz == 4);
+
+    bot_angle_axis_to_quat(aa[0], aa + 1, quat);
+    return 0;
+  }
+  return -1;
 }
 
-int bot_param_get_camera_calibration_config_prefix(BotParam *bot_param, const char *cam_name, char *result,
-    int result_size)
+int bot_param_get_translation(BotParam *param, const char *name, double translation[3])
 {
-  snprintf(result, result_size, "calibration.cameras.%s", cam_name);
-  return bot_param_has_key(bot_param, result) ? 0 : -1;
+  char key[2048];
+  sprintf(key, "%s.translation", name);
+  if (bot_param_has_key(param, key)) {
+    int sz = bot_param_get_double_array(param, key, translation, 3);
+    assert(sz == 3);
+    return 0;
+  }
+  // not found
+  return -1;
+}
+
+int bot_param_get_trans(BotParam *param, const char *name, BotTrans * trans)
+{
+  if (bot_param_get_quat(param, name, trans->rot_quat))
+    return -1;
+
+  if (bot_param_get_translation(param, name, trans->trans_vec))
+    return -1;
+
+  return 0;
 }
 
 BotCamTrans*
-bot_param_get_new_camtrans(BotParam *bot_param, const char *cam_name)
+bot_param_get_new_camtrans(BotParam *param, const char *cam_name)
 {
-  char prefix[1024];
-  int status = bot_param_get_camera_calibration_config_prefix(bot_param, cam_name, prefix, sizeof(prefix));
-  if (0 != status)
+  char prefix[2048];
+  snprintf(prefix, sizeof(prefix), "%s.%s.intrinsic_cal", CAMERA_PREFIX, cam_name);
+  if (!bot_param_has_key(param, prefix))
     goto fail;
 
   char key[2048];
   double width;
   sprintf(key, "%s.width", prefix);
-  if (0 != bot_param_get_double(bot_param, key, &width))
+  if (0 != bot_param_get_double(param, key, &width))
     goto fail;
 
   double height;
   sprintf(key, "%s.height", prefix);
-  if (0 != bot_param_get_double(bot_param, key, &height))
+  if (0 != bot_param_get_double(param, key, &height))
     goto fail;
 
   double pinhole_params[5];
   snprintf(key, sizeof(key), "%s.pinhole", prefix);
-  if (5 != bot_param_get_double_array(bot_param, key, pinhole_params, 5))
+  if (5 != bot_param_get_double_array(param, key, pinhole_params, 5))
     goto fail;
   double fx = pinhole_params[0];
   double fy = pinhole_params[1];
@@ -56,28 +197,28 @@ bot_param_get_new_camtrans(BotParam *bot_param, const char *cam_name)
 
   double position[3];
   sprintf(key, "%s.position", prefix);
-  if (3 != bot_param_get_double_array(bot_param, key, position, 3))
+  if (3 != bot_param_get_double_array(param, key, position, 3))
     goto fail;
 
   sprintf(key, "cameras.%s", cam_name);
   double orientation[4];
-  if (0 != bot_param_get_quat(bot_param, key, orientation))
+  if (0 != bot_param_get_quat(param, key, orientation))
     goto fail;
 
   char *ref_frame;
   sprintf(key, "%s.relative_to", prefix);
-  if (0 != bot_param_get_str(bot_param, key, &ref_frame))
+  if (0 != bot_param_get_str(param, key, &ref_frame))
     goto fail;
 
   char * distortion_model;
   sprintf(key, "%s.distortion_model", prefix);
-  if (0 != bot_param_get_str(bot_param, key, &distortion_model))
+  if (0 != bot_param_get_str(param, key, &distortion_model))
     goto fail;
 
   if (strcmp(distortion_model, "spherical") == 0) {
     double distortion_param;
     sprintf(key, "%s.distortion_params", prefix);
-    if (1 != bot_param_get_double_array(bot_param, key, &distortion_param, 1))
+    if (1 != bot_param_get_double_array(param, key, &distortion_param, 1))
       goto fail;
 
     BotDistortionObj* sph_dist = bot_spherical_distortion_create(distortion_param);
@@ -87,12 +228,12 @@ bot_param_get_new_camtrans(BotParam *bot_param, const char *cam_name)
   else if (strcmp(distortion_model, "plumb-bob") == 0) {
     double dist_k[3];
     sprintf(key, "%s.distortion_k", prefix);
-    if (3 != bot_param_get_double_array(bot_param, key, dist_k, 3))
+    if (3 != bot_param_get_double_array(param, key, dist_k, 3))
       goto fail;
 
     double dist_p[2];
     sprintf(key, "%s.distortion_p", prefix);
-    if (2 != bot_param_get_double_array(bot_param, key, dist_p, 2))
+    if (2 != bot_param_get_double_array(param, key, dist_p, 2))
       goto fail;
 
     BotDistortionObj* pb_dist = bot_plumb_bob_distortion_create(dist_k[0], dist_k[1], dist_k[2], dist_p[0], dist_p[1]);
@@ -101,132 +242,4 @@ bot_param_get_new_camtrans(BotParam *bot_param, const char *cam_name)
   }
 
   fail: return NULL;
-}
-
-char * bot_param_cam_get_name_from_lcm_channel(BotParam *cfg, const char *channel)
-{
-  char * cam_name = NULL;
-
-  char **cam_names = bot_param_get_subkeys(cfg, "cameras");
-
-  for (int i = 0; cam_names && cam_names[i]; i++) {
-    char *thumb_key = g_strdup_printf("cameras.%s.thumbnail_channel", cam_names[i]);
-    char *cam_thumb_str = NULL;
-    int key_status = bot_param_get_str(cfg, thumb_key, &cam_thumb_str);
-    free(thumb_key);
-
-    if ((0 == key_status) && (0 == strcmp(channel, cam_thumb_str))) {
-      strcpy(cam_name, cam_names[i]);
-      break;
-    }
-
-    char *full_key = g_strdup_printf("cameras.%s.full_frame_channel", cam_names[i]);
-    char *cam_full_str = NULL;
-    key_status = bot_param_get_str(cfg, full_key, &cam_full_str);
-    free(full_key);
-
-    if ((0 == key_status) && (0 == strcmp(channel, cam_full_str))) {
-      strcpy(cam_name, cam_names[i]);
-      break;
-    }
-  }
-  g_strfreev(cam_names);
-
-  return cam_name;
-}
-
-/* ================ planar lidar ============== */
-char**
-bot_param_get_all_planar_lidar_names(BotParam *bot_param)
-{
-  return bot_param_get_subkeys(bot_param, "planar_lidars");
-}
-
-int bot_param_get_planar_lidar_config_path(BotParam *bot_param, const char *plidar_name, char *result, int result_size)
-{
-  int n = snprintf(result, result_size, "planar_lidars.%s", plidar_name);
-  if (n >= result_size)
-    return -1;
-  if (bot_param)
-    return bot_param_has_key(bot_param, result) ? 0 : -1;
-  else
-    return 0;
-}
-
-/* ================ general ============== */
-int bot_param_get_quat(BotParam *bot_param, const char *name, double quat[4])
-{
-  char key[256];
-  sprintf(key, "%s.quat", name);
-  if (bot_param_has_key(bot_param, key)) {
-    int sz = bot_param_get_double_array(bot_param, key, quat, 4);
-    assert(sz == 4);
-    return 0;
-  }
-
-  sprintf(key, "%s.rpy", name);
-  if (bot_param_has_key(bot_param, key)) {
-    double rpy[3];
-    int sz = bot_param_get_double_array(bot_param, key, rpy, 3);
-    assert(sz == 3);
-    for (int i = 0; i < 3; i++)
-      rpy[i] = bot_to_radians (rpy[i]);
-    bot_roll_pitch_yaw_to_quat(rpy, quat);
-    return 0;
-  }
-
-  sprintf(key, "%s.rodrigues", name);
-  if (bot_param_has_key(bot_param, key)) {
-    double rod[3];
-    int sz = bot_param_get_double_array(bot_param, key, rod, 3);
-    assert(sz == 3);
-    bot_rodrigues_to_quat(rod, quat);
-    return 0;
-  }
-
-  sprintf(key, "%s.angleaxis", name);
-  if (bot_param_has_key(bot_param, key)) {
-    double aa[4];
-    int sz = bot_param_get_double_array(bot_param, key, aa, 4);
-    assert(sz == 4);
-
-    bot_angle_axis_to_quat(aa[0], aa + 1, quat);
-    return 0;
-  }
-  return -1;
-}
-
-int bot_param_get_translation(BotParam *bot_param, const char *name, double translation[3])
-{
-  char key[256];
-  sprintf(key, "%s.translation", name);
-  if (bot_param_has_key(bot_param, key)) {
-    int sz = bot_param_get_double_array(bot_param, key, translation, 3);
-    assert(sz == 3);
-    return 0;
-  }
-  // not found
-  return -1;
-}
-
-int bot_param_get_trans(BotParam *bot_param, const char *name, BotTrans * trans)
-{
-  if (bot_param_get_quat(bot_param, name, trans->rot_quat))
-    return -1;
-
-  if (bot_param_get_translation(bot_param, name, trans->trans_vec))
-    return -1;
-
-  return 0;
-}
-
-int bot_param_get_matrix_4_4(BotParam *bot_param, const char *name, double m[16])
-{
-  BotTrans trans;
-  if (bot_param_get_trans(bot_param, name, &trans))
-    return -1;
-
-  bot_trans_get_mat_4x4(&trans, m);
-
-  return 0;
 }
