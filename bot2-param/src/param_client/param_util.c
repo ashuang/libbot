@@ -53,7 +53,7 @@ char * bot_param_get_sensor_name_from_lcm_channel(BotParam *param, const char * 
     int key_status = bot_param_get_str(param, key, &lcm_channel_str);
 
     if ((0 == key_status) && (0 == strcmp(channel, lcm_channel_str))) {
-      strcpy(sensor_name, sensor_names[i]);
+      sensor_name = strdup(sensor_names[i]);
       free(lcm_channel_str);
       break;
     }
