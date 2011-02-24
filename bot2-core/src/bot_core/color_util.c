@@ -11,7 +11,7 @@ static inline float _randf()
 }
 
 
-void color_util_rand_color(float f[4], double alpha, double min_intensity)
+void bot_color_util_rand_color(float f[4], double alpha, double min_intensity)
 {
     f[3] = alpha;
 
