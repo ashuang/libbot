@@ -80,6 +80,10 @@ void bot_lcmgl_pop_matrix(bot_lcmgl_t * lcmgl);
 void bot_lcmgl_load_identity(bot_lcmgl_t *lcmgl);
 void bot_lcmgl_mult_matrixf(bot_lcmgl_t * lcmgl, float m[16]);
 void bot_lcmgl_mult_matrixd(bot_lcmgl_t * lcmgl, double m[16]);
+void bot_lcmgl_matrix_mode(bot_lcmgl_t * lcmgl, unsigned int mode);
+void bot_lcmgl_ortho(bot_lcmgl_t *lcmgl, double left, double right,
+    double bottom, double top, double nearVal, double farVal);
+
 void bot_lcmgl_materialf(bot_lcmgl_t * lcmgl, int face, int name, float c0, float c1, float c2, float c3);
 
 void bot_lcmgl_push_attrib(bot_lcmgl_t *lcmgl, unsigned int attrib);
@@ -263,7 +267,9 @@ enum _bot_lcmgl_enum_t
     BOT_LCMGL_TEX_2D,
     BOT_LCMGL_TEX_DRAW_QUAD,
     BOT_LCMGL_SPHERE,
-    BOT_LCMGL_CYLINDER
+    BOT_LCMGL_CYLINDER,
+    BOT_LCMGL_MATRIX_MODE,
+    BOT_LCMGL_ORTHO
 };
 
 /**

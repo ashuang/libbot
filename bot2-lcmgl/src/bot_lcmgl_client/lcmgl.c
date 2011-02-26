@@ -305,6 +305,27 @@ void bot_lcmgl_load_identity(bot_lcmgl_t *lcmgl)
     bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_LOAD_IDENTITY);
 }
 
+void bot_lcmgl_matrix_mode(bot_lcmgl_t * lcmgl, unsigned int mode){
+  bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_MATRIX_MODE);
+  bot_lcmgl_encode_u32(lcmgl, mode);
+}
+
+
+void bot_lcmgl_ortho(bot_lcmgl_t *lcmgl,
+    double        left,    double        right,
+    double        bottom,  double        top,
+    double        nearVal, double        farVal){
+  bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_ORTHO);
+  bot_lcmgl_encode_double(lcmgl, left);
+  bot_lcmgl_encode_double(lcmgl, right);
+  bot_lcmgl_encode_double(lcmgl, bottom);
+  bot_lcmgl_encode_double(lcmgl, top);
+  bot_lcmgl_encode_double(lcmgl, nearVal);
+  bot_lcmgl_encode_double(lcmgl, farVal);
+}
+
+
+
 void bot_lcmgl_color3f(bot_lcmgl_t *lcmgl, float v0, float v1, float v2)
 {
     bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_COLOR3F);

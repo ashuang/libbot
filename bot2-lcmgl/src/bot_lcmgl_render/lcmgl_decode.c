@@ -267,6 +267,25 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             break;
         }
 
+        case BOT_LCMGL_MATRIX_MODE:
+        {
+          uint32_t mode = lcmgl_decode_u32(&ldec);
+          glMatrixMode(mode);
+          break;
+        }
+
+        case BOT_LCMGL_ORTHO:
+        {
+            double left = lcmgl_decode_double(&ldec);
+            double right = lcmgl_decode_double(&ldec);
+            double bottom = lcmgl_decode_double(&ldec);
+            double top=lcmgl_decode_double(&ldec);
+            double nearVal=lcmgl_decode_double(&ldec);
+            double farVal=lcmgl_decode_double(&ldec);
+            glOrtho(left,right,bottom,top,nearVal,farVal);
+            break;
+        }
+
         case BOT_LCMGL_SCALEF:
         {
             float v[3];
