@@ -9,7 +9,7 @@
  *
  * TODO
  *
- * Linking: `pkg-config --libs bot2-lcmgl-render`
+ * Linking: `pkg-config --libs bot2-lcmgl-renderer`
  * @{
  */
 

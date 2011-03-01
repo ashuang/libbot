@@ -4,6 +4,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #include <bot_vis/bot_vis.h>
+#include <GL/gl.h>
 
 #define RENDERER_NAME "RWX"
 

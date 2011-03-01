@@ -20,7 +20,7 @@ target_link_libraries(bot-lcmgl-viewer
     ${GLUT_LIBRARIES}
     ${LCM_LDFLAGS}
     ${BOT2_VIS_LDFLAGS}
-    bot2-lcmgl-render
+    bot2-lcmgl-renderer
     )
 
 pods_install_executables(bot-lcmgl-viewer)
