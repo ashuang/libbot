@@ -608,6 +608,19 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             }
             break;
         }
+
+        case BOT_LCMGL_SCALE_TO_VIEWER_AR:
+        {
+            GLint viewport[4];
+            glGetIntegerv (GL_VIEWPORT, viewport);
+            float vp_width = viewport[2] - viewport[0];
+            float vp_height = viewport[3] - viewport[1];
+            float ar = vp_width/vp_height;
+            glScalef(1,ar,1);
+
+            break;
+        }
+
         default:
             printf("lcmgl unknown opcode %d\n", opcode);
             break;

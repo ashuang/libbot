@@ -544,6 +544,11 @@ void bot_lcmgl_rect(bot_lcmgl_t *lcmgl, double xyz[3], double size[2], int fille
     bot_lcmgl_encode_u8(lcmgl, filled);
 }
 
+void bot_lcmgl_scale_to_viewer_ar(bot_lcmgl_t *lcmgl){
+  bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_SCALE_TO_VIEWER_AR);
+}
+
+
 // texture API
 
 int 

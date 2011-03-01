@@ -195,6 +195,25 @@ void bot_lcmgl_text_ex(bot_lcmgl_t *lcmgl,
 #define lcmglCircle(xyz, radius) bot_lcmgl_circle(lcmgl, xyz, radius)
 #define lcmglDisk(xyz, r_in, r_out) bot_lcmgl_disk(lcmgl, xyz, r_in, r_out)
 
+
+/**
+ * bot_lcmgl_scale_to_viewer_aspect_ratio:
+ * This function scales the opengl workspace such that it is proportional to the
+ * aspect ratio of the viewer window.
+ *
+ * It's useful for displaying things with square "pixels".
+ * It maps to:
+ *     GLint viewport[4];
+ *     glGetIntegerv (GL_VIEWPORT, viewport);
+ *     float vp_width = viewport[2] - viewport[0];
+ *     float vp_height = viewport[3] - viewport[1];
+ *     float ar = vp_width/vp_height;
+ *     glScalef(1,ar,1);
+ *
+ */
+void bot_lcmgl_scale_to_viewer_ar(bot_lcmgl_t *lcmgl);
+
+
 // texture API
 typedef enum {
     BOT_LCMGL_LUMINANCE = 0,
@@ -269,7 +288,8 @@ enum _bot_lcmgl_enum_t
     BOT_LCMGL_SPHERE,
     BOT_LCMGL_CYLINDER,
     BOT_LCMGL_MATRIX_MODE,
-    BOT_LCMGL_ORTHO
+    BOT_LCMGL_ORTHO,
+    BOT_LCMGL_SCALE_TO_VIEWER_AR
 };
 
 /**
