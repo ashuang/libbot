@@ -27,6 +27,6 @@ pods_install_libraries(bot2-lcmgl-renderer)
 pods_install_headers(${h_files} DESTINATION bot_lcmgl_render)
 
 pods_install_pkg_config_file(bot2-lcmgl-renderer
-    LIBS -lbot2-lcmgl-render
+    LIBS -lbot2-lcmgl-renderer
     REQUIRES gtk+-2.0 bot2-vis lcm
     VERSION 0.0.1)
