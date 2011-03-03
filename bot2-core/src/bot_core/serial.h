@@ -49,47 +49,6 @@ int bot_serial_set_N82 (int fd);
 
 int bot_serial_close(int fd);
 
-
-/**
- *
- *
- */
-typedef struct _BotSerialCircBuf BotSerialCircBuf;
-
-/*
- * Create buffer, and allocate space for size bytes
- */
-BotSerialCircBuf * bot_serial_circbuf_create(int size);
-
-/*
- * Destroy it
- */
-void bot_serial_circbuf_destroy(BotSerialCircBuf * cbuf);
-
-/*
- * Copy numBytes from the head of the buffer, and move read pointers
- */
-int bot_serial_circbuf_read(BotSerialCircBuf * cbuf, int numBytes, char * buf);
-
-/*
- * Copy numBytes from buf to end of buffer
- */
-int bot_serial_circbuf_write(BotSerialCircBuf * cbuf, int numBytes, char * buf);
-
-/*
- * Copy numBytes from the head of the buffer, but DON'T move read pointers
- */
-int bot_serial_circbuf_peek(BotSerialCircBuf * cbuf, int numBytes, char * buf); //read numBytes from start of buffer, but don't move readPtr
-/*
- * blow everything away
- */
-int bot_serial_circbuf_flush(BotSerialCircBuf * cbuf); //move pointers to "empty" the read buffer
-/*
- * Get the amount of data currently stored in the buffer (not the allocated size)
- */
-int bot_serial_circbuf_available(BotSerialCircBuf * cbuf);
-
-
 #ifdef __cplusplus
 }
 #endif
