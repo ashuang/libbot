@@ -204,7 +204,7 @@ static inline int _num_channels (GLenum format) {
 
 int
 bot_gl_texture_upload (BotGlTexture * t, GLenum format,
-        GLenum type, int stride, void * data)
+        GLenum type, int stride, const void * data)
 {
     if (t->use_pbo && (stride * t->height) > t->max_data_size) {
         fprintf (stderr, 

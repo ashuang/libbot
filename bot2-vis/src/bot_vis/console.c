@@ -170,7 +170,7 @@ bot_gl_console_printf (BotGlConsole *console, const char *format, ...)
 }
 
 void 
-bot_gl_console_render (BotGlConsole *console)
+bot_gl_console_render (BotGlConsole *console, double elapsed)
 {
     if (!g_queue_get_length (console->lines)) {
         console->last_render_utime = 0;
@@ -202,10 +202,12 @@ bot_gl_console_render (BotGlConsole *console)
 
     double decay = 1;
     int64_t now = _timestamp_now ();
-    if (console->last_render_utime && console->lambda > 0) {
-        double elapsed = (now - console->last_render_utime) * 1e-6;
-        decay = exp ( - elapsed * console->lambda);
+    if(elapsed < 0) {
+        if (console->last_render_utime && console->lambda > 0) {
+            elapsed = (now - console->last_render_utime) * 1e-6;
+            decay = exp ( - elapsed * console->lambda);
 //        printf ("elapsed: %f decay: %f\n", elapsed, decay);
+        }
     }
     console->last_render_utime = now;
 
