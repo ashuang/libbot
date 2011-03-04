@@ -12,6 +12,7 @@
 #define DEFAULT_HISTORY_LEN 100
 
 typedef struct {
+  int frame_num;
   char * frame_name;
   char * relative_to;
   char * update_channel;
@@ -48,7 +49,7 @@ struct _BotFrames {
   BotParam *bot_param;
 
   GMutex * mutex;
-
+  int num_frames;
   char * root_name;
   GHashTable* frame_handles_by_name;
   GHashTable* frame_handles_by_channel;
@@ -123,14 +124,15 @@ static void on_frames_update(const lcm_recv_buf_t *rbuf, const char *channel, co
     frame_handle->relative_to = strdup(msg->relative_to);
     g_hash_table_insert(bot_frames->frame_handles_by_name, (gpointer) frame_handle->frame_name, (gpointer) frame_handle);
   }
-  else if(strcmp(msg->relative_to, frame_handle->relative_to) != 0){
-    //TODO: should we handle updates that don't follow graph? i think probably not
-    fprintf(stderr, "Ignoring link update %s->%s, frame was constructed relative to %s\n", msg->frame,
-        msg->relative_to, frame_handle->relative_to);
-  }
-  else {
+  else if(strcmp(msg->relative_to, frame_handle->relative_to) == 0){
+    //update the existing frame
     frame_handle->was_updated = 1;
     bot_ctrans_link_update(frame_handle->ctrans_link, &link_transf, msg->utime);
+  }
+  else {
+    //invalid update TODO: rate limit spewing? probably not worth it
+    fprintf(stderr, "Ignoring link update %s->%s, frame was constructed relative to %s\n", msg->frame,
+        msg->relative_to, frame_handle->relative_to);
   }
   g_mutex_unlock(bot_frames->mutex);
 
@@ -146,7 +148,7 @@ bot_frames_new(lcm_t *lcm, BotParam *bot_param)
   self->lcm = lcm;
   self->bot_param = bot_param;
   self->mutex = g_mutex_new();
-
+  self->num_frames =0;
   g_mutex_lock(self->mutex);
   // setup the coordinate frame graph
   self->ctrans = bot_ctrans_new();
@@ -175,6 +177,7 @@ bot_frames_new(lcm_t *lcm, BotParam *bot_param)
   //create a frame_handle for the root frame
   frame_handle_t * root_handle = (frame_handle_t *) calloc(1, sizeof(frame_handle_t));
   root_handle->frame_name = strdup(self->root_name);
+  root_handle->frame_num =self->num_frames++;
   g_hash_table_insert(self->frame_handles_by_name, (gpointer) self->root_name, (gpointer) root_handle);
 
   char ** frame_names = bot_param_get_subkeys(self->bot_param, "coordinate_frames");
@@ -237,6 +240,7 @@ bot_frames_new(lcm_t *lcm, BotParam *bot_param)
 
     //create the frame_handle
     frame_handle = (frame_handle_t *) calloc(1, sizeof(frame_handle_t));
+    frame_handle->frame_num = self->num_frames++;
     frame_handle->ctrans_link = link;
     frame_handle->frame_name = frame_name;
     frame_handle->relative_to = relative_to;
@@ -300,7 +304,7 @@ static void _update_handler_t_destroy(void * data, void * user)
 void bot_frames_destroy(BotFrames * bot_frames)
 {
 
-  g_mutex_free(bot_frames->mutex);
+  g_mutex_lock(bot_frames->mutex);
 
   bot_ctrans_destroy(bot_frames->ctrans);
   if(bot_frames->update_subscription!=NULL);
@@ -322,7 +326,8 @@ void bot_frames_destroy(BotFrames * bot_frames)
     g_list_foreach(bot_frames->update_callbacks, _update_handler_t_destroy, NULL);
     g_list_free(bot_frames->update_callbacks);
   }
-
+  g_mutex_unlock(bot_frames->mutex);
+  g_mutex_free(bot_frames->mutex);
   g_slice_free(BotFrames, bot_frames);
 }
 
@@ -335,7 +340,7 @@ void bot_frames_update_frame(BotFrames * bot_frames, const char * frame_name, co
   msg.utime = utime;
   memcpy(msg.trans, trans->trans_vec, 3 * sizeof(double));
   memcpy(msg.quat, trans->rot_quat, 4 * sizeof(double));
-  bot_frames_update_t_publish(bot_frames->lcm, BOT_FRAMES_UPDATE_CHANNEL, &msg);
+  bot_frames_update_t_publish(bot_frames->lcm, BOT_FRAMES_UPDATE_CHANNEL, &msg); //lcm object is threadsafe
 }
 
 void bot_frames_add_update_subscriber(BotFrames *bot_frames, bot_frames_link_update_handler_t * callback_func,
@@ -344,7 +349,9 @@ void bot_frames_add_update_subscriber(BotFrames *bot_frames, bot_frames_link_upd
   update_handler_t * uh = g_slice_new0(update_handler_t);
   uh->callback_func = callback_func;
   uh->user = user;
+  g_mutex_lock(bot_frames->mutex);
   bot_frames->update_callbacks = g_list_append(bot_frames->update_callbacks, uh);
+  g_mutex_unlock(bot_frames->mutex);
 
 }
 
@@ -442,10 +449,16 @@ int bot_frames_rotate_vec(BotFrames *bot_frames, const char *from_frame, const c
 
 int bot_frames_get_n_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int nth_from_latest)
 {
+  g_mutex_lock(bot_frames->mutex);
   BotCTransLink *link = bot_ctrans_get_link(bot_frames->ctrans, from_frame, to_frame);
+  int n_trans;
   if (!link)
-    return 0;
-  return bot_ctrans_link_get_n_trans(link);
+    n_trans = 0;
+  else
+    n_trans = bot_ctrans_link_get_n_trans(link);
+  g_mutex_unlock(bot_frames->mutex);
+
+  return n_trans;
 }
 
 /**
@@ -454,55 +467,62 @@ int bot_frames_get_n_trans(BotFrames *bot_frames, const char *from_frame, const 
 int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int nth_from_latest,
     BotTrans *btrans, int64_t *timestamp)
 {
+  g_mutex_lock(bot_frames->mutex);
   BotCTransLink *link = bot_ctrans_get_link(bot_frames->ctrans, from_frame, to_frame);
+  int status;
   if (!link)
-    return 0;
-  int status = bot_ctrans_link_get_nth_trans(link, nth_from_latest, btrans, timestamp);
-  if (status && btrans && 0 != strcmp(to_frame, bot_ctrans_link_get_to_frame(link))) {
-    bot_trans_invert(btrans);
+    status =0;
+  else{
+    int status = bot_ctrans_link_get_nth_trans(link, nth_from_latest, btrans, timestamp);
+    if (status && btrans && 0 != strcmp(to_frame, bot_ctrans_link_get_to_frame(link))) {
+      bot_trans_invert(btrans);
+    }
   }
+  g_mutex_unlock(bot_frames->mutex);
   return status;
 }
-const char * bot_frames_get_relative_to(BotFrames * bot_frames, 
-										const char * frame_name){
-	//get a reference to the frame_handle
-	frame_handle_t * frame_handle = (frame_handle_t *)
-			g_hash_table_lookup(	bot_frames->frame_handles_by_name,
-									frame_name);
-	//check to see if it was successful
-	if (frame_handle == NULL){
-		//didn't find the frame
-		return NULL;
-	}
-	return frame_handle->relative_to;
+const char * bot_frames_get_relative_to(BotFrames * bot_frames, const char * frame_name)
+{
+  const char * rel_to = NULL;
+  g_mutex_lock(bot_frames->mutex);
+  //get a reference to the frame_handle
+  frame_handle_t * frame_handle = (frame_handle_t *) g_hash_table_lookup(bot_frames->frame_handles_by_name, frame_name);
+  //check to see if it was successful
+  if (frame_handle != NULL)
+    rel_to = frame_handle->relative_to;
+  g_mutex_unlock(bot_frames->mutex);
+  return rel_to;
 }
 
 const char * bot_frames_get_root_name(BotFrames * bot_frames)
 {
-  return bot_frames->root_name;
+  return bot_frames->root_name; //root frame is read-only
 }
 
 int bot_frames_get_num_frames(BotFrames * bot_frames)
 {
-  return g_hash_table_size(bot_frames->frame_handles_by_name);
+  g_mutex_lock(bot_frames->mutex);
+  int num_frames = bot_frames->num_frames;
+  g_mutex_unlock(bot_frames->mutex);
+  return num_frames;
 }
 
 char ** bot_frames_get_frame_names(BotFrames * bot_frames)
 {
   int num_frames = bot_frames_get_num_frames(bot_frames);
 
+  g_mutex_lock(bot_frames->mutex);
   char ** frames = calloc(num_frames + 1, sizeof(char*));
 
   GHashTableIter iter;
   gpointer key, value;
 
   g_hash_table_iter_init(&iter, bot_frames->frame_handles_by_name);
-  int frame_num = 0;
   while (g_hash_table_iter_next(&iter, &key, &value)) {
     frame_handle_t * han = (frame_handle_t *) value;
-    frames[frame_num++] = strdup(han->frame_name);
+    frames[han->frame_num] = strdup(han->frame_name);
   }
-  assert(frame_num==num_frames);
+  g_mutex_unlock(bot_frames->mutex);
   return frames;
 }
 
