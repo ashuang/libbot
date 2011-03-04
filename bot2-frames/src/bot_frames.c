@@ -463,6 +463,19 @@ int bot_frames_get_nth_trans(BotFrames *bot_frames, const char *from_frame, cons
   }
   return status;
 }
+const char * bot_frames_get_relative_to(BotFrames * bot_frames, 
+										const char * frame_name){
+	//get a reference to the frame_handle
+	frame_handle_t * frame_handle = (frame_handle_t *)
+			g_hash_table_lookup(	bot_frames->frame_handles_by_name,
+									frame_name);
+	//check to see if it was successful
+	if (frame_handle == NULL){
+		//didn't find the frame
+		return NULL;
+	}
+	return frame_handle->relative_to;
+}
 
 const char * bot_frames_get_root_name(BotFrames * bot_frames)
 {
