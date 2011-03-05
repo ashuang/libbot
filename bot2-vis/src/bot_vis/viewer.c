@@ -19,6 +19,7 @@
 #endif
 
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 
 #include <bot_core/bot_core.h>
 
@@ -44,12 +45,13 @@ static int g_draws = 0;
 // a structure for bookmarked viewpoints
 typedef struct _bookmark_persp bookmark_persp_t;
 struct _bookmark_persp {
-  BotViewer* viewer;
-  double eye[3];
-  double lookat[3];
-  double up[3];
-  BotProjectionMode projection_mode;
-  int saved;
+    BotViewer* viewer;
+    double eye[3];
+    double lookat[3];
+    double up[3];
+    BotProjectionMode projection_mode;
+    int saved;
+    int index;
 } bmtemp;
 
 enum {
@@ -68,6 +70,8 @@ struct _BotViewerPriv {
 
     bookmark_persp_t* bookmarks;
     int num_bookmarks;
+
+    GtkAccelGroup* key_accel_group;
 };
 #define BOT_VIEWER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE((o), TYPE_BOT_VIEWER, BotViewerPriv))
 
@@ -1003,9 +1007,7 @@ static void on_select_bookmark_save_view(GtkMenuItem *mi, void *user)
   views->saved = 1;
   vhandler->get_eye_look(vhandler, views->eye, views->lookat, views->up);
 
-  //fprintf(stderr, "saved viewpoint:   eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
-  //fprintf(stderr, "saved viewpoint:   lookat: [%f %f %f]\n", views->lookat[0], views->lookat[1], views->lookat[2]);
-  //fprintf(stderr, "saved viewpoint:   up: [%f %f %f]\n", views->up[0], views->up[1], views->up[2]);
+  bot_viewer_set_status_bar_message(viewer, "Saved viewpoint %d", views->index);
 }
 
 
@@ -1029,10 +1031,9 @@ static void on_select_bookmark_load_view(GtkMenuItem *mi, void *user)
 
     vhandler->set_look_at_smooth(vhandler, views->eye, views->lookat, views->up, duration_ms);
     bot_viewer_request_redraw(viewer);
+
+    bot_viewer_set_status_bar_message(viewer, "Loaded viewpoint %d", views->index);
   }
-  //fprintf(stderr, "loaded viewpoint:  eye: [%f %f %f]\n", views->eye[0], views->eye[1], views->eye[2]);
-  //fprintf(stderr, "loaded viewpoint:  lookat: [%f %f %f]\n", views->lookat[0], views->lookat[1], views->lookat[2]);
-  //fprintf(stderr, "loaded viewpoint:  up:  [%f %f %f]\n", views->up[0], views->up[1], views->up[2]);
 }
 
 static void on_select_perspective_item(GtkMenuItem *mi, void *user)
@@ -1263,21 +1264,37 @@ make_menus(BotViewer *viewer, GtkWidget *parent)
     g_signal_connect(G_OBJECT(orthographic_item), "activate", G_CALLBACK(on_select_orthographic_item), viewer);
 
     // create labels for loading and saving bookmarked views
-    char *bmlabel;
+    guint keys[] = {
+        GDK_KEY_F1,
+        GDK_KEY_F2,
+        GDK_KEY_F3,
+        GDK_KEY_F4,
+        GDK_KEY_F5,
+        GDK_KEY_F6,
+    };
+
     for(int i=0; i<priv->num_bookmarks; i++) {
-      bmlabel = g_strdup_printf("Save Viewpoint %d", i);
-      GtkWidget *save_view_item = gtk_menu_item_new_with_label(bmlabel);
-      gtk_menu_append(GTK_MENU(viewer->view_menu), save_view_item);
-      g_signal_connect(G_OBJECT(save_view_item), "activate", G_CALLBACK(on_select_bookmark_save_view), &priv->bookmarks[i]);
+      char* smi_label = g_strdup_printf("Viewpoint %d", i + 1);
+      GtkWidget* submenu_item = gtk_menu_item_new_with_label(smi_label);
+      gtk_menu_append(GTK_MENU(viewer->view_menu), submenu_item);
+      g_free(smi_label);
+
+      GtkWidget* submenu = gtk_menu_new();
+      gtk_menu_item_set_submenu(GTK_MENU_ITEM(submenu_item), submenu);
+      GtkWidget* save_smi = gtk_menu_item_new_with_label("Save");
+      GtkWidget* load_smi = gtk_menu_item_new_with_label("Load");
+      gtk_menu_append(GTK_MENU(submenu), save_smi);
+      gtk_menu_append(GTK_MENU(submenu), load_smi);
+      g_signal_connect(G_OBJECT(save_smi), "activate", 
+              G_CALLBACK(on_select_bookmark_save_view), &priv->bookmarks[i]);
+      g_signal_connect(G_OBJECT(load_smi), "activate", 
+              G_CALLBACK(on_select_bookmark_load_view), &priv->bookmarks[i]);
+
+      gtk_widget_add_accelerator(save_smi, "activate", priv->key_accel_group,
+              keys[i], GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+      gtk_widget_add_accelerator(load_smi, "activate", priv->key_accel_group,
+              keys[i], 0, GTK_ACCEL_VISIBLE);
     }
-    
-    for(int i=0; i<priv->num_bookmarks; i++) {
-      bmlabel = g_strdup_printf("Load Viewpoint %d", i);
-      GtkWidget *load_view_item = gtk_menu_item_new_with_label(bmlabel);
-      gtk_menu_append(GTK_MENU(viewer->view_menu), load_view_item);
-      g_signal_connect(G_OBJECT(load_view_item), "activate", G_CALLBACK(on_select_bookmark_load_view), &priv->bookmarks[i]);
-    }
-    g_free(bmlabel);
 
     gtk_widget_show_all(view_menuitem);
 
@@ -1440,21 +1457,24 @@ bot_viewer_init (BotViewer *viewer)
 
     // allocate memory for saved bookmarks
     priv->num_bookmarks = 6;
-    priv->bookmarks = (bookmark_persp_t*) calloc(priv->num_bookmarks, sizeof(bookmark_persp_t));
+    priv->bookmarks = (bookmark_persp_t*) calloc(priv->num_bookmarks, 
+            sizeof(bookmark_persp_t));
     for(int bk_ind=0; bk_ind<priv->num_bookmarks; bk_ind++) {
-	priv->bookmarks[bk_ind].viewer = viewer;
+        priv->bookmarks[bk_ind].viewer = viewer;
+        priv->bookmarks[bk_ind].index = bk_ind + 1;
         //default views
-	//for (int i=0; i<3; i++) {
-	//  priv->bookmarks[bk_ind].eye[i] = *(defaultbmview_eye+i);
-	//  priv->bookmarks[bk_ind].lookat[i] = *(defaultbmview_lookat+i);
-	//  priv->bookmarks[bk_ind].up[i] = *(defaultbmview_up+i);
-	// }
+        //for (int i=0; i<3; i++) {
+        //  priv->bookmarks[bk_ind].eye[i] = *(defaultbmview_eye+i);
+        //  priv->bookmarks[bk_ind].lookat[i] = *(defaultbmview_lookat+i);
+        //  priv->bookmarks[bk_ind].up[i] = *(defaultbmview_up+i);
+        // }
     }
 
     viewer->prettier_flag = (getenv("BOT_VIEWER_PRETTIER") != NULL && 
                              atoi(getenv("BOT_VIEWER_PRETTIER"))>0);;
     printf("BOT_VIEWER_PRETTIER: %d\n", viewer->prettier_flag);
 
+    // viewer main window
     viewer->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(viewer->window), "BotViewer");
     gtk_window_set_resizable(GTK_WINDOW(viewer->window), TRUE);
@@ -1462,7 +1482,11 @@ bot_viewer_init (BotViewer *viewer)
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(viewer->window), vbox);
-    
+
+    // keyboard accelerators for viewer
+    priv->key_accel_group = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(viewer->window), priv->key_accel_group);
+
     make_menus(viewer, vbox);
 
     viewer->tips = gtk_tooltips_new ();
