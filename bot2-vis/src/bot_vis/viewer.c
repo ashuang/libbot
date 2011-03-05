@@ -1265,12 +1265,12 @@ make_menus(BotViewer *viewer, GtkWidget *parent)
 
     // create labels for loading and saving bookmarked views
     guint keys[] = {
-        GDK_KEY_F1,
-        GDK_KEY_F2,
-        GDK_KEY_F3,
-        GDK_KEY_F4,
-        GDK_KEY_F5,
-        GDK_KEY_F6,
+        GDK_F1,
+        GDK_F2,
+        GDK_F3,
+        GDK_F4,
+        GDK_F5,
+        GDK_F6,
     };
 
     for(int i=0; i<priv->num_bookmarks; i++) {
