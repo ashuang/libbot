@@ -150,7 +150,7 @@ read_header (FILE *fp, const char *magic, int *width, int *height,
         int *maxval)
 {
     char m[3] = { 0 };
-    fread (m, sizeof(m)-1, 1, fp);
+    int ignored = fread (m, sizeof(m)-1, 1, fp);
     if (strcmp(m, magic)) {
         fprintf(stderr, "bad magic [%s]\n", m); return -1;
     }
