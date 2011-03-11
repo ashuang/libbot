@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 11.02.09
+# Distributed with pods version: 11.03.11
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -135,7 +135,7 @@ function(pods_install_pkg_config_file)
         "Requires: ${pc_requires}\n"
         "Version: ${pc_version}\n"
         "Libs: -L\${exec_prefix}/lib ${pc_libs}\n"
-        "Cflags: ${pc_cflags}\n")
+        "Cflags: -I\${includedir} ${pc_cflags}\n")
 
     # mark the .pc file for installation to the lib/pkgconfig directory
     install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
