@@ -76,28 +76,42 @@ char * bot_param_get_planar_lidar_name_from_lcm_channel(BotParam *param, const c
   return bot_param_get_sensor_name_from_lcm_channel(param, PLANAR_LIDAR_PREFIX, channel);
 }
 
+
+//get coord frame name
+char * bot_param_get_sensor_coord_frame(BotParam *bot_param, const char * sensor_prefix, const char *sensor_name)
+{
+  char key[1024];
+  snprintf(key, sizeof(key), "%s.%s.coord_frame", sensor_prefix, sensor_name);
+  return bot_param_get_str_or_fail(bot_param, key);
+}
 char *
 bot_param_get_camera_coord_frame(BotParam *bot_param, const char *camera_name)
 {
-  char key[1024];
-  snprintf(key, sizeof(key), "%s.%s.coord_frame", CAMERA_PREFIX, camera_name);
-  return bot_param_get_str_or_fail(bot_param, key);
+  return bot_param_get_sensor_coord_frame(bot_param, CAMERA_PREFIX, camera_name);
 }
 char *
 bot_param_get_planar_lidar_coord_frame(BotParam *bot_param, const char *lidar_name)
 {
-  char key[1024];
-  snprintf(key, sizeof(key), "%s.%s.coord_frame", PLANAR_LIDAR_PREFIX, lidar_name);
-  return bot_param_get_str_or_fail(bot_param, key);
+  return bot_param_get_sensor_coord_frame(bot_param, PLANAR_LIDAR_PREFIX, lidar_name);
 }
 
-char *
-bot_param_get_camera_thumbnail_channel(BotParam *bot_param, const char *camera_name)
+
+//get lcm channel
+char * bot_param_get_sensor_lcm_channel(BotParam *bot_param, const char * sensor_prefix, const char *sensor_name)
 {
   char key[1024];
-  snprintf(key, sizeof(key), "%s.%s.thumbnail_channel", CAMERA_PREFIX, camera_name);
+  snprintf(key, sizeof(key), "%s.%s.lcm_channel", sensor_prefix, sensor_name);
   return bot_param_get_str_or_fail(bot_param, key);
 }
+char * bot_param_get_camera_lcm_channel(BotParam *bot_param, const char *camera_name)
+{
+  return bot_param_get_sensor_lcm_channel(bot_param, CAMERA_PREFIX, camera_name);
+}
+char * bot_param_get_planar_lidar_lcm_channel(BotParam *bot_param, const char *lidar_name)
+{
+  return bot_param_get_sensor_lcm_channel(bot_param, CAMERA_PREFIX, lidar_name);
+}
+
 
 /* ================ general ============== */
 int bot_param_get_quat(BotParam *param, const char *name, double quat[4])
@@ -194,21 +208,6 @@ bot_param_get_new_camtrans(BotParam *param, const char *cam_name)
   double cx = pinhole_params[3];
   double cy = pinhole_params[4];
   double skew = pinhole_params[2];
-
-  double position[3];
-  sprintf(key, "%s.position", prefix);
-  if (3 != bot_param_get_double_array(param, key, position, 3))
-    goto fail;
-
-  sprintf(key, "cameras.%s", cam_name);
-  double orientation[4];
-  if (0 != bot_param_get_quat(param, key, orientation))
-    goto fail;
-
-  char *ref_frame;
-  sprintf(key, "%s.relative_to", prefix);
-  if (0 != bot_param_get_str(param, key, &ref_frame))
-    goto fail;
 
   char * distortion_model;
   sprintf(key, "%s.distortion_model", prefix);

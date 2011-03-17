@@ -45,17 +45,23 @@ extern "C" {
   /*
    * Search through all the sensors to find the one which is published on this LCM channel
    */
-  char * bot_param_get_sensor_name_from_lcm_channel(BotParam *param, const char * prefix, const char *channel);
+  char * bot_param_get_sensor_name_from_lcm_channel(BotParam *param, const char * sensor_prefix, const char *channel);
   char * bot_param_get_camera_name_from_lcm_channel(BotParam *param, const char *channel);
   char * bot_param_get_planar_lidar_name_from_lcm_channel(BotParam *param, const char *channel);
 
   /*
    * get the name of the coordinate frame for this sensor
    */
-  char * bot_param_get_camera_coord_frame(BotParam *param, const char *channel);
-  char * bot_param_get_planar_lidar_coord_frame(BotParam *param, const char *channel);
+  char * bot_param_get_sensor_coord_frame(BotParam *param, const char * sensor_prefix, const char *sensor_name);
+  char * bot_param_get_camera_coord_frame(BotParam *param, const char *camera_name);
+  char * bot_param_get_planar_lidar_coord_frame(BotParam *param, const char *lidar_name);
 
-  char * bot_param_get_camera_thumbnail_channel(BotParam *bot_param, const char *camera_name);
+  /*
+   * get the lcm channel for the sensor
+   */
+  char * bot_param_get_sensor_lcm_channel(BotParam *bot_param, const char * sensor_prefix, const char *sensor_name);
+  char * bot_param_get_camera_lcm_channel(BotParam *bot_param, const char *camera_name);
+  char * bot_param_get_planar_lidar_lcm_channel(BotParam *bot_param, const char *lidar_name);
 
   /*
    * Create a BotCamTrans object from the information in the config file
