@@ -300,7 +300,7 @@ static int get_token(Parser * p, BotParamToken * tok, char * str, int len)
     escape = 0;
   }
   /* An identifier starts with alpha-numeric text or a few symbols */
-  if (isalnum (ch) || ch == '_' || ch == '-' || ch == '.') {
+  if (isalnum (ch) || ch == '_' || ch == '-' || ch == '.' || ch == '+') {
     *tok = TokIdentifier;
     end_ch = 0;
     escape = 0;
@@ -317,7 +317,7 @@ static int get_token(Parser * p, BotParamToken * tok, char * str, int len)
     ch = p->get_ch(p);
     /* An identifier is terminated as soon as we see a character which
      * itself cannot be part of an identifier. */
-    if (*tok == TokIdentifier && !isalnum (ch) && ch != '_' && ch != '-' && ch != '.') {
+    if (*tok == TokIdentifier && !isalnum (ch) && ch != '_' && ch != '-' && ch != '.' && ch != '+') {
       if (ch != 0)
         unget_ch(p, ch);
       goto finish;
