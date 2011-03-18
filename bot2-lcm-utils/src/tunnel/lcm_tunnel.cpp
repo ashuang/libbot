@@ -53,10 +53,10 @@ static int _fileutils_write_fully(int fd, const void *b, int len)
 }
 
 LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
-  verbose(verbose), regex_inited(false), buf_sz(65536), buf((char*) calloc(65536, sizeof(char))), channel_sz(65536),
-      channel((char*) calloc(65536, sizeof(char))), recFlags_sz(1024), recFlags((char*) calloc(1024, sizeof(char))),
-      ldpc_dec(NULL), udp_fd(-1), server_udp_port(-1), udp_send_seqno(0), stopSendThread(false), bytesInQueue(0),
-      cur_seqno(0), errorStartTime(-1), numSuccessful(0), lastErrorPrintTime(-1)
+  verbose(verbose), regex(NULL), buf_sz(65536), buf((char*) calloc(65536, sizeof(char))), channel_sz(65536), channel(
+      (char*) calloc(65536, sizeof(char))), recFlags_sz(1024), recFlags((char*) calloc(1024, sizeof(char))), ldpc_dec(
+      NULL), udp_fd(-1), server_udp_port(-1), udp_send_seqno(0), stopSendThread(false), bytesInQueue(0), cur_seqno(0),
+      errorStartTime(-1), numSuccessful(0), lastErrorPrintTime(-1)
 {
   //allocate and initialize things
 
@@ -75,24 +75,22 @@ void LcmTunnel::init_regex(const char *lcm_channel)
     char *rchannel = (char*) calloc(strlen(lcm_channel) + 3, sizeof(char));
     sprintf(rchannel, "%c%s%c", '^', lcm_channel, '$');
 
-    if (regex_inited) {
+    if (regex != NULL) {
       if (verbose)
         printf("Replacing regex with \"%s\"\n", rchannel);
-      regfree(&regex);
-      regex_inited = false;
+      g_regex_unref(regex);
     }
-
-    if (regcomp(&regex, rchannel, REG_NOSUB | REG_EXTENDED))
+    GError *rerr = NULL;
+    regex = g_regex_new(rchannel, (GRegexCompileFlags) 0, (GRegexMatchFlags) 0, &rerr);
+    if (rerr != NULL)
       fprintf(stderr, "Invalid regex: \"%s\"\n", rchannel);
-    else
-      regex_inited = true;
     free(rchannel);
   }
 }
 
 bool LcmTunnel::match_regex(const char *lcm_channel)
 {
-  return regex_inited && (0 == regexec(&regex, lcm_channel, 0, NULL, 0));
+  return regex != NULL && (g_regex_match(regex, lcm_channel, (GRegexMatchFlags) 0, NULL));
 }
 
 LcmTunnel::~LcmTunnel()
@@ -119,8 +117,8 @@ LcmTunnel::~LcmTunnel()
   //close TCP socket
   closeTCPSocket();
 
-  if (regex_inited)
-    regfree(&regex);
+  if (regex != NULL)
+    g_regex_unref(regex);
 
   free(buf);
   free(channel);
@@ -447,7 +445,6 @@ int LcmTunnel::on_udp_data(GIOChannel * source, GIOCondition cond, void *user_da
         getNumFragments(recv_udp_msg->payload_size), self->cur_seqno, self->nfrags);
   }
 
-
   lcm_tunnel_udp_msg_t_destroy(recv_udp_msg);
 
   return TRUE;
@@ -564,7 +561,7 @@ int LcmTunnel::on_tcp_data(GIOChannel * source, GIOCondition cond, void *user_da
           fprintf(stderr, "UDP with FEC rate of %.2f and max_delay of %dms\n", self->tunnel_params->fec,
               self->tunnel_params->max_delay_ms);
         else if (self->tunnel_params->fec < -1)
-          fprintf(stderr, "UDP with DUP rate of %d and max_delay of %dms\n", (int)-self->tunnel_params->fec,
+          fprintf(stderr, "UDP with DUP rate of %d and max_delay of %dms\n", (int) -self->tunnel_params->fec,
               self->tunnel_params->max_delay_ms);
         else
           fprintf(stderr, "UDP with a max_delay of %dms\n", self->tunnel_params->max_delay_ms);
@@ -958,6 +955,8 @@ static void usage(const char *progname)
     "                              these channels will be forwarded to the server\n"
     "                              is automatically surrounded by ^ and $.\n"
     "                              (Default: .*)\n"
+    "    -R/-S                      Capitalize to invert the regex match\n"
+    "\n"
     "    -l, --lcm-url=URL         Transmit to specified LCM URL\n"
     "    -p, --port=N              Start server on control port N instead of\n"
     "                              default (%d)\n"
@@ -1010,7 +1009,7 @@ int main(int argc, char **argv)
 {
   setlinebuf(stdout);
 
-  const char *optstring = "hvqur:s:p:f:l:m:d:w:";
+  const char *optstring = "hvqur:s:R:S:p:f:l:m:d:w:";
 
   app_params_t params;
   memset(&params, 0, sizeof(params));
@@ -1074,6 +1073,22 @@ int main(int argc, char **argv)
         return 1;
       }
       strcpy(params.channels_send, optarg);
+      break;
+
+    case 'R':
+      if (strlen(optarg) > sizeof(params.channels_recv) - 1) {
+        fprintf(stderr, "recv channels string too long\n");
+        return 1;
+      }
+      sprintf(params.channels_recv, "^(?!^%s$).*+$", optarg);
+      printf("params.channels_recv=%s\n", params.channels_recv);
+      break;
+    case 'S':
+      if (strlen(optarg) > sizeof(params.channels_send) - 1) {
+        fprintf(stderr, "send channels string too long\n");
+        return 1;
+      }
+      sprintf(params.channels_send, "^(?!^%s$).*+$", optarg);
       break;
     case 'u':
       params.udp = 1;

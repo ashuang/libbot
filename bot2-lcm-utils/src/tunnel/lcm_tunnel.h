@@ -3,7 +3,6 @@
 
 #include <inttypes.h>
 #include <deque>
-#include <regex.h>
 #include <glib.h>
 
 #include "ldpc/ldpc_wrapper.h"
@@ -98,8 +97,7 @@ public:
   char name[1024]; //address and port for client
 
 private:
-  regex_t regex;
-  bool regex_inited;
+  GRegex * regex;
 
   tunnel_server_params_t * server_params; //params of parent server
   lcm_tunnel_params_t * tunnel_params;
