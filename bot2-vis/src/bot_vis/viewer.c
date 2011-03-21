@@ -1570,6 +1570,8 @@ bot_viewer_init (BotViewer *viewer)
 BotViewer *bot_viewer_new (const char *window_title)
 {
     BotViewer *viewer = BOT_VIEWER (g_object_new (TYPE_BOT_VIEWER, NULL));
+    if (viewer!=NULL)
+      bot_viewer_set_window_title (viewer, window_title);
     return viewer;
 }
 
