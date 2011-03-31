@@ -4,7 +4,7 @@ add_library(bot2-frames-renderer SHARED
     coord_frames_renderer.c)
     
 pods_use_pkg_config_packages(bot2-frames-renderer bot2-core bot2-param-client bot2-vis bot2-frames)
-#target_link_libraries(bot2-frames-renderer ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+target_link_libraries(bot2-frames-renderer ${OPENGL_LIBRARIES})
 
 # set the library API version.  Increment this every time the public API
 # changes.
@@ -31,5 +31,5 @@ pods_install_pkg_config_file(bot2-frames-renderer
     
 #build the test-viewer
 add_executable(test-viewer test_viewer.c)
+target_link_libraries(test-viewer ${GLUT_LIBRARIES})
 pods_use_pkg_config_packages(test-viewer bot2-vis bot2-lcmgl-renderer bot2-frames-renderer)
-#target_link_libraries(test-viewer ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})

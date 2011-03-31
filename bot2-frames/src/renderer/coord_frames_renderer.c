@@ -3,8 +3,13 @@
 #include <string.h>
 #include <assert.h>
 
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
 #include <gtk/gtk.h>
 
 #include <lcm/lcm.h>

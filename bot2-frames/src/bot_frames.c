@@ -2,9 +2,15 @@
 
 #include <glib.h>
 
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#endif
+
 #include <lcm/lcm.h>
 #include "bot_frames.h"
-#include <GL/gl.h>
+
 #include <bot_param/param_util.h>
 #include <lcmtypes/bot_frames_update_t.h>
 
