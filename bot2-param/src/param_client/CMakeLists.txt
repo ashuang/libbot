@@ -6,7 +6,9 @@ add_library(bot2-param-client SHARED
 target_link_libraries(bot2-param-client
    ${LCMTYPES_LIBS})
 
-pods_use_pkg_config_packages(bot2-param-client lcm bot2-core glib-2.0)
+set(REQUIRED_LIBS lcm bot2-core glib-2.0)
+
+pods_use_pkg_config_packages(bot2-param-client ${REQUIRED_LIBS})
 
 # set the library API version.  Increment this every time the public API
 # changes.
@@ -22,5 +24,5 @@ pods_install_libraries(bot2-param-client)
 # use it.
 pods_install_pkg_config_file(bot2-param-client
     LIBS -lbot2-param-client -l${LCMTYPES_LIBS}
-    REQUIRES lcm glib-2.0 bot2-core
+    REQUIRES ${REQUIRED_LIBS}
     VERSION 0.0.1)

@@ -2,7 +2,10 @@ add_definitions(-std=gnu99)
 # Create a shared library libbot2-frames.so with a single source file
 add_library(bot2-frames SHARED  bot_frames.c)
 target_link_libraries(bot2-frames ${LCMTYPES_LIBS})
-pods_use_pkg_config_packages(bot2-frames bot2-core bot2-param-client)
+
+set(REQUIRED_LIBS bot2-core bot2-param-client)
+
+pods_use_pkg_config_packages(bot2-frames ${REQUIRED_LIBS})
 
 # set the library API version.  Increment this every time the public API
 # changes.
@@ -20,5 +23,5 @@ pods_install_libraries(bot2-frames)
 pods_install_pkg_config_file(bot2-frames
     CFLAGS
     LIBS -lbot2-frames -l${LCMTYPES_LIBS}
-    REQUIRES bot2-core bot2-param-client
+    REQUIRES ${REQUIRED_LIBS}
     VERSION 0.0.1)
