@@ -42,7 +42,7 @@ Requirements
     cmake
     sun-java6-jdk | default-jdk | openjdk-6-jdk
     python-dev
-    python-gtk
+    python-gtk2
     libgtk2.0-dev
     mesa-common-dev
     libgl1-mesa-dev
