@@ -7,6 +7,9 @@ include_directories(${PROJECT_SOURCE_DIR}
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)
 
+# Keep the GLM library out of the public API
+list(REMOVE_ITEM h_files glm.h)
+
 add_library(bot2-vis SHARED ${c_files})
 
 target_link_libraries(bot2-vis

@@ -24,6 +24,7 @@ add_definitions(-std=gnu99)
 add_subdirectory(src/bot_vis)
 add_subdirectory(src/testers)
 add_subdirectory(src/rwx-viewer)
+add_subdirectory(src/wavefront-viewer)
 
 # bot-ppmsgz script
 install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/bot-ppmsgz DESTINATION bin)

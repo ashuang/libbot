@@ -11,6 +11,7 @@
 #include "gtk_util.h"
 #include "param_widget.h"
 #include "rwx.h"
+#include "wavefront.h"
 #include "scrollplot2d.h"
 #include "texture.h"
 #include "viewer.h"
