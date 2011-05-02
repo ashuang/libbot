@@ -607,6 +607,49 @@ int bot_param_write(BotParam * param, FILE * f)
   return 0;
 }
 
+/* Writes the contents of a configuration file's parse tree to the
+ * string s. */
+int bot_param_write_to_string(BotParam * param, char ** s)
+{
+  /* Somewhat circuitous way of writing to a string:
+   * write to a tmpfile and read back from it.
+   * fmemopen and open_memstream could be used but they are
+   * GNU extensions.
+   */
+  FILE *tmpF = tmpfile();
+  if (tmpF == NULL) {
+    fprintf(stderr, "ERROR: could not open temp file\n");
+    return -1;
+  }
+
+  int ret = bot_param_write(param, tmpF);
+  if (ret) {
+    fprintf(stderr, "ERROR: could not write to temp file\n");
+    return ret;
+  }
+
+  /* obtain the number of characters that were written */
+  int lSize = ftell(tmpF);
+  rewind(tmpF);
+  /* allocate memory to contain the whole file */
+  *s = (char *) calloc(1, lSize+1);
+  if (*s==NULL) {
+    fprintf(stderr, "ERROR: allocating memory for the param string output.\n");
+    return -1;
+  }
+
+  /* copy the file into the buffer: */
+  int result = fread(*s, 1, lSize, tmpF);
+  if (result != lSize) {
+    fprintf(stderr, "ERROR: reading back temp file\n");
+    return -1;
+  }
+  fclose(tmpF);
+
+  (*s)[lSize] = '\0';
+  return 0;
+}
+
 /*
  * only used internally
  */

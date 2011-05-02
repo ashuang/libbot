@@ -17,14 +17,21 @@ int main()
   lcm_t * lcm = lcm_create(NULL);
 
   BotParam * param = bot_param_new_from_server(lcm, 1);
-  bot_param_write(param, stderr);
   if (param == NULL) {
     fprintf(stderr, "could not get params!\n");
     exit(1);
   }
+
+  char * s;
+  int ret = bot_param_write_to_string(param, &s);
+  fprintf(stderr, "%s", s);
+  free(s);
+
   double foo = bot_param_get_double_or_fail(param, "foo");
   double bar = bot_param_get_double_or_fail(param, "bar");
   printf("foo=%f, bar = %f\n", foo, bar);
+
+  bot_param_write(param, stderr);
 
   while (1) {
     lcm_handle(lcm);

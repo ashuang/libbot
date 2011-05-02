@@ -25,34 +25,18 @@ typedef struct {
 
 void publish_params(param_server_t *self)
 {
-  FILE *tmpF = tmpfile();
-  if (tmpF == NULL) {
-    fprintf(stderr, "ERROR: could not open tmp file ");
-    exit(1);
-  }
-  bot_param_write(self->params, tmpF);
 
   bot_param_update_t * update_msg = (bot_param_update_t *) calloc(1, sizeof(bot_param_update_t));
+
+  int ret = bot_param_write_to_string(self->params, &update_msg->params);
+  if (ret) {
+    fprintf(stderr, "ERROR: could not write message to string");
+    exit(1);
+  }
+
   update_msg->utime = _timestamp_now();
   update_msg->server_id = self->id;
   update_msg->sequence_number = self->seqNo;
-  // obtain the number of characters that were written
-  int lSize = ftell(tmpF);
-  rewind(tmpF);
-
-  // allocate memory to contain the whole file:
-  update_msg->params = (char*) calloc(1, lSize + 1);
-  if (update_msg->params == NULL) {
-    fprintf(stderr, "ERROR: allocating memory for the param file \n");
-    exit(1);
-  }
-  // copy the file into the buffer:
-  int result = fread(update_msg->params, 1, lSize, tmpF);
-  if (result != lSize) {
-    fprintf(stderr, "Reading error\n");
-    exit(1);
-  }
-  fclose(tmpF);
 
   bot_param_update_t_publish(self->lcm, BOT_PARAM_UPDATE_CHANNEL, update_msg);
   bot_param_update_t_destroy(update_msg);

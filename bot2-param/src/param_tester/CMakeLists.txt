@@ -5,4 +5,4 @@ add_executable(param-tester param_tester.c)
 pods_use_pkg_config_packages(param-tester lcm glib-2.0 bot2-param-client)
 
 # make executable public
-#pods_install_executables(param-tester)
+pods_install_executables(param-tester)

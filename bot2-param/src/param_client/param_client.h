@@ -92,6 +92,19 @@ int
 bot_param_write (BotParam * param, FILE * f);
 
 /**
+ * bot_param_write_to_string:
+ * @param: the configuration to write.
+ * @s: string to write to.
+ *
+ * The string will be allocated by the library, but must
+ * be freed by the user.
+ *
+ * returns: -1 on error, 0 on success.
+ */
+int
+bot_param_write_to_string (BotParam * param, char ** s);
+
+/**
  * bot_param_print:
  * @param: The configuration to print.
  *
