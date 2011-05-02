@@ -117,7 +117,7 @@ int bot_param_has_key (BotParam *param, const char *key);
 
 /**
  * bot_param_get_num_subkeys:
- * @param: The configuraion.
+ * @param: The configuration.
  * @containerKey: The key to check.
  *
  * Finds the number of sub keys of @containerKey that also have sub keys.
