@@ -107,7 +107,7 @@ bot_param_print (BotParam * param){
 /**
  * bot_param_has_key:
  * @param: The configuration.
- * @key: The key to check the existance of.
+ * @key: The key to check the existence of.
  *
  * Checks if a key named @key exists in the file that was read in by @param.
  *
