@@ -223,6 +223,7 @@ typedef enum {
 
 typedef enum {
     BOT_LCMGL_COMPRESS_NONE = 0,
+    BOT_LCMGL_COMPRESS_ZLIB = 1,
 } bot_lcmgl_compress_mode_t;
 
 /**

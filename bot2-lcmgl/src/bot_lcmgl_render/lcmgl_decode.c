@@ -13,6 +13,7 @@
 #include <lcmtypes/bot_lcmgl_data_t.h>
 #include "../bot_lcmgl_client/lcmgl.h"
 #include "lcmgl_decode.h"
+#include <zlib.h> //for compressed textures
 
 union fu32
 {
@@ -530,18 +531,10 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
         }
         case BOT_LCMGL_TEX_2D:
         {
-            int id = lcmgl_decode_u32(&ldec);
-            int width = lcmgl_decode_u32(&ldec);
-            int height = lcmgl_decode_u32(&ldec);
-            int format = lcmgl_decode_u32(&ldec);
-            int compression = lcmgl_decode_u32(&ldec);
-
-            int raw_datalen = lcmgl_decode_u32(&ldec);
-            void *data_uncopressed = NULL;
-            if(BOT_LCMGL_COMPRESS_NONE == compression) {
-                data_uncopressed = &ldec.data[ldec.datapos];
-                ldec.datapos += raw_datalen;
-            }
+            uint32_t id = lcmgl_decode_u32(&ldec);
+            uint32_t width = lcmgl_decode_u32(&ldec);
+            uint32_t height = lcmgl_decode_u32(&ldec);
+            uint32_t format = lcmgl_decode_u32(&ldec);
 
             int bytes_per_pixel = 1;
             GLenum gl_format = GL_LUMINANCE;
@@ -562,12 +555,46 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             int bytes_per_row = width * bytes_per_pixel;
             int max_data_size = height * bytes_per_row;
 
+
+            int compression = lcmgl_decode_u32(&ldec);
+            int raw_datalen = lcmgl_decode_u32(&ldec);
+            void *data_uncompressed = NULL;
+            int free_uncompressed_data = 0;
+            switch (compression) {
+            case BOT_LCMGL_COMPRESS_NONE:
+              data_uncompressed = &ldec.data[ldec.datapos];
+              ldec.datapos += raw_datalen;
+              break;
+            case BOT_LCMGL_COMPRESS_ZLIB:
+            {
+              data_uncompressed = malloc(raw_datalen);
+              free_uncompressed_data = 1;
+
+              for (int row = 0; row < height; row++) {
+                void *row_start = (uint8_t*) data_uncompressed + row * bytes_per_row;
+                uint32_t compressed_size = lcmgl_decode_u32(&ldec);
+                uLong uncompressed_size = bytes_per_row;
+                uLong uncompress_return = uncompress((Bytef *) row_start, (uLong *) &uncompressed_size,
+                    (Bytef *) &ldec.data[ldec.datapos], (uLong) compressed_size);
+                if (uncompress_return != Z_OK || bytes_per_row != uncompressed_size) {
+                  fprintf(stderr, "ERROR uncompressing the texture2D, ret = %lu\n", uncompress_return);
+                  exit(1);
+                }
+                ldec.datapos += compressed_size;
+              }
+            }
+            break;
+            }
+
             _lcmgl_texture_t *tex = (_lcmgl_texture_t*)malloc(sizeof(_lcmgl_texture_t));
 
             tex->tex = bot_gl_texture_new(width, height, max_data_size);
-            GLenum gl_type = GL_UNSIGNED_BYTE;
+            GLenum gl_type = GL_UNSIGNED_BYTE; //TODO: would be good to support other types
             bot_gl_texture_upload(tex->tex, gl_format, gl_type,
-                    bytes_per_row, data_uncopressed);
+                    bytes_per_row, data_uncompressed);
+
+            if (free_uncompressed_data)
+              free(data_uncompressed);
 
             ntextures++;
             textures = realloc(textures, ntextures * sizeof(_lcmgl_texture_t));

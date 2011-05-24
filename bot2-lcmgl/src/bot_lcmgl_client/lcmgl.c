@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <time.h>
 #include <sys/time.h>
+#include <zlib.h> //for texture compression //TODO: is this portable?
 
 #include "lcmtypes/bot_lcmgl_data_t.h"
 
@@ -583,6 +584,7 @@ bot_lcmgl_texture2d(bot_lcmgl_t *lcmgl, const void *data,
     bot_lcmgl_encode_u32(lcmgl, height);
     bot_lcmgl_encode_u32(lcmgl, format);
     bot_lcmgl_encode_u32(lcmgl, compression);
+    //TODO: would be good to support other types such as GL_FLOAT etc...
 
     switch(compression) {
         case BOT_LCMGL_COMPRESS_NONE:
@@ -592,6 +594,29 @@ bot_lcmgl_texture2d(bot_lcmgl_t *lcmgl, const void *data,
                 bot_lcmgl_encode_raw(lcmgl, bytes_per_row, row_start);
             }
             break;
+
+        case BOT_LCMGL_COMPRESS_ZLIB:
+        {
+          bot_lcmgl_encode_u32(lcmgl, datalen);
+          //compress each row individually
+          uLong uncompressed_size = bytes_per_row;
+          uLong compressed_buf_size = uncompressed_size * 1.01 + 12; //with extra space for zlib
+          Bytef * compressed_buf = (Bytef *) malloc(compressed_buf_size);
+          for(int row=0; row<height; row++) {
+            void *row_start = (uint8_t*)data + row * row_stride;
+            uLong compressed_size = compressed_buf_size;
+            int compress_return = compress2((Bytef *) compressed_buf, &compressed_size, (Bytef *) row_start, uncompressed_size,
+                          Z_BEST_SPEED);
+            if (compress_return != Z_OK) {
+                        fprintf(stderr, "ERROR: Could not compress row %d/%d of texture!\n",row,height);
+                        exit(1);
+                      }
+            bot_lcmgl_encode_u32(lcmgl, compressed_size);
+            bot_lcmgl_encode_raw(lcmgl, compressed_size, compressed_buf);
+          }
+          free(compressed_buf);
+        }
+        break;
     }
 
     return tex_id;
