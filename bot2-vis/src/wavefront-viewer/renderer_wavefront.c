@@ -151,12 +151,11 @@ setup_renderer_wavefront(BotViewer *viewer, int render_priority, const char *wav
 
         double span_max = MAX(span_x, MAX(span_y, span_z));
 
-        // pick initial values so that the model fits within a reasonable box
-        default_scale = 10.0 / span_max;
-
-        default_dx = -(maxv[0] + minv[0]) / 2;
-        default_dy = -(maxv[1] + minv[1]) / 2;
-        default_dz = -(maxv[2] + minv[2]) / 2;
+        // leave the default scale and translations at default
+        default_scale = 1.0;
+        default_dx = 0.0;
+        default_dy = 0.0;
+        default_dz = 0.0;
 
         printf("WAVEFRONT extrema: [%f, %f, %f] [%f, %f, %f]\n", 
                 minv[0], minv[1], minv[2],

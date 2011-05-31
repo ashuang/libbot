@@ -16,6 +16,7 @@ target_link_libraries(bot2-vis
     ${GTK2_LDFLAGS}
     ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
+    ${LIBJPEG_LIBRARIES}
     ${BOT2_CORE_LDFLAGS}
     z)
 
@@ -29,5 +30,5 @@ pods_install_headers(${h_files} DESTINATION bot_vis)
 
 pods_install_pkg_config_file(${PROJECT_NAME}
     LIBS -lbot2-vis -lz
-    REQUIRES gtk+-2.0 lcm bot2-core 
+    REQUIRES gtk+-2.0 lcm bot2-core libjpeg
     VERSION 0.0.1)
