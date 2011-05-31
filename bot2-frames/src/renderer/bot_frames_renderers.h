@@ -14,7 +14,10 @@
 extern "C" {
 #endif
 
-  void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames);
+void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames, const char * renderer_name);
+
+void bot_frames_add_articulated_body_renderer_to_viewer(BotViewer *viewer, int render_priority, BotParam * param,
+    BotFrames * frames, const char * model_path, const char * param_articulated_name);
 
 #ifdef __cplusplus
 }

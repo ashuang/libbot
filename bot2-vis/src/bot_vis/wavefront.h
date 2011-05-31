@@ -70,6 +70,14 @@ void
 bot_wavefront_model_get_extrema (BotWavefrontModel *model,
                                  double minv[3], double maxv[3]);
 
+/**
+ * bot_wavefront_model_gl_draw:
+ * @model: The %BotWavefrontModel
+ *
+ * Draws the model using opengl
+ */
+void
+bot_wavefront_model_gl_draw (BotWavefrontModel *model);
 
 
 

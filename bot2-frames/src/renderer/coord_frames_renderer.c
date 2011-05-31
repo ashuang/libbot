@@ -14,14 +14,14 @@
 
 #include <lcm/lcm.h>
 
-#include "coord_frames_renderer.h"
+#include "bot_frames_renderers.h"
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
 #include <bot_vis/viewer.h>
 #include <bot_param/param_client.h>
 #include <bot_frames/bot_frames.h>
 
-#define RENDERER_NAME "Coord Frames"
+//#define RENDERER_NAME "Coord Frames"
 
 #define PARAM_FRAME_SELECT "Frame"
 #define PARAM_FOLLOW_POS "Follow pos"
@@ -36,6 +36,7 @@
 #define MAX_HIST   10000
 
 typedef struct _RendererFrames {
+
   BotRenderer renderer;
   BotEventHandler ehandler;
   BotViewer *viewer;
@@ -271,7 +272,7 @@ static void update_view_follower(RendererFrames *self, BotTrans *frame_to_root)
     self->smooth_init = 1;
     memcpy(self->smooth_xyzt, xyzt, 4 * sizeof(double));
   }
-  double alpha = .005;
+  double alpha = .25;
   bot_vector_scale_nd(xyzt, 4, alpha);
   bot_vector_scale_nd(self->smooth_xyzt, 4, 1 - alpha);
   bot_vector_add_nd(self->smooth_xyzt, xyzt, 4, self->smooth_xyzt);
@@ -329,6 +330,10 @@ static void draw(BotViewer *viewer, BotRenderer *super)
     draw_shadow(&frame_to_root);
   }
 
+  if (bot_gtk_param_widget_get_bool(self->pw, PARAM_FOLLOW_POS)) {
+    update_view_follower(self, &frame_to_root);
+  }
+
 }
 
 static void on_clear_button(GtkWidget *button, RendererFrames *self)
@@ -360,23 +365,24 @@ static void on_param_widget_changed(BotGtkParamWidget *pw, const char *name, voi
 static void on_load_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user_data)
 {
   RendererFrames *self = (RendererFrames *) user_data;
-  bot_gtk_param_widget_load_from_key_file(self->pw, keyfile, RENDERER_NAME);
+  bot_gtk_param_widget_load_from_key_file(self->pw, keyfile, self->renderer.name);
 }
 
 static void on_save_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user_data)
 {
   RendererFrames *self = (RendererFrames *) user_data;
-  bot_gtk_param_widget_save_to_key_file(self->pw, keyfile, RENDERER_NAME);
+  bot_gtk_param_widget_save_to_key_file(self->pw, keyfile, self->renderer.name);
 }
 
-static void frames_update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, int64_t utime, void *user)
+static void frames_update_handler(BotFrames *bot_frames, const char *frame, const char * relative_to, int64_t utime,
+    void *user)
 {
   RendererFrames *self = (RendererFrames *) user;
   //TODO: handle adding coordinate frames!
   bot_viewer_request_redraw(self->viewer);
 }
 
-void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames)
+void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames, const char * renderer_name)
 {
   RendererFrames *self = (RendererFrames*) calloc(1, sizeof(RendererFrames));
 
@@ -386,12 +392,12 @@ void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, B
   renderer->destroy = destroy_renderer_frames;
 
   renderer->widget = gtk_vbox_new(FALSE, 0);
-  renderer->name = (char *) RENDERER_NAME;
+  renderer->name = strdup(renderer_name);
   renderer->user = self;
   renderer->enabled = 1;
 
   BotEventHandler *ehandler = &self->ehandler;
-  ehandler->name = (char *) RENDERER_NAME;
+  ehandler->name = renderer->name;
   ehandler->enabled = 1;
   ehandler->pick_query = NULL;
   ehandler->key_press = NULL;

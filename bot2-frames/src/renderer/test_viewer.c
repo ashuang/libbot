@@ -2,15 +2,13 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 
-
 #include <bot_vis/bot_vis.h>
 #include <lcm/lcm.h>
 #include <bot_core/bot_core.h>
 
 //renderers
 #include <bot_lcmgl_render/lcmgl_bot_renderer.h>
-#include <bot_frames/coord_frames_renderer.h>
-
+#include <bot_frames/bot_frames_renderers.h>
 
 static void on_top_view_clicked(GtkToggleToolButton *tb, void *user_data)
 {
@@ -41,26 +39,27 @@ int main(int argc, char *argv[])
   glutInit(&argc, argv);
   g_thread_init(NULL);
 
-//  if (argc < 2) {
-//    fprintf(stderr, "usage: %s <render_plugins>\n", g_path_get_basename(argv[0]));
-//    exit(1);
-//  }
+  //  if (argc < 2) {
+  //    fprintf(stderr, "usage: %s <render_plugins>\n", g_path_get_basename(argv[0]));
+  //    exit(1);
+  //  }
   lcm_t * lcm = bot_lcm_get_global(NULL);
-  BotParam * param = bot_param_get_global(lcm,0);
+  BotParam * param = bot_param_get_global(lcm, 0);
   BotFrames * bcf = bot_frames_get_global(lcm, param);
   bot_glib_mainloop_attach_lcm(lcm);
 
-  BotViewer* viewer = bot_viewer_new("Quad Viewer");
+  BotViewer* viewer = bot_viewer_new("Bot Frames Test Viewer");
   //die cleanly for control-c etc :-)
   bot_gtk_quit_on_interrupt();
 
   // setup renderers
   bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
-  bot_lcmgl_add_renderer_to_viewer(viewer,lcm, 1);
-  bot_frames_add_renderer_to_viewer(viewer,1,bcf);
+  bot_lcmgl_add_renderer_to_viewer(viewer, lcm, 1);
+  bot_frames_add_renderer_to_viewer(viewer, 1, bcf, "frames renderer");
+  bot_frames_add_articulated_body_renderer_to_viewer(viewer, 1, param, bcf, NULL, "articulated_body_name");
 
   //load the renderer params from the config file.
-  char *fname = g_build_filename(g_get_user_config_dir(), ".quad-viewerrc", NULL);
+  char *fname = g_build_filename(g_get_user_config_dir(), ".bft-viewerrc", NULL);
   bot_viewer_load_preferences(viewer, fname);
 
   gtk_main();
