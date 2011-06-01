@@ -29,6 +29,6 @@ pods_install_libraries(bot2-vis)
 pods_install_headers(${h_files} DESTINATION bot_vis)
 
 pods_install_pkg_config_file(${PROJECT_NAME}
-    LIBS -lbot2-vis -lz
-    REQUIRES gtk+-2.0 lcm bot2-core libjpeg
+    LIBS -lbot2-vis -lz -ljpeg
+    REQUIRES gtk+-2.0 lcm bot2-core
     VERSION 0.0.1)
