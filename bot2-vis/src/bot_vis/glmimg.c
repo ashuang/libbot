@@ -235,6 +235,15 @@ glmLoadTexture(const char *filename, GLboolean alpha, GLboolean repeat, GLboolea
     return 0;
     
  DONE:
+
+   // Give up if the maximum texture size is 0
+    if (gl_max_texture_size == 0) {
+        DBG_(__glmWarning("glmLoadTexture(): Maximum texture size is %d. Skipping texture!",
+                          gl_max_texture_size));
+        
+        return 0;
+    }
+
     /*#define FORCE_ALPHA*/
 #ifdef FORCE_ALPHA
     if(alpha && type == GL_RGB) {
