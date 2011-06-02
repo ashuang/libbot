@@ -326,6 +326,35 @@ bot_gl_draw_arrow_2d (double length, double head_width, double head_length,
     }
 }
 
+void
+bot_gl_draw_arrow_3d (double length, double head_width, double head_length,
+        double body_width)
+{
+    int slices = 20;
+    int stacks = 20;
+
+    //apply translations so the drawing is centered at origin along the x axis per bot_gl_draw_arrow_2d
+    glPushMatrix();
+    glTranslated(-length / 2, 0, 0);
+    glRotated(90, 0, 1, 0);
+
+    glPushAttrib(GL_ENABLE_BIT);
+    glEnable(GL_DEPTH_TEST);
+
+    GLUquadricObj *q = gluNewQuadric();
+
+    //draw body
+    gluCylinder(q, body_width, body_width, length - head_length, slices, stacks);
+
+    //draw head
+    glTranslated(0, 0, length - head_length);
+    gluCylinder(q, head_width, 0, head_length, slices, stacks);
+    gluDeleteQuadric(q);
+
+    glPopAttrib();
+    glPopMatrix();
+}
+
 int bot_glutBitmapHeight(void* font);
 void bot_glutBitmapString(void* font, const unsigned char* text);
 

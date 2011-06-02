@@ -85,6 +85,16 @@ void bot_gl_draw_ellipse (double a, double b, double theta, int npoints);
 void bot_gl_draw_arrow_2d (double length, double head_width, double head_length,
         double body_width, int fill);
 
+/**
+ * bot_gl_draw_arrow_3d
+ *
+ * renders an arrow centered on the origina pointin along the x axis using cylinders
+ * so it is visible from all angles
+ */
+void
+bot_gl_draw_arrow_3d (double length, double head_width, double head_length,
+        double body_width);
+
 #define BOT_GL_DRAW_TEXT_DROP_SHADOW      1
 #define BOT_GL_DRAW_TEXT_JUSTIFY_LEFT     2
 #define BOT_GL_DRAW_TEXT_JUSTIFY_RIGHT    4
