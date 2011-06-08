@@ -986,6 +986,10 @@ static void usage(const char *progname)
     "\n"
     "Examples:\n"
     "\n"
+    " %s \n"
+    "    Start a server. Clients can then connect using one of the examples below.\n"
+    "    NOTE: Any node can be connected to, and will act as a server.\n"
+    "\n"
     " %s 192.168.1.1\n"
     "    Tunnels traffic on all LCM channels between us and 192.168.1.1\n"
     "\n"
@@ -995,12 +999,12 @@ static void usage(const char *progname)
     "\n"
     " %s -r ABC 192.168.1.1\n"
     "    Server at 192.168.1.1 forwards all channels, we forward traffic on channel\n"
-    "    ABC back\n"
+    "    ABC back.\n"
     "\n"
     " %s -u -f 1.5 -s \"ABC|DEF\" -r \"\" 192.168.1.1\n"
     "    We forward traffic on channels ABC and DEF to 192.168.1.1 via UDP with\n"
     "    FEC 1.5.  Server does not forward anything back.\n"
-    "\n", basename, DEFAULT_PORT, DEFAULT_PORT, basename, basename, basename, basename);
+    "\n", basename, DEFAULT_PORT, DEFAULT_PORT, basename, basename, basename, basename, basename);
   free(basename);
   exit(1);
 }
