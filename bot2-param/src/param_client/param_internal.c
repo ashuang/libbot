@@ -961,6 +961,7 @@ int bot_param_get_double(BotParam * param, const char * key, double * val)
 
   BotParamElement * el = find_key(param->root, key, 1);
   if (!el || el->type != BotParamArray || el->num_values < 1) {
+    g_mutex_unlock(param->lock);
     return -1;
   }
   double ret = cast_to_double(key, el->values[0], val);
