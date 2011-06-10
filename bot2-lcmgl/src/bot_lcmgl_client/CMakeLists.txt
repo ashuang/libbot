@@ -14,6 +14,7 @@ add_library(${libname} SHARED ${c_files})
 target_link_libraries(${libname}
     ${GLIB2_LDFLAGS}
     ${LCM_LDFLAGS}
+    ${ZLIB_LIBRARIES}
     ${LCMTYPES_LIBS})
 
 # set the library API version.  Increment this every time the public API
