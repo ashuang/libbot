@@ -47,6 +47,21 @@ void bot_timestamp_to_timespec(int64_t v, struct timespec *ts);
     @param dev_ticks_per_second  The nominal rate at which the device time increments
     @param dev_ticks_wraparound  Assume that dev_ticks wraps around every wraparound ticks
     @param rate                  An upper bound on the rate error
+
+    The syncronization algorithm is described in:
+    @inproceedings{olson2010,
+      TITLE      = {A Passive Solution to the Sensor Synchronization Problem},
+      AUTHOR     = { Edwin Olson},
+      BOOKTITLE  = {Proceedings of the {IEEE/RSJ} International Conference on Intelligent
+                     Robots and Systems {(IROS)}},
+      YEAR       = {2010},
+      MONTH      = {October},
+      VOLUME     = {},
+      NUMBER     = {},
+      PAGES      = {},
+      KEYWORDS   = {sensor calibration, time synchronization},
+      ISSN       = { },
+    }
 **/
 bot_timestamp_sync_state_t *
 bot_timestamp_sync_init (double dev_ticks_per_second, int64_t dev_ticks_wraparound,
