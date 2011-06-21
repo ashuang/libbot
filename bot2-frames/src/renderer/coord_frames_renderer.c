@@ -382,8 +382,11 @@ static void frames_update_handler(BotFrames *bot_frames, const char *frame, cons
   bot_viewer_request_redraw(self->viewer);
 }
 
-void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames, const char * renderer_name)
+void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames)
 {
+
+  const char * renderer_name = "BOT_FRAMES";
+
   RendererFrames *self = (RendererFrames*) calloc(1, sizeof(RendererFrames));
 
   BotRenderer *renderer = &self->renderer;
