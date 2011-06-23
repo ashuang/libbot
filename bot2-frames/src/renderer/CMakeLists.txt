@@ -1,7 +1,7 @@
 add_definitions(-std=gnu99)
 # Create a shared library libbot2-frames-renderer.so with a single source file
 add_library(bot2-frames-renderers SHARED
-    coord_frames_renderer.c articulated_body_renderer.c)
+    coord_frames_renderer.c articulated_body_renderer.c frame_modifier_renderer.c)
   
 set(REQUIRED_LIBS bot2-core bot2-param-client bot2-vis bot2-frames)
   
