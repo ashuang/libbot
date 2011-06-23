@@ -237,10 +237,12 @@ static void update_path_hist(RendererFrames *self, BotTrans *frame_to_root)
 
   double dist = bot_vector_dist_3d(frame_to_root->trans_vec, t.trans_vec);
 
+#if 0
   if (dist > 2.0) {
     // clear the buffer if we jump
     bot_ptr_circular_clear(self->path);
   }
+#endif
 
   if (dist > bot_gtk_param_widget_get_double(self->pw, PARAM_DECIMATE_PATH) || bot_ptr_circular_size(self->path) == 0) {
     BotTrans *p = (BotTrans*) calloc(1, sizeof(BotTrans));

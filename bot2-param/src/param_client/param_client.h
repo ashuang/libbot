@@ -153,8 +153,6 @@ bot_param_get_num_subkeys (BotParam * param, const char * containerKey);
  */
 char **
 bot_param_get_subkeys (BotParam * param, const char * containerKey);
-                     
-
 
 /**
  * bot_param_get_int:
