@@ -224,13 +224,6 @@ bot_null_distortion_create(void)
 
 // Structure for spherical distortion model
 typedef struct {
-    double w;   // Original image width
-    double h;   // Original image height
-    double fx;  // Focal Length
-    double fy;
-    double cx;  // Center of distortion
-    double cy;
-
     double k1; //radial distortion coeffs
     double k2;
     double k3;
@@ -255,18 +248,10 @@ plumb_bob_undistort_func(const void *data, const double x, const double y,
     //modifed from opencv function cvUndistortPoints
     //k contains distortion params... we don't have k3
     double k[5]={dist->k1,dist->k2,dist->k3,dist->p1,dist->p2};
-    double fx, fy, ifx, ify, cx, cy;
-
-    fx = dist->fx;
-    fy = dist->fy;
-    ifx = 1./fx;
-    ify = 1./fy;
-    cx = dist->cx;
-    cy = dist->cy;
 
     double x1, y1, x0, y0;
-    x0 = x1 = (x - cx)*ifx;
-    y0 = y1 = (y - cy)*ify;
+    x0 = x1 =x;
+    y0 = y1 =y;
 
     // compensate distortion iteratively
     for(int j = 0; j < 5; j++ ) //opencv uses 5
@@ -279,9 +264,9 @@ plumb_bob_undistort_func(const void *data, const double x, const double y,
         y1 = (y0 - deltaY)*icdist;
     }
 
-    ray[0] = x1*fx+cx;
-    ray[1] = y1*fy+cy;
-    //ray[2] = ?;
+    ray[0] = x1;
+    ray[1] = y1;
+    ray[2] = 1;
 
     return 0;
 }
@@ -294,10 +279,8 @@ plumb_bob_distort_func(const void *data, const double ray[3],
     OpenCvDistortionParams *dist = (OpenCvDistortionParams*)data;
     //hopefully it is correct
     if (ray[2] < CAMERA_EPSILON) return -1;
-    double ix = ray[0] / ray[2];
-    double iy = ray[1] / ray[2];
-    double xn = (ix-dist->cx)/dist->fx;
-    double yn = (iy-dist->cy)/dist->fy;
+    double xn = ray[0] / ray[2];
+    double yn = ray[1] / ray[2];
     double r2 = xn*xn + yn * yn;
     double r4 = r2*r2;
     double r6 = r4*r2;
@@ -311,8 +294,8 @@ plumb_bob_distort_func(const void *data, const double ray[3],
     double dy = a3*dist->p1+a1*dist->p2;
     double xd = xr+dx;
     double yd = yr+dy;
-    *x = xd*dist->fx+dist->cx;
-    *y = yd*dist->fy+dist->cy;
+    *x = xd;
+    *y = yd;
 
     return 0;
 }
