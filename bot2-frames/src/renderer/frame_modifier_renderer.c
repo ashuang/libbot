@@ -48,6 +48,8 @@ typedef struct _RendererFrames {
   char ** frameNames;
   int * frameNums;
 
+  int updating;
+
 } RendererFrames;
 
 static void destroy_renderer_frames(BotRenderer *super)
@@ -72,17 +74,19 @@ static void frames_update_handler(BotFrames *bot_frames, const char *frame, cons
   int activeSensorNum = bot_gtk_param_widget_get_enum(self->pw, PARAM_FRAME_SELECT);
   if (activeSensorNum > 0) {
     const char * activeSensorName = self->frameNames[activeSensorNum];
-    const char * relative_to = bot_frames_get_relative_to(self->frames, activeSensorName);
-    bot_frames_get_trans(self->frames, activeSensorName, relative_to, &tran);
-    double rpy[3];
-    bot_quat_to_roll_pitch_yaw(tran.rot_quat, rpy);
-    bot_gtk_param_widget_set_double(self->pw, PARAM_X, tran.trans_vec[0]);
-    bot_gtk_param_widget_set_double(self->pw, PARAM_Y, tran.trans_vec[1]);
-    bot_gtk_param_widget_set_double(self->pw, PARAM_Z, tran.trans_vec[2]);
-    bot_gtk_param_widget_set_double(self->pw, PARAM_ROLL, bot_to_degrees(rpy[0]));
-    bot_gtk_param_widget_set_double(self->pw, PARAM_PITCH, bot_to_degrees(rpy[1]));
-    bot_gtk_param_widget_set_double(self->pw, PARAM_YAW, bot_to_degrees(rpy[2]));
-
+    if (strcmp(frame, activeSensorName) == 0) {
+      const char * relative_to = bot_frames_get_relative_to(self->frames, activeSensorName);
+      bot_frames_get_trans(self->frames, activeSensorName, relative_to, &tran);
+      double rpy[3];
+      bot_quat_to_roll_pitch_yaw(tran.rot_quat, rpy);
+      bot_gtk_param_widget_set_double(self->pw, PARAM_X, tran.trans_vec[0]);
+      bot_gtk_param_widget_set_double(self->pw, PARAM_Y, tran.trans_vec[1]);
+      bot_gtk_param_widget_set_double(self->pw, PARAM_Z, tran.trans_vec[2]);
+      bot_gtk_param_widget_set_double(self->pw, PARAM_ROLL, bot_to_degrees(rpy[0]));
+      bot_gtk_param_widget_set_double(self->pw, PARAM_PITCH, bot_to_degrees(rpy[1]));
+      bot_gtk_param_widget_set_double(self->pw, PARAM_YAW, bot_to_degrees(rpy[2]));
+      self->updating = 0;
+    }
   }
   bot_viewer_request_redraw(self->viewer);
 }
@@ -90,10 +94,14 @@ static void frames_update_handler(BotFrames *bot_frames, const char *frame, cons
 static void on_param_widget_changed(BotGtkParamWidget *pw, const char *name, void *user)
 {
   RendererFrames *self = (RendererFrames*) user;
+  if (self->updating) {
+    return;
+  }
   BotViewer *viewer = self->viewer;
   int activeSensorNum = bot_gtk_param_widget_get_enum(pw, PARAM_FRAME_SELECT);
   if (!strcmp(name, PARAM_FRAME_SELECT)) {
     if (activeSensorNum > 0) {
+      self->updating = 1;
       bot_viewer_set_status_bar_message(self->viewer, "Modify Calibration relative to %s", bot_frames_get_relative_to(
           self->frames, self->frameNames[activeSensorNum]));
       bot_gtk_param_widget_set_enabled(self->pw, PARAM_X, 1);
@@ -103,6 +111,8 @@ static void on_param_widget_changed(BotGtkParamWidget *pw, const char *name, voi
       bot_gtk_param_widget_set_enabled(self->pw, PARAM_PITCH, 1);
       bot_gtk_param_widget_set_enabled(self->pw, PARAM_YAW, 1);
       bot_gtk_param_widget_set_enabled(self->pw, PARAM_SAVE, 1);
+      frames_update_handler(self->frames, self->frameNames[activeSensorNum], bot_frames_get_relative_to(self->frames,
+          self->frameNames[activeSensorNum]), bot_timestamp_now(), self);
     }
     else {
       bot_viewer_set_status_bar_message(self->viewer, "");
@@ -158,6 +168,7 @@ static void on_param_widget_changed(BotGtkParamWidget *pw, const char *name, voi
 
   }
   else if (activeSensorNum > 0) {
+    self->updating = 1;
     BotTrans curr;
     curr.trans_vec[0] = bot_gtk_param_widget_get_double(self->pw, PARAM_X);
     curr.trans_vec[1] = bot_gtk_param_widget_get_double(self->pw, PARAM_Y);
@@ -180,8 +191,6 @@ static void on_param_widget_changed(BotGtkParamWidget *pw, const char *name, voi
     bot_frames_update_frame(self->frames, frame_name, relative_to, &curr, bot_timestamp_now());
   }
 
-  frames_update_handler(self->frames, self->frameNames[activeSensorNum],
-      bot_frames_get_relative_to(self->frames, self->frameNames[activeSensorNum]), bot_timestamp_now(), self);
   bot_viewer_request_redraw(self->viewer);
 }
 
