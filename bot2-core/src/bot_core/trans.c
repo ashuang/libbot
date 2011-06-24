@@ -5,6 +5,7 @@
 #include "small_linalg.h"
 #include "rotations.h"
 #include "trans.h"
+#include "math_util.h"
 
 void
 bot_trans_set_identity(BotTrans *btrans)
@@ -45,6 +46,15 @@ bot_trans_apply_trans(BotTrans *dest, const BotTrans * src)
     dest->trans_vec[2] += src->trans_vec[2];
 }
 
+void bot_trans_apply_trans_to(const BotTrans * src1, const BotTrans * src2, BotTrans * dest){
+  BotTrans tmp; //allow in place operation
+  bot_trans_copy(&tmp,src2);
+  bot_trans_apply_trans(&tmp,src1);
+  bot_trans_copy(dest,&tmp);
+  return;
+}
+
+
 void
 bot_trans_invert(BotTrans * btrans)
 {
@@ -55,6 +65,14 @@ bot_trans_invert(BotTrans * btrans)
     btrans->rot_quat[1] = -btrans->rot_quat[1];
     btrans->rot_quat[2] = -btrans->rot_quat[2];
     btrans->rot_quat[3] = -btrans->rot_quat[3];
+}
+
+
+void bot_trans_invert_and_compose(const BotTrans * curr, const BotTrans * prev, BotTrans * delta){
+  bot_trans_copy(delta,prev);
+  bot_trans_invert(delta);
+  bot_trans_apply_trans_to(delta,curr,delta);
+  return;
 }
 
 void
@@ -140,4 +158,12 @@ void
 bot_trans_get_trans_vec(const BotTrans * btrans, double trans_vec[3])
 {
     memcpy(trans_vec, btrans->trans_vec, 3*sizeof(double));
+}
+
+void bot_trans_print_trans(const BotTrans * tran)
+{
+  double rpy[3];
+  bot_quat_to_roll_pitch_yaw(tran->rot_quat, rpy);
+  printf("t=(%f %f %f) rpy=(%f,%f,%f)", tran->trans_vec[0], tran->trans_vec[1],
+      tran->trans_vec[2], bot_to_degrees(rpy[0]), bot_to_degrees(rpy[1]), bot_to_degrees(rpy[2]));
 }

@@ -86,11 +86,30 @@ void bot_trans_interpolate(BotTrans *dest, const BotTrans * trans_a,
 void bot_trans_apply_trans(BotTrans *dest, const BotTrans * src);
 
 /**
+ * bot_trans_apply_trans_to:
+ *
+ * Modifies %dest so that it is equivalent to first applying @src1
+ * and then applying @src2.  If we represent SRC1, SRC2 and DEST as homogeneous
+ * matrices, then this operation is equivalent to:  DEST = SRC1 * SRC2
+ * it is ok if SRC1 or SRC2 is also dest (in place operation)
+ */
+void bot_trans_apply_trans_to(const BotTrans * src1, const BotTrans * src2, BotTrans * dest);
+
+/**
  * bot_trans_invert:
  *
  * Inverts the transformation.  Modifies @btrans in-place.
  */
 void bot_trans_invert(BotTrans * btrans);
+
+/**
+ * bot_trans_invert_and_compose:
+ *
+ * Compute the transformation that will take you from @prev to @curr, such that
+ * bot_trans_apply_trans_to(@prev,%diff,@curr) would give you @curr
+ */
+void bot_trans_invert_and_compose(const BotTrans * curr, const BotTrans * prev, BotTrans * diff);
+
 
 /**
  * bot_trans_rotate_vec:
@@ -145,6 +164,15 @@ void bot_trans_get_mat_3x4(const BotTrans *btrans, double mat[12]);
  * translation portion of the rigid body transformation.
  */
 void bot_trans_get_trans_vec(const BotTrans * btrans, double trans_vec[3]);
+
+/**
+ * bot_trans_print_trans:
+ *
+ * print out the BotTrans struct tran
+ * as (x,y,z) (r,p,y)
+ */
+void bot_trans_print_trans(const BotTrans * tran);
+
 
 /**
  * @}
