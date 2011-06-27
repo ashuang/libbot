@@ -41,7 +41,12 @@ articulated_body_name {
 #include "bot_frames_renderers.h"
 #include <bot_param/param_util.h>
 #include <bot_vis/bot_vis.h>
+
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
 
 #define DEG2RAD(X) (X*180.0/M_PI)
 
