@@ -59,6 +59,13 @@ static inline int bot_theta_to_int(double theta, int max)
     return v;
 }
 
+/** Convenience function for systems without the sincos GNU extension **/
+static inline void bot_sincos(double theta, double *s, double *c)
+{
+    *s = sin(theta);
+    *c = cos(theta);
+}
+
 #define bot_to_radians(deg) ((deg)*M_PI/180)
 
 #define bot_to_degrees(rad) ((rad)*180/M_PI)
