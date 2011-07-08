@@ -71,10 +71,11 @@ BotParam *
 bot_param_new( void );
 
 /**
- * bot_param_free:
+ * bot_param_destroy:
  * @param: The %BotParam to free.
  *
- * Frees a configuration handle
+ * Frees the memory used by a BotParam and destroys its
+ * constituents.
  */
 void
 bot_param_destroy (BotParam * param);
