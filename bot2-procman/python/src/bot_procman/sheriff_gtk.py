@@ -514,6 +514,9 @@ class SheriffGtk:
         stdout_adj.set_data ("scrolled-to-end", 1)
         stdout_adj.connect ("changed", self.on_adj_changed)
         stdout_adj.connect ("value-changed", self.on_adj_value_changed)
+        
+        #add callback so we can add a clear option to the default right click popup
+        self.stdout_textview.connect ("populate-popup", self.on_tb_populate_menu)
 
         font_desc = pango.FontDescription ("Monospace")
         self.stdout_textview.modify_font (font_desc)
@@ -1198,6 +1201,21 @@ class SheriffGtk:
             start_iter = tb.get_start_iter ()
             chop_iter = tb.get_iter_at_line (num_lines - self.stdout_maxlines)
             tb.delete (start_iter, chop_iter)
+            
+    def on_tb_populate_menu(self,textview, menu):
+        sep = gtk.SeparatorMenuItem()
+        menu.append (sep)
+        sep.show()
+        mi = gtk.MenuItem ("_Clear")
+        menu.append(mi)
+        mi.connect ("activate", self._tb_clear)
+        mi.show()
+
+    def _tb_clear(self,menu):
+        tb = self.stdout_textview.get_buffer ()
+        start_iter = tb.get_start_iter ()
+        end_iter = tb.get_end_iter ()
+        tb.delete (start_iter, end_iter)
 
     # LCM handlers
     def on_procman_orders (self, channel, data):
