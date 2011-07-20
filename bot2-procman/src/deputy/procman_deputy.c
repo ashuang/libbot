@@ -612,11 +612,12 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
     // ignore stale orders (where utime is too long ago)
     int64_t now = timestamp_now ();
     if (now - orders->utime > PROCMAN_MAX_MESSAGE_AGE_USEC) {
-        if (s->verbose) {
-            printf ("ignoring stale orders (utime %d seconds ago)\n",
-                    (int) ((now - orders->utime) / 1000000));
+        for (int i=0; i<orders->ncmds; i++) {
+               bot_procman_sheriff_cmd_t *cmd = &orders->cmds[i];
+               printf_and_transmit (s, cmd->sheriff_id, "ignoring stale orders (utime %d seconds ago). You may want to check the system clocks!\n",
+                   (int) ((now - orders->utime) / 1000000));
         }
-        s->nstale_orders_slm++;
+         s->nstale_orders_slm++;
         return;
     }
 
