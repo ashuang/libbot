@@ -10,7 +10,7 @@ Maintainers:  Albert Huang <albert@csail.mit.edu>
 Summary:      Tools to manage many processes distributed over several workstations
 Description:  
   Procman is a tool for managing many processes distributed over one or more
-  comptuers.  There are two ways to use procman:
+  computers.  There are two ways to use procman:
 
   1) Sheriff / Deputy mode
 
