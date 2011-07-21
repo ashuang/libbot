@@ -659,6 +659,10 @@ static BotParam * _bot_param_new(void)
   root = new_element(NULL);
   root->type = BotParamContainer;
 
+  if (!g_thread_supported ())
+    g_thread_init (NULL);
+
+
   BotParam * param;
   param = calloc(1, sizeof(BotParam));
   param->root = root;
