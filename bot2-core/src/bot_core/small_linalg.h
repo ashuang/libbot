@@ -260,7 +260,7 @@ static inline double
 bot_vector_dist_2d (const double v1[2], const double v2[2])
 {
     double v[2];
-    bot_vector_sub_nd (v1, v2, 2, v);
+    bot_vector_subtract_2d (v1, v2, v);
     return bot_vector_magnitude_2d (v);
 }
 
