@@ -758,7 +758,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
 
 }
 
-BotParam * bot_param_new_from_file(const char * filename)
+static BotParam * _new_from_file(const char * filename)
 {
   ParserFile pf;
   FILE * f = fopen(filename, "r");
@@ -782,6 +782,70 @@ BotParam * bot_param_new_from_file(const char * filename)
     return param;
   }
 }
+
+BotParam * bot_param_new_from_file (const char *filename)
+{
+    BotParam *param_parent = _new_from_file (filename);
+    if (!param_parent)
+        return NULL;
+
+    char **include = bot_param_get_str_array_alloc (param_parent, BOT_PARAM_INCLUDE_KEYWORD);
+    if (!include)
+        return param_parent; // nothing to include
+
+    char *contents;  GError *error; gsize len;
+    if (!g_file_get_contents (filename, &contents, &len, &error)) {
+        fprintf (stderr, "%s: [%s]", __func__, error->message);
+        g_error_free (error);
+        bot_param_str_array_free (include);
+        return param_parent;
+    }
+
+    char *param_str = contents;
+    gsize param_len = len;
+    char *param_dir = g_path_get_dirname (filename);
+
+    for (char **child=include; *child; child++) {
+        char *child_filename = NULL;
+        if (g_path_is_absolute (*child))
+            child_filename = g_strdup (*child);
+        else if (g_str_has_prefix (*child, "~"))
+            child_filename = g_build_filename (g_get_home_dir (), *child+1, NULL);
+        else
+            child_filename = g_build_filename (param_dir, *child, NULL);
+
+        if (!g_file_test (child_filename, G_FILE_TEST_EXISTS)) {
+            fprintf (stderr, "%s: can't include [%s], file does not exist\n", 
+                     __func__, child_filename);
+            abort ();
+        }
+        else {
+            if (!g_file_get_contents (child_filename, &contents, &len, &error)) {
+                fprintf (stderr, "%s: can't include [%s], unable to read file [%s]\n",
+                         __func__, child_filename, error->message);
+                abort ();
+            }
+            char *tmp = param_str;
+            param_str = g_strconcat (tmp, contents, NULL);
+            param_len += len;
+            g_free (tmp);
+            g_free (child_filename);
+            g_free (contents);
+        }
+    }
+
+    BotParam *param = bot_param_new_from_string (param_str, param_len);
+    assert (param);
+
+    // clean up
+    bot_param_destroy (param_parent);
+    bot_param_str_array_free (include);
+    g_free (param_str);
+    g_free (param_dir);
+
+    return param;
+}
+
 
 BotParam * bot_param_new_from_string(const char * string, int length)
 {
