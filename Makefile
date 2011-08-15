@@ -5,10 +5,10 @@ SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
 # Figure out where to build the software.
 #   Use BUILD_PREFIX if it was passed in.
-#   If not, search up to four parent directories for a 'build' directory.
+#   If not, search up to three parent directories for a 'build' directory.
 #   Otherwise, use ./build.
 ifeq "$(BUILD_PREFIX)" ""
-BUILD_PREFIX=$(shell for pfx in ./ .. ../.. ../../.. ../../../..; do d=`pwd`/$$pfx/build; \
+BUILD_PREFIX=$(shell for pfx in ./ .. ../.. ../../..; do d=`pwd`/$$pfx/build; \
                if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
 endif
 
