@@ -109,7 +109,7 @@ char * bot_param_get_camera_lcm_channel(BotParam *bot_param, const char *camera_
 }
 char * bot_param_get_planar_lidar_lcm_channel(BotParam *bot_param, const char *lidar_name)
 {
-  return bot_param_get_sensor_lcm_channel(bot_param, CAMERA_PREFIX, lidar_name);
+  return bot_param_get_sensor_lcm_channel(bot_param, PLANAR_LIDAR_PREFIX, lidar_name);
 }
 
 
