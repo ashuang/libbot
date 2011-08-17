@@ -31,9 +31,9 @@ extern "C" {
   static const float bot_color_util_red[3]     = {1,0,0};
   static const float bot_color_util_green[3]   = {0,1,0};
   static const float bot_color_util_blue[3]    = {0,0,1};
-  static const float bot_color_util_cyan[3]    = {1,1,0};
+  static const float bot_color_util_cyan[3]    = {0,1,1};
   static const float bot_color_util_magenta[3] = {1,0,1};
-  static const float bot_color_util_yellow[3]  = {0,1,1};
+  static const float bot_color_util_yellow[3]  = {1,1,0};
   static const float bot_color_util_black[3]   = {0,0,0};
   static const float bot_color_util_white[3]   = {1,1,1};
 
