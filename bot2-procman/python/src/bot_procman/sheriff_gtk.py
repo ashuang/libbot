@@ -6,7 +6,9 @@ import traceback
 import getopt
 import subprocess
 import signal
+import pickle
 
+import glib
 import gobject
 import gtk
 import pango
@@ -49,6 +51,22 @@ ANSI_CODES_TO_TEXT_TAG_PROPERTIES = { \
         "47" : ("background", "white"),
         }
 
+COL_CMDS_TV_OBJ, \
+COL_CMDS_TV_CMD, \
+COL_CMDS_TV_NICKNAME, \
+COL_CMDS_TV_HOST, \
+COL_CMDS_TV_STATUS_ACTUAL, \
+COL_CMDS_TV_CPU_USAGE, \
+COL_CMDS_TV_MEM_VSIZE, \
+COL_CMDS_TV_AUTO_RESPAWN, \
+NUM_CMDS_ROWS = range(9)
+
+COL_HOSTS_TV_OBJ, \
+COL_HOSTS_TV_NAME, \
+COL_HOSTS_TV_LAST_UPDATE, \
+COL_HOSTS_TV_LOAD, \
+NUM_HOSTS_ROWS = range(5)
+
 def find_bot_procman_deputy_cmd():
     search_path = []
     if BUILD_PREFIX is not None:
@@ -61,11 +79,6 @@ def find_bot_procman_deputy_cmd():
     return None
 
 def timestamp_now (): return int (time.time () * 1000000)
-
-#try:
-#    getattr(__builtins__, "all")
-#except AttributeError:
-#    def all (list): return reduce (lambda x, y: x and y, list, True)
 
 def now_str (): return time.strftime ("[%H:%M:%S] ")
 
@@ -153,34 +166,49 @@ class AddModifyCommandDialog (gtk.Dialog):
     def get_group (self): return self.group_cbe.child.get_text ()
     def get_auto_respawn (self): return self.auto_respawn_cb.get_active ()
 
-class CommandExtraData:
+class CommandExtraData(object):
     def __init__ (self, text_tag_table):
         self.tb = gtk.TextBuffer (text_tag_table)
         self.printf_keep_count = [ 0, 0, 0, 0, 0, 0 ]
         self.printf_drop_count = 0
 
-COL_CMDS_TV_OBJ, \
-COL_CMDS_TV_CMD, \
-COL_CMDS_TV_NICKNAME, \
-COL_CMDS_TV_HOST, \
-COL_CMDS_TV_STATUS_ACTUAL, \
-COL_CMDS_TV_CPU_USAGE, \
-COL_CMDS_TV_MEM_VSIZE, \
-COL_CMDS_TV_AUTO_RESPAWN, \
-NUM_CMDS_ROWS = range(9)
+class SheriffGtkConfig(object):
+    def __init__(self):
+        self.show_columns = [ True ] * NUM_CMDS_ROWS
+        config_dir = os.path.join(glib.get_user_config_dir(), "procman-sheriff")
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+        self.config_fname = os.path.join(config_dir, "config")
+    
+    def save(self):
+        d = {}
+        for i, val in enumerate(self.show_columns):
+            d["show_column_%d" % i] = val
 
-COL_HOSTS_TV_OBJ, \
-COL_HOSTS_TV_NAME, \
-COL_HOSTS_TV_LAST_UPDATE, \
-COL_HOSTS_TV_LOAD, \
-NUM_HOSTS_ROWS = range(5)
+        try:
+            pickle.dump(d, open(self.config_fname, "w"))
+        except Exception, err:
+            print err
 
-class SheriffGtk:
+    def load(self):
+        if not os.path.exists(self.config_fname):
+            return
+        try:
+            d = pickle.load(open(self.config_fname, "r"))
+            for i in range(len(self.show_columns)):
+                self.show_columns[i] = d["show_column_%d" % i]
+        except Exception, err:
+            print err
+            return
+
+class SheriffGtk(object):
     def __init__ (self, lc):
         self.lc = lc
         self.stdout_maxlines = 2000
         self.config_filename = None
         self.next_cmds_update_time = 0
+        self.gui_config = SheriffGtkConfig()
+        self.gui_config.load()
 
         # deputy spawned by the sheriff
         self.spawned_deputy = None
@@ -369,35 +397,23 @@ class SheriffGtk:
 
         cmds_tr = gtk.CellRendererText ()
         cmds_tr.set_property ("ellipsize", pango.ELLIPSIZE_END)
-        #nickname_tr = gtk.CellRendererText ()
         plain_tr = gtk.CellRendererText ()
         status_tr = gtk.CellRendererText ()
 
+        cols_to_make = [ \
+                ("Name", cmds_tr, COL_CMDS_TV_CMD),
+                ("Host", plain_tr, COL_CMDS_TV_HOST),
+                ("Status", status_tr, COL_CMDS_TV_STATUS_ACTUAL),
+                ("CPU %", plain_tr, COL_CMDS_TV_CPU_USAGE),
+                ("Mem (kB)", plain_tr, COL_CMDS_TV_MEM_VSIZE),
+                ]
+
         cols = []
-        col = gtk.TreeViewColumn ("Name", cmds_tr, text=COL_CMDS_TV_CMD)
-        col.set_sort_column_id (COL_CMDS_TV_CMD)
-        cols.append (col)
-
-#        col = gtk.TreeViewColumn ("Nickname", plain_tr, text=COL_CMDS_TV_NICKNAME)
-#        col.set_sort_column_id (COL_CMDS_TV_NICKNAME)
-#        cols.append (col)
-
-        col = gtk.TreeViewColumn ("Host", plain_tr, text=COL_CMDS_TV_HOST)
-        col.set_sort_column_id (COL_CMDS_TV_HOST)
-        cols.append (col)
-
-        col = gtk.TreeViewColumn ("Status", status_tr, text=COL_CMDS_TV_STATUS_ACTUAL)
-        col.set_sort_column_id (COL_CMDS_TV_STATUS_ACTUAL)
-        col.set_cell_data_func (status_tr, self._status_cell_data_func)
-
-        cols.append (col)
-        col = gtk.TreeViewColumn ("CPU %", plain_tr, text=COL_CMDS_TV_CPU_USAGE)
-        col.set_sort_column_id (COL_CMDS_TV_CPU_USAGE)
-        cols.append (col)
-
-        col = gtk.TreeViewColumn ("Mem (kB)", plain_tr, text=COL_CMDS_TV_MEM_VSIZE)
-        col.set_sort_column_id (COL_CMDS_TV_MEM_VSIZE)
-        cols.append (col)
+        for name, renderer, col_id in cols_to_make:
+            col = gtk.TreeViewColumn(name, renderer, text=col_id)
+            col.set_sort_column_id(col_id)
+            col.set_visible(self.gui_config.show_columns[col_id])
+            cols.append(col)
 
         for col in cols:
             col.set_resizable (True)
@@ -407,9 +423,11 @@ class SheriffGtk:
             if name == "Name":
                 continue
             col_cmi = gtk.CheckMenuItem (name)
-            col_cmi.set_active (True)
-            col_cmi.connect ("activate", 
-                    lambda cmi, col: col.set_visible (cmi.get_active()), col)
+            col_cmi.set_active (col.get_visible())
+            def on_activate(cmi, col_):
+                col_.set_visible(cmi.get_active())
+                self.gui_config.show_columns[col_.get_sort_column_id()] = cmi.get_active()
+            col_cmi.connect ("activate", on_activate, col)
             view_menu.append (col_cmi)
 
         cmds_sel = self.cmds_tv.get_selection ()
@@ -559,6 +577,7 @@ class SheriffGtk:
 
     def cleanup(self):
         self._terminate_spawned_deputy()
+        self.gui_config.save()
 
     def _terminate_spawned_deputy(self):
         if self.spawned_deputy:
