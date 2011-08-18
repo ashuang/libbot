@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <pty.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -49,10 +50,12 @@ static void dbgt (const char *fmt, ...)
 
 static procman_cmd_t * procman_cmd_create (const char *cmd, int32_t cmd_id);
 static void procman_cmd_destroy (procman_cmd_t *cmd);
+static void procman_cmd_split_str (procman_cmd_t *pcmd, GHashTable* variables);
 
 struct _procman {
     procman_params_t params;
     GList *commands;
+    GHashTable* variables;
 };
 
 void procman_params_init_defaults (procman_params_t *params, int argc,
@@ -83,6 +86,9 @@ procman_t *procman_create (const procman_params_t *params)
 
     memcpy (&pm->params, params, sizeof (procman_params_t));
 
+    pm->variables = g_hash_table_new_full(g_str_hash, g_str_equal,
+            (GDestroyNotify)g_free, (GDestroyNotify)g_free);
+
     // add the bin path to the PATH environment variable
     //
     // TODO check and see if it's already there
@@ -93,40 +99,6 @@ procman_t *procman_create (const procman_params_t *params)
     printf ("setting PATH to %s\n", newpath);
     setenv ("PATH", newpath, 1);
     free (newpath);
-
-    if (strlen (params->config_file) > 0) {
-        // parse the config file
-        FILE *fp = fopen (params->config_file, "r");
-        if (NULL == fp) {
-            perror ("fopen");
-            return NULL;
-        }
-
-        char buf[1024];
-        do {
-            memset (buf, 0, sizeof(buf));
-            if(!fgets (buf, sizeof (buf), fp)) {
-                perror("fgets");
-                return NULL;
-            }
-
-            // remove leading and trailing whitespace
-            g_strstrip (buf);
-
-            // skip empty lines and comments
-            if (strlen (buf) == 0 || '#' == buf[0]) {
-                continue;
-            }
-
-            // skip lines starting with '['
-            if ('[' == buf[0]) { continue; }
-
-            if (pm->params.verbose)
-                printf ("procman: adding [%s]\n", buf);
-            procman_add_cmd (pm, buf);
-
-        } while (! feof (fp));
-    }
 
     return pm;
 }
@@ -142,6 +114,8 @@ procman_destroy (procman_t *pm)
     g_list_free (pm->commands);
     pm->commands = NULL;
 
+    g_hash_table_destroy(pm->variables);
+
     free (pm);
 }
 
@@ -155,79 +129,32 @@ int procman_start_cmd (procman_t *pm, procman_cmd_t *p)
     } else {
         dbgt ("starting [%s]\n", p->cmd->str);
 
+        procman_cmd_split_str(p, pm->variables);
+
         // close existing fd's
         if (p->stdout_fd >= 0) {
             close (p->stdout_fd);
             p->stdout_fd = -1;
         }
-        if (p->stdin_fd >= 0) {
-            close (p->stdin_fd);
-            p->stdin_fd = -1;
-        }
+        p->stdin_fd = -1;
         p->exit_status = 0;
 
-        // setup pipes
-        int stdin_fds[2];
-        int stdout_fds[2];
+        // make a backup of stderr, in case something bad happens during exec.
+        // if exec succeeds, then we have a dangling file descriptor that
+        // gets closed when the child exits... that's okay
+        int stderr_backup = dup(STDERR_FILENO);
 
-        status = pipe (stdin_fds);
-        if (status < 0) {
-            int eno = errno;
-            dbgt ("couldn't create stdin pipe for [%s]: %s (%d)\n",
-                    p->cmd->str, strerror (eno), eno);
-            return -1;
-        }
-        status = pipe (stdout_fds);
-        if (status < 0) {
-            int eno = errno;
-            dbgt ("couldn't create stdin pipe for [%s]: %s (%d)\n",
-                    p->cmd->str, strerror (eno), eno);
-            close (stdin_fds[0]);
-            close (stdin_fds[1]);
-            return -1;
-        }
-
-//        printf("command is: %s\n",p->cmd->str);
-//        for (int i=0;i<p->envc;i++){
-//          printf("%s = %s\n",p->envp[i][0],p->envp[i][1]);
-//        }
-//
-//        for (int i=0;i<p->argc;i++){
-//          printf("%s ",p->argv[i]);
-//        }
-//        printf("\n");
-
-        int pid;
-        pid = fork();
+        int pid = forkpty(&p->stdin_fd, NULL, NULL, NULL);
         if (0 == pid) {
-            // move stderr to fd 3, in case shit happens during exec
-            // if exec succeeds, then we have a dangling file descriptor that
-            // gets closed when the child exits... that's okay
-            dup2( 2, 3);
+//            // block SIGINT (only allow the procman to kill the process now)
+//            sigset_t toblock;
+//            sigemptyset (&toblock);
+//            sigaddset (&toblock, SIGINT);
+//            sigprocmask (SIG_BLOCK, &toblock, NULL);
 
-            // redirect stdin, stdout, and stderr
-            status = close(0);
-            status = close(1);
-            status = close(2);
-            status = dup2( stdin_fds[0], 0);
-            status = dup2( stdout_fds[1], 1);
-
-            // make stderr the same as stdout
-            status = dup2( stdout_fds[1], 2);
-
-            // close unneeded pipes
-            status = close (stdin_fds[1]);
-            status = close (stdout_fds[0]);
-
-            // block SIGINT (only allow the procman to kill the process now)
-            sigset_t toblock;
-            sigemptyset (&toblock);
-            sigaddset (&toblock, SIGINT);
-            sigprocmask (SIG_BLOCK, &toblock, NULL);
-
-            //set environment variables from the beginning of the command
+            // set environment variables from the beginning of the command
             for (int i=0;i<p->envc;i++){
-              setenv(p->envp[i][0],p->envp[i][1],1);
+                setenv(p->envp[i][0],p->envp[i][1],1);
             }
 
             // go!
@@ -238,30 +165,24 @@ int procman_start_cmd (procman_t *pm, procman_cmd_t *p)
                     "PROCMAN ERROR!!!! couldn't start [%s]!\n"
                     "execv: %s\n", p->cmd->str, strerror (errno));
             fprintf (stderr, "%s\n", ebuf);
-            fflush (stderr);
 
             // if execv returns, the command did not execute successfully
             // (e.g. permission denied or bad path or something)
 
             // restore stderr so we can barf a real error message
-            close(0); close(1); close(2); dup2( 3, 2); close(3);
-
-            fprintf (stderr, "%s\n", ebuf);
-            fflush (stderr);
+            close(STDERR_FILENO); 
+            dup2(stderr_backup, STDERR_FILENO); 
+            fprintf(stderr, "%s\n", ebuf);
+            close(stderr_backup);
 
             exit(-1);
         } else if (pid < 0) {
-            perror ("fork");
+            perror("forkpty");
             return -1;
         } else {
             p->pid = pid;
 
-            p->stdin_fd = stdin_fds[1];
-            p->stdout_fd = stdout_fds[0];
-
-            // close unneeded pipes
-            status = close (stdin_fds[0]);
-            status = close (stdout_fds[1]);
+            p->stdout_fd = p->stdin_fd;
         }
     }
     return 0;
@@ -365,28 +286,30 @@ procman_check_for_dead_children (procman_t *pm, procman_cmd_t **dead_child)
 int
 procman_close_dead_pipes (procman_t *pm, procman_cmd_t *cmd)
 {
-    if (cmd->stdout_fd < 0 && cmd->stdin_fd < 0) return 0;
+    if (cmd->stdout_fd < 0 && cmd->stdin_fd < 0) 
+        return 0;
 
     if (cmd->pid) {
         dbgt ("refusing to close pipes for command "
                 "with nonzero pid [%s] [%d]\n",
                 cmd->cmd->str, cmd->pid);
+        return 0;
     }
     if (cmd->stdout_fd >= 0) {
         close (cmd->stdout_fd);
-    }
-    if (cmd->stdin_fd >= 0) {
-        close (cmd->stdin_fd);
     }
     cmd->stdin_fd = -1;
     cmd->stdout_fd = -1;
     return 0;
 }
 
+/**
+ * same as g_strsplit_set, but removes empty tokens
+ */
 static char **
-strsplit_set_packed(const char *tosplit, const char *delimeters, int max_tokens)
+strsplit_set_packed(const char *tosplit, const char *delimiters, int max_tokens)
 {
-    char **tmp = g_strsplit_set(tosplit, delimeters, max_tokens);
+    char **tmp = g_strsplit_set(tosplit, delimiters, max_tokens);
     int i;
     int n=0;
     for(i=0; tmp[i]; i++) {
@@ -404,8 +327,130 @@ strsplit_set_packed(const char *tosplit, const char *delimeters, int max_tokens)
     return result;
 }
 
+typedef struct {
+    const char* w;
+    int w_len;
+    int pos;
+    char cur_tok;
+    GString* result;
+    GHashTable* variables;
+} subst_parse_context_t;
+
+static int
+is_valid_variable_char(char c, int pos)
+{
+    const char* valid_start = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+    const char* valid_follow = "1234567890";
+    return (strchr(valid_start, c) != NULL ||
+            ((0 == pos) && (strchr(valid_follow, c) != NULL)));
+}
+
+static char
+subst_vars_has_token(subst_parse_context_t* ctx)
+{
+    return (ctx->pos < ctx->w_len);
+}
+
+static char
+subst_vars_peek_token(subst_parse_context_t* ctx) 
+{
+    return subst_vars_has_token(ctx) ? ctx->w[ctx->pos] : 0;
+}
+
+static int
+subst_vars_eat_token(subst_parse_context_t* ctx)
+{
+    if(subst_vars_has_token(ctx)) {
+        ctx->cur_tok = ctx->w[ctx->pos];
+        ctx->pos++;
+        return TRUE;
+    } else {
+        ctx->cur_tok = 0;
+        return FALSE;
+    }
+}
+
+static int
+subst_vars_parse_variable(subst_parse_context_t* ctx)
+{
+    int start = ctx->pos;
+    if(!subst_vars_has_token(ctx)) {
+        g_string_append_c(ctx->result, '$');
+        return 0;
+    }
+    int has_braces = subst_vars_peek_token(ctx) == '{';
+    if(has_braces)
+        subst_vars_eat_token(ctx);
+    int varname_start = ctx->pos;
+    int varname_len = 0;
+    while(subst_vars_has_token(ctx) &&
+          is_valid_variable_char(subst_vars_peek_token(ctx), varname_len)) {
+        varname_len++;
+        subst_vars_eat_token(ctx);
+    }
+    char* varname = g_strndup(&ctx->w[varname_start], varname_len);
+    int braces_ok = TRUE;
+    if(has_braces && ((!subst_vars_eat_token(ctx)) || ctx->cur_tok != '}'))
+        braces_ok = FALSE;
+    int ok = varname_len && braces_ok;
+    if(ok) {
+        // first lookup the variable in our stored table
+        char* val = g_hash_table_lookup(ctx->variables, varname);
+        // if that fails, then check for a similar environment variable
+        if(!val)
+            val = getenv(varname);
+        if(val)
+            g_string_append(ctx->result, val);
+        else
+            ok = FALSE;
+    } 
+    if(!ok)
+        g_string_append_len(ctx->result, &ctx->w[start - 1], ctx->pos - start + 1);
+    g_free(varname);
+    return ok;
+}
+
+/**
+ * Do variable expansion on a command argument.  This searches the argument for
+ * text of the form $VARNAME and ${VARNAME}.  For each discovered variable, it
+ * then expands the variable.  Values defined in the hashtable vars are used
+ * first, followed by environment variable values.  If a variable expansion
+ * fails, then the corresponding text is left unchanged.
+ */
+static char* 
+subst_vars(const char* w, GHashTable* vars)
+{
+    subst_parse_context_t ctx;
+    ctx.w = w;
+    ctx.w_len = strlen(w);
+    ctx.pos = 0;
+    ctx.result = g_string_sized_new(ctx.w_len * 2);
+    ctx.variables = vars;
+    
+    while(subst_vars_eat_token(&ctx)) {
+        char c = ctx.cur_tok;
+        if('\\' == c) {
+            if(subst_vars_eat_token(&ctx)) {
+                g_string_append_c(ctx.result, c);
+            } else {
+                g_string_append_c(ctx.result, '\\');
+            }
+            continue;
+        }
+        // variable?
+        if('$' == c) {
+            subst_vars_parse_variable(&ctx);
+        } else {
+            g_string_append_c(ctx.result, c);
+        }
+    }
+    char* result = g_strdup(ctx.result->str);
+    g_string_free(ctx.result, TRUE);
+    return result;
+}
+
 static void
-procman_cmd_split_str (procman_cmd_t *pcmd)
+procman_cmd_split_str (procman_cmd_t *pcmd, GHashTable* variables)
 {
     if (pcmd->argv) {
         g_strfreev (pcmd->argv);
@@ -418,6 +463,7 @@ procman_cmd_split_str (procman_cmd_t *pcmd)
         pcmd->envp = NULL;
     }
 
+    // TODO don't use g_shell_parse_argv... it's not good with escape characters
     char ** argv=NULL;
     int argc = -1;
     GError *err = NULL;
@@ -447,8 +493,10 @@ procman_cmd_split_str (procman_cmd_t *pcmd)
     for (int i=0;i<argc;i++) {
         if (i<envCount)
             pcmd->envp[i]=g_strsplit(argv[i],"=",2);
-        else
-            pcmd->argv[i-envCount]=g_strdup(argv[i]);
+        else {
+            // substitute variables
+            pcmd->argv[i-envCount]=subst_vars(argv[i], variables);
+        }
     }
     g_strfreev(argv);
 }
@@ -463,7 +511,10 @@ procman_cmd_create (const char *cmd, int32_t cmd_id)
     pcmd->stdin_fd = -1;
     g_string_assign (pcmd->cmd, cmd);
 
-    procman_cmd_split_str (pcmd);
+    pcmd->argv = NULL;
+    pcmd->argc = 0;
+    pcmd->envp = NULL;
+    pcmd->envc = 0;
 
     return pcmd;
 }
@@ -482,6 +533,24 @@ procman_cmd_destroy (procman_cmd_t *cmd)
 const GList *
 procman_get_cmds (procman_t *pm) {
     return pm->commands;
+}
+
+void 
+procman_set_variable(procman_t* pm, const char* name, const char* val)
+{
+    g_hash_table_insert(pm->variables, g_strdup(name), g_strdup(val));
+}
+
+void 
+procman_remove_variable(procman_t* pm, const char* name)
+{
+    g_hash_table_remove(pm->variables, name);
+}
+
+void 
+procman_remove_all_variables(procman_t* pm)
+{
+    g_hash_table_remove_all(pm->variables);
 }
 
 procman_cmd_t*
@@ -581,5 +650,4 @@ void
 procman_cmd_change_str (procman_cmd_t *cmd, const char *cmd_str)
 {
     g_string_assign (cmd->cmd, cmd_str);
-    procman_cmd_split_str (cmd);
 }

@@ -138,6 +138,7 @@ class SheriffDeputy (gobject.GObject):
 #        self.last_orders_jitter_usec = 0
         self.phys_mem_total_bytes = 0
         self.phys_mem_free_bytes = 0
+        self.variables = {}
 
     def get_commands (self):
         return self.commands.values ()
@@ -145,6 +146,19 @@ class SheriffDeputy (gobject.GObject):
     def owns_command (self, command):
         return command.sheriff_id in self.commands and \
                 self.commands [command.sheriff_id] is command
+
+    def get_variables(self):
+        return self.variables
+
+    def set_variable(self, name, val):
+        self.variables[name] = val
+
+    def remove_variable(self, name):
+        if name in self.variables:
+            del self.variables[name]
+
+    def get_variable(self, name):
+        return self.variables[name]
 
     def _update_from_deputy_info (self, dep_info):
         """
@@ -181,6 +195,8 @@ class SheriffDeputy (gobject.GObject):
             status_changes.append ((cmd, old_status, None))
             del self.commands[toremove.sheriff_id]
 
+        # TODO update variables
+
         self.last_update_utime = timestamp_now ()
 #        self.clock_skew_usec = dep_info.clock_skew_usec
 #        self.last_orders_jitter_usec = dep_info.last_orders_jitter_usec
@@ -213,6 +229,7 @@ class SheriffDeputy (gobject.GObject):
                 new_status = cmd.status ()
                 if old_status != new_status:
                     status_changes.append ((cmd, old_status, new_status))
+        # TODO update variables
         return status_changes
 
     def _add_command (self, cmd_name, cmd_nickname, group, sheriff_id):
@@ -249,6 +266,10 @@ class SheriffDeputy (gobject.GObject):
             cmd_msg.force_quit = cmd.force_quit
             cmd_msg.group = cmd.group
             orders.cmds.append (cmd_msg)
+        orders.nvars = len(self.variables)
+        for name, val in self.variables.items():
+            orders.varnames.append(name)
+            orders.varvals.append(val)
         return orders
 
 class Sheriff (gobject.GObject):

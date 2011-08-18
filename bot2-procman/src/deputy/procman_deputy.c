@@ -272,6 +272,7 @@ stop_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd)
         status = procman_kill_cmd (pmd->pm, cmd, SIGKILL);
     } else {
         status = procman_kill_cmd (pmd->pm, cmd, SIGTERM);
+        status = procman_kill_cmd (pmd->pm, cmd, SIGINT);
     }
     gh->num_kills_sent ++;
     gh->last_kill_time = now;
@@ -416,7 +417,7 @@ transmit_proc_info (procman_deputy_t *s)
         pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
 
         msg.cmds[i].name = cmd->cmd->str;
-	msg.cmds[i].nickname = mi->nickname;
+    msg.cmds[i].nickname = mi->nickname;
         msg.cmds[i].actual_runid = mi->actual_runid;
         msg.cmds[i].pid = cmd->pid;
         msg.cmds[i].exit_code = cmd->exit_status;
@@ -640,6 +641,12 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
         s->last_sheriff_name = strdup (orders->sheriff_name);
     }
 
+    // update variables
+    procman_remove_all_variables(s->pm);
+    for(int varind=0; varind<orders->nvars; varind++) {
+        procman_set_variable(s->pm, orders->varnames[varind], orders->varvals[varind]);
+    }
+
     // attempt to carry out the orders
     int action_taken = 0;
     int i;
@@ -668,7 +675,7 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
             mi = (pmd_cmd_moreinfo_t*) calloc (1, sizeof (pmd_cmd_moreinfo_t));
             mi->sheriff_id = cmd->sheriff_id;
             mi->group = strdup (cmd->group);
-	    mi->nickname = strdup (cmd->nickname);
+        mi->nickname = strdup (cmd->nickname);
             p->user = mi;
             action_taken = 1;
         }
@@ -747,7 +754,7 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
             dbgt ("removing [%s]\n", p->cmd->str);
             // cleanup the private data structure used
             free (mi->group);
-	    free (mi->nickname);
+        free (mi->nickname);
             free (mi);
             p->user = NULL;
             procman_remove_cmd (s->pm, p);

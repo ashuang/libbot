@@ -62,6 +62,23 @@ void procman_destroy (procman_t *pm);
 // Do not modify this list, or it's contents!
 const GList* procman_get_cmds (procman_t *pm);
 
+/**
+ * Sets a variable.  Variable expansion will be performed on commands with
+ * variables of the form $VARNAME or ${VARNAME}, for variable names in this
+ * hash table.
+ */
+void procman_set_variable(procman_t* pm, const char* name, const char* val);
+
+/**
+ * Removes a variable from the variable expansion table.
+ */
+void procman_remove_variable(procman_t* pm, const char* name);
+
+/**
+ * Removes all variables from the variable expansion table.
+ */
+void procman_remove_all_variables(procman_t* pm);
+
 int procman_start_cmd (procman_t *pm, procman_cmd_t *cmd);
 int procman_stop_cmd (procman_t *pm, procman_cmd_t *p);
 int procman_kill_cmd (procman_t *pm, procman_cmd_t *cmd, int signum);

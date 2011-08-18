@@ -13,4 +13,8 @@ struct orders_t {
 
     int32_t ncmds;
     sheriff_cmd_t cmds[ncmds];
+
+    int32_t nvars;
+    string varnames[nvars];
+    string varvals[nvars];
 }

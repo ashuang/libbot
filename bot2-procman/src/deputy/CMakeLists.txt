@@ -11,6 +11,6 @@ pods_use_pkg_config_packages(bot-procman-deputy
     glib-2.0 
     gthread-2.0 
     lcm)
-target_link_libraries(bot-procman-deputy ${LCMTYPES_LIBS})
+target_link_libraries(bot-procman-deputy ${LCMTYPES_LIBS} util)
 
 pods_install_executables(bot-procman-deputy)

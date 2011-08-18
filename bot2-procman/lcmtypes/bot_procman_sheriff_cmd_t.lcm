@@ -15,9 +15,9 @@ struct sheriff_cmd_t {
     // group of the command
     string group;
 
-	// to start a command running, the sheriff should change desired_runid and 
-	// unset force_quit
-	int32_t desired_runid;
+    // to start a command running, the sheriff should change desired_runid and 
+    // unset force_quit
+    int32_t desired_runid;
 
     // flag set by the sheriff.  If set, then the deputy should forcefully
     // terminate the command
