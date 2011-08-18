@@ -82,7 +82,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         self.deputies = deputies
 
         # command name
-        table.attach (gtk.Label ("Name"), 0, 1, 1, 2, 0, 0)
+        table.attach (gtk.Label ("Command"), 0, 1, 1, 2, 0, 0)
         self.name_te = gtk.Entry ()
         self.name_te.set_text (initial_cmd)
         self.name_te.set_width_chars (40)
@@ -348,13 +348,13 @@ class SheriffGtk:
         status_tr = gtk.CellRendererText ()
 
         cols = []
-        col = gtk.TreeViewColumn ("Command", cmds_tr, text=1)
+        col = gtk.TreeViewColumn ("Name", cmds_tr, text=1)
         col.set_sort_column_id (1)
         cols.append (col)
 
-        col = gtk.TreeViewColumn ("Nickname", plain_tr, text=2)
-        col.set_sort_column_id (2)
-        cols.append (col)
+#        col = gtk.TreeViewColumn ("Nickname", plain_tr, text=2)
+#        col.set_sort_column_id (2)
+#        cols.append (col)
 
         col = gtk.TreeViewColumn ("Host", plain_tr, text=3)
         col.set_sort_column_id (3)
@@ -373,17 +373,13 @@ class SheriffGtk:
         col.set_sort_column_id (6)
         cols.append (col)
 
-
-#        col = gtk.TreeViewColumn ("Summary", plain_tr, text=7)
-#        col.set_sort_column_id (7)
-#        col.set_expand (True)
-#        cols.append (col)
-
         for col in cols:
             col.set_resizable (True)
             self.cmds_tv.append_column (col)
 
             name = col.get_title ()
+            if name == "Name":
+                continue
             col_cmi = gtk.CheckMenuItem (name)
             col_cmi.set_active (True)
             col_cmi.connect ("activate", 
@@ -574,16 +570,8 @@ class SheriffGtk:
         else:
             # add the group name to the command name column if visible
             # otherwise, add it to the nickname column
-            if (self.cmds_tv.get_column(0).get_visible()):
-                ts_iter = self.cmds_ts.append (None, 
-                          ((None, group_name, "", "", "", "", 0)))
-            else:
-                if (self.cmds_tv.get_column(1).get_visible()):
-                    ts_iter = self.cmds_ts.append (None, 
-                               ((None, "", group_name, "", "", "", 0)))
-                else:
-                    ts_iter = self.cmds_ts.append (None, 
-                          ((None, group_name, "", "", "", "", 0)))
+            ts_iter = self.cmds_ts.append (None, 
+                      ((None, group_name, "", "", "", "", 0)))
 
             trr = gtk.TreeRowReference (self.cmds_ts, 
                     self.cmds_ts.get_path (ts_iter))
@@ -687,32 +675,24 @@ class SheriffGtk:
                         SheriffGtk.COL_CMDS_TV_MEM_VSIZE, mem_total)
 
                 cur_grpname = \
-                        model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_CMD) or \
-                        model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_NICKNAME)
+                        model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_CMD)
 
                 if not cur_grpname:
-                    # add the group name to the command name column if visible
-                    # otherwise, add it to the nickname column
-                    if (self.cmds_tv.get_column(0).get_visible()):
-                        model.set (model_iter, 
-                                   SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
-                                   SheriffGtk.COL_CMDS_TV_NICKNAME, "")
-                    else:
-                        if (self.cmds_tv.get_column(1).get_visible()):
-                            model.set (model_iter, 
-                                       SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.group)
-                        else:
-                            model.set (model_iter, 
-                                       SheriffGtk.COL_CMDS_TV_CMD, cmd.group,
-                                       SheriffGtk.COL_CMDS_TV_NICKNAME, "")
+                    # add the group name to the command name column
+                    model.set (model_iter, 
+                               SheriffGtk.COL_CMDS_TV_CMD, cmd.group)
                 return
             if cmd in cmds:
 #                extradata = cmd.get_data ("extradata")
                 cpu_str = "%.2f" % (cmd.cpu_usage * 100)
                 mem_usage = int (cmd.mem_vsize_bytes / 1024)
 
+                name = cmd.name
+                if cmd.nickname.strip():
+                    name = cmd.nickname
+
                 model.set (model_iter, 
-                        SheriffGtk.COL_CMDS_TV_CMD, cmd.name,
+                        SheriffGtk.COL_CMDS_TV_CMD, name,
                         SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.nickname,
                         SheriffGtk.COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
                         SheriffGtk.COL_CMDS_TV_HOST, cmd_deps[cmd].name,
