@@ -401,18 +401,20 @@ class SheriffGtk(object):
         status_tr = gtk.CellRendererText ()
 
         cols_to_make = [ \
-                ("Name", cmds_tr, COL_CMDS_TV_CMD),
-                ("Host", plain_tr, COL_CMDS_TV_HOST),
-                ("Status", status_tr, COL_CMDS_TV_STATUS_ACTUAL),
-                ("CPU %", plain_tr, COL_CMDS_TV_CPU_USAGE),
-                ("Mem (kB)", plain_tr, COL_CMDS_TV_MEM_VSIZE),
+                ("Name", cmds_tr, COL_CMDS_TV_CMD, None),
+                ("Host", plain_tr, COL_CMDS_TV_HOST, None),
+                ("Status", status_tr, COL_CMDS_TV_STATUS_ACTUAL, self._status_cell_data_func),
+                ("CPU %", plain_tr, COL_CMDS_TV_CPU_USAGE, None),
+                ("Mem (kB)", plain_tr, COL_CMDS_TV_MEM_VSIZE, None),
                 ]
 
         cols = []
-        for name, renderer, col_id in cols_to_make:
+        for name, renderer, col_id, cell_data_func in cols_to_make:
             col = gtk.TreeViewColumn(name, renderer, text=col_id)
             col.set_sort_column_id(col_id)
             col.set_visible(self.gui_config.show_columns[col_id])
+            if cell_data_func:
+                col.set_cell_data_func(renderer, cell_data_func)
             cols.append(col)
 
         for col in cols:
