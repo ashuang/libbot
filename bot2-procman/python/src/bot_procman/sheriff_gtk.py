@@ -869,6 +869,8 @@ class SheriffGtk(object):
             else:
                 self.sheriff.load_config (cfg)
         self.load_dlg.hide()
+        self.load_dlg.destroy()
+        self.load_dlg = None
 
     def _do_save_config_dialog (self, *args):
         if not self.save_dlg:
