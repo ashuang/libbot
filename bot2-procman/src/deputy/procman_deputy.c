@@ -452,17 +452,17 @@ update_cpu_times (procman_deputy_t *s)
     sys_cpu_mem_t *a = &s->cpu_time[1];
     sys_cpu_mem_t *b = &s->cpu_time[0];
 
-    uint64_t ellapsed_jiffies = a->user - b->user + 
+    uint64_t elapsed_jiffies = a->user - b->user + 
                                 a->user_low - b->user_low + 
                                 a->system - b->system + 
                                 a->idle - b->idle;
     uint64_t loaded_jiffies = a->user - b->user +
                               a->user_low - b->user_low + 
                               a->system - b->system;
-    if (! ellapsed_jiffies) {
+    if (! elapsed_jiffies || loaded_jiffies > elapsed_jiffies) {
         s->cpu_load = 0;
     } else {
-        s->cpu_load = (double)loaded_jiffies / ellapsed_jiffies;
+        s->cpu_load = (double)loaded_jiffies / elapsed_jiffies;
     }
 
     for (iter = allcmds; iter; iter=iter->next) {
@@ -484,10 +484,11 @@ update_cpu_times (procman_deputy_t *s)
                 uint64_t used_jiffies = pa->user - pb->user + 
                                         pa->system - pb->system;
 
-                if (! ellapsed_jiffies || pb->user == 0 || pb->system == 0) {
+                if (! elapsed_jiffies || pb->user == 0 || pb->system == 0 ||
+                        used_jiffies > elapsed_jiffies) {
                     mi->cpu_usage = 0;
                 } else {
-                    mi->cpu_usage = (double)used_jiffies / ellapsed_jiffies;
+                    mi->cpu_usage = (double)used_jiffies / elapsed_jiffies;
                 }
             }
         } else {
