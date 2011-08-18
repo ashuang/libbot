@@ -28,6 +28,28 @@ except ImportError:
 PRINTF_RATE_LIMIT = 10000
 UPDATE_CMDS_MIN_INTERVAL_USEC = 300
 
+ANSI_CODES_TO_TEXT_TAG_PROPERTIES = { \
+        "1" : ("weight", pango.WEIGHT_BOLD),
+        "2" : ("weight", pango.WEIGHT_LIGHT),
+        "4" : ("underline", pango.UNDERLINE_SINGLE),
+        "30" : ("foreground", "black"),
+        "31" : ("foreground", "red"),
+        "32" : ("foreground", "green"),
+        "33" : ("foreground", "yellow"),
+        "34" : ("foreground", "blue"),
+        "35" : ("foreground", "magenta"),
+        "36" : ("foreground", "cyan"),
+        "37" : ("foreground", "white"),
+        "40" : ("background", "black"),
+        "41" : ("background", "red"),
+        "42" : ("background", "green"),
+        "43" : ("background", "yellow"),
+        "44" : ("background", "blue"),
+        "45" : ("background", "magenta"),
+        "46" : ("background", "cyan"),
+        "47" : ("background", "white"),
+        }
+
 def find_bot_procman_deputy_cmd():
     search_path = []
     if BUILD_PREFIX is not None:
@@ -125,8 +147,8 @@ class AddModifyCommandDialog (gtk.Dialog):
     def get_group (self): return self.group_cbe.child.get_text ()
 
 class CommandExtraData:
-    def __init__ (self):
-        self.tb = gtk.TextBuffer ()
+    def __init__ (self, text_tag_table):
+        self.tb = gtk.TextBuffer (text_tag_table)
         self.printf_keep_count = [ 0, 0, 0, 0, 0, 0 ]
         self.printf_drop_count = 0
 #        self.summary = ""
@@ -523,6 +545,10 @@ class SheriffGtk:
         # status bar
         self.statusbar = gtk.Statusbar ()
         vbox.pack_start (self.statusbar, False, False, 0)
+
+        self.text_tags = { "normal" : gtk.TextTag("normal") }
+        for tt in self.text_tags.values():
+            self.sheriff_tb.get_tag_table().add(tt)
 
         vbox.show_all ()
         self.window.show ()
@@ -1152,8 +1178,10 @@ class SheriffGtk:
 
     # Sheriff event handlers
     def _on_sheriff_command_added (self, sheriff, deputy, command):
-        extradata = CommandExtraData ()
+        extradata = CommandExtraData (self.sheriff_tb.get_tag_table())
         command.set_data ("extradata", extradata)
+#        for tt in self.text_tags.values():
+#            extradata.tb.get_tag_table().add(tt)
         self._add_text_to_buffer (self.sheriff_tb, now_str() + 
                 "Added [%s] [%s]\n" % (deputy.name, command.name))
         self._repopulate_cmds_tv ()
@@ -1173,9 +1201,40 @@ class SheriffGtk:
     def _on_sheriff_command_group_changed (self, sheriff, cmd):
         self._repopulate_cmds_tv ()
 
+    def _tag_from_seg(self, seg):
+        esc_seq, seg = seg.split("m", 1)
+        if not esc_seq:
+            esc_seq = "0"
+        key = esc_seq
+        codes = esc_seq.split(";")
+        if len(codes) > 0:
+            codes.sort()
+            key = ";".join(codes)
+        if key not in self.text_tags:
+            tag = gtk.TextTag(key)
+            for code in codes:
+                if code in ANSI_CODES_TO_TEXT_TAG_PROPERTIES:
+                    propname, propval = ANSI_CODES_TO_TEXT_TAG_PROPERTIES[code]
+                    tag.set_property(propname, propval)
+            self.sheriff_tb.get_tag_table().add(tag)
+            self.text_tags[key] = tag
+        return self.text_tags[key], seg
+
     def _add_text_to_buffer (self, tb, text):
-        end_iter = tb.get_end_iter ()
-        tb.insert (end_iter, text)
+        if not text:
+            return
+#        end_iter = tb.get_end_iter()
+#        tb.insert(end_iter, text)
+
+        # interpret text as ANSI escape sequences?  Try to format colors...
+        tag = self.text_tags["normal"]
+        for segnum, seg in enumerate(text.split("\x1b[")):
+            if not seg:
+                continue
+            if segnum > 0:
+                tag, seg = self._tag_from_seg(seg)
+            end_iter = tb.get_end_iter()
+            tb.insert_with_tags(end_iter, seg, tag)
 
         # toss out old text if the muffer is getting too big
         num_lines = tb.get_line_count ()
