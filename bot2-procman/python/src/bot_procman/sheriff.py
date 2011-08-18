@@ -496,8 +496,11 @@ class Sheriff (gobject.GObject):
 
         for host in config_node.hosts.values ():
             for cmd in host.commands:
-                self.add_command(host.name, cmd.name, cmd.nickname, cmd.group)
-                dbg ("[%s] %s (%s) -> %s" % (cmd.group, cmd.name, cmd.nickname, host.name))
+                cmd_name = cmd.attributes["exec"]
+                cmd_nickname = cmd.attributes["nickname"]
+                cmd_group = cmd.attributes["group"]
+                self.add_command(host.name, cmd_name, cmd_nickname, cmd_group)
+                dbg ("[%s] %s (%s) -> %s" % (cmd_group, cmd_name, cmd_nickname, host.name))
 
     def save_config (self, file_obj):
         config_node = sheriff_config.ConfigNode ()
@@ -506,9 +509,9 @@ class Sheriff (gobject.GObject):
             config_node.add_host(host_node)
             for cmd in deputy.commands.values ():
                 cmd_node = sheriff_config.CommandNode ()
-                cmd_node.name = cmd.name
-                cmd_node.nickname = cmd.nickname
-                cmd_node.group = cmd.group
+                cmd_node.attributes["exec"] = cmd.name
+                cmd_node.attributes["nickname"] = cmd.nickname
+                cmd_node.attributes["group"] = cmd.group
                 host_node.add_command (cmd_node)
         file_obj.write (str (config_node))
 

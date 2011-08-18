@@ -108,24 +108,31 @@ class Tokenizer:
         se.text = self.line_buf
         raise se
 
+def escape_str(text):
+    def escape_char(c):
+        if c in r'\"':
+            return '\\' + c
+        return c
+
+    return "".join([ escape_char(c) for c in text ])
+
 class CommandNode:
     def __init__ (self):
-        self.name = None
-        self.host = None
-        self.nickname = ""
-        self.group = ""
+        self.attributes = { \
+                "exec" : None,
+                "host" : None,
+                "group" : "",
+                "nickname" : "",
+                }
 
     def _get_str (self, indent = 0):
         s = "    " * indent
         lines = []
         lines.append (s + "cmd {")
-        lines.append (s + "    exec = \"%s\";" % self.name)
-        if self.group:
-            lines.append (s + "    group = \"%s\";" % self.group)
-#        if self.host is not None:
-#            lines.append (s + "    host = \"%s\";" % self.host)
-        if self.nickname:
-            lines.append (s + "    nickname = \"%s\";" % self.nickname)
+        for key, val in self.attributes.items():
+            if not val:
+                continue
+            lines.append (s + "    %s = \"%s\";" % (key, escape_str(val)))
         lines.append (s + "}")
         return ("\n".join (lines))
 
@@ -205,28 +212,20 @@ class Parser:
         raise ParseError (self.tokenizer, self._cur_tok, msg)
 
     def _parse_command_param_list (self, cmd):
-        if not self._eat_token (TokIdentifier): return
-        if self._cur_tok.val == "exec":
-            if not self._eat_token (TokAssign): self._fail ("Expected '='")
-            if not self._eat_token (TokString):
-                self._fail ("Expected string literal for command exec")
-            cmd.name = self._cur_tok.val
-            if not self._eat_token (TokEndStatement):
-                self._fail ("Expected ';'")
-        elif self._cur_tok.val == "group":
-            if not self._eat_token (TokAssign): self._fail ("Expected '='")
-            if not self._eat_token (TokString):
-                self._fail ("Expected string literal for command group")
-            cmd.group = self._cur_tok.val
-            if not self._eat_token (TokEndStatement):
-                self._fail ("Expected ';'")
-        elif self._cur_tok.val == "nickname":
-            if not self._eat_token (TokAssign): self._fail ("Expected '='")
-            if not self._eat_token (TokString):
-                self._fail ("Expected string literal for command nickname")
-            cmd.nickname = self._cur_tok.val
-            if not self._eat_token (TokEndStatement):
-                self._fail ("Expected ';'")
+        if not self._eat_token (TokIdentifier): 
+            return
+        attrib_name = self._cur_tok.val
+        if attrib_name not in [ "exec", "group", "nickname" ]:
+            self._fail("Unrecognized attribute %s" % attrib_name)
+
+        if not self._eat_token (TokAssign): 
+            self._fail ("Expected '='")
+        if not self._eat_token (TokString):
+            self._fail ("Expected string literal")
+        attrib_val = self._cur_tok.val
+        if not self._eat_token (TokEndStatement):
+            self._fail ("Expected ';'")
+        cmd.attributes[attrib_name] = attrib_val
 
         return self._parse_command_param_list (cmd)
 
@@ -235,11 +234,8 @@ class Parser:
         if not self._eat_token (TokOpenStruct): self._fail ("Expected '{'")
         self._parse_command_param_list (cmd)
         if not self._eat_token (TokCloseStruct): self._fail ("Expected '}'")
-        if not cmd.name:
+        if not cmd.attributes["exec"]:
             self._fail ("Invalid command defined -- no executable specified")
-        # useful for loading config files that don't have a nickname field
-        if cmd.nickname is None:
-            cmd.nickname = ""
         return cmd
 
     def _parse_command_list (self):
