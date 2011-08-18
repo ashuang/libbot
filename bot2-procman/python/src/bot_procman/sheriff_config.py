@@ -112,16 +112,19 @@ class CommandNode:
     def __init__ (self):
         self.name = None
         self.host = None
-        self.nickname = None
+        self.nickname = ""
+        self.group = ""
 
     def _get_str (self, indent = 0):
         s = "    " * indent
         lines = []
         lines.append (s + "cmd {")
         lines.append (s + "    exec = \"%s\";" % self.name)
-        if self.host is not None:
-            lines.append (s + "    host = \"%s\";" % self.host)
-        if self.nickname is not None:
+        if self.group:
+            lines.append (s + "    group = \"%s\";" % self.group)
+#        if self.host is not None:
+#            lines.append (s + "    host = \"%s\";" % self.host)
+        if self.nickname:
             lines.append (s + "    nickname = \"%s\";" % self.nickname)
         lines.append (s + "}")
         return ("\n".join (lines))
@@ -129,7 +132,7 @@ class CommandNode:
     def __str__ (self):
         return self._get_str ()
 
-class GroupNode:
+class HostNode:
     def __init__ (self, name):
         self.name = name
         self.commands = []
@@ -138,39 +141,27 @@ class GroupNode:
         self.commands.append (command)
 
     def __str__ (self):
-        val = "group \"%s\" {" % self.name
+        val = "host \"%s\" {" % self.name
         for cmd in self.commands: val = val + "\n" + cmd._get_str (1)
-        val = val + "\n}"
+        val = val + "\n}\n"
         return val
 
 class ConfigNode:
     def __init__ (self):
-        self.groups = {}
-        self.add_group (GroupNode (""))
+        self.hosts = {}
 
-    def has_group (self, group_name):
-        return group_name in self.groups
+    def has_host (self, name):
+        return name in self.hosts
 
-    def get_group (self, group_name):
-        return self.groups[group_name]
+    def get_host (self, name):
+        return self.hosts[name]
 
-    def add_group (self, group):
-        assert group.name not in self.groups
-        self.groups[group.name] = group
-
-    def add_command (self, command):
-        none_group = self.groups[""]
-        none_group.add_command (command)
+    def add_host (self, host):
+        assert host.name not in self.hosts
+        self.hosts[host.name] = host
 
     def __str__ (self):
-        val = ""
-        none_group = self.groups[""]
-        for cmd in none_group.commands: 
-            val = val + "\n" + cmd._get_str (0)
-
-        return val + "\n" + \
-                "\n".join ([str (group) for group in self.groups.values () \
-                if group.name != "" ])
+        return "".join ([str (host) for host in self.hosts.values() ])
 
 class ParseError (Exception):
     def __init__ (self, tokenizer, token, msg):
@@ -222,11 +213,11 @@ class Parser:
             cmd.name = self._cur_tok.val
             if not self._eat_token (TokEndStatement):
                 self._fail ("Expected ';'")
-        elif self._cur_tok.val == "host":
+        elif self._cur_tok.val == "group":
             if not self._eat_token (TokAssign): self._fail ("Expected '='")
             if not self._eat_token (TokString):
-                self._fail ("Expected string literal for command host")
-            cmd.host = self._cur_tok.val
+                self._fail ("Expected string literal for command group")
+            cmd.group = self._cur_tok.val
             if not self._eat_token (TokEndStatement):
                 self._fail ("Expected ';'")
         elif self._cur_tok.val == "nickname":
@@ -257,34 +248,29 @@ class Parser:
             cmds.append (self._parse_command ())
         return cmds
 
-    def _parse_group (self):
+    def _parse_host (self):
         if not self._eat_token (TokString):
-            self._fail ("Expected group name string")
+            self._fail ("Expected host name")
 
         name = self._cur_tok.val
-        group = GroupNode (name)
+        host = HostNode (name)
 
         if not self._eat_token (TokOpenStruct): self._fail ("Expected '{'")
 
         for cmd in self._parse_command_list ():
-            group.add_command (cmd)
+            host.add_command (cmd)
 
         if not self._eat_token (TokCloseStruct): self._fail ("Expected '}'")
-        return group
+        return host
 
     def _parse_listdecl (self, node):
         if self._eat_token (TokEOF):
             return node
 
         if not self._eat_token (TokIdentifier) or \
-                self._cur_tok.val not in [ "cmd", "group" ]:
-            self._fail ("Expected command or group declaration")
-
-        if self._cur_tok.val == "cmd":
-            node.add_command (self._parse_command ())
-
-        if self._cur_tok.val == "group":
-            node.add_group (self._parse_group ())
+                self._cur_tok.val != "host":
+            self._fail ("Expected host declaration")
+        node.add_host(self._parse_host())
 
         return self._parse_listdecl (node)
 

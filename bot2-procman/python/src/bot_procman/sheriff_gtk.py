@@ -857,6 +857,8 @@ class SheriffGtk:
                 msgdlg.run ()
                 msgdlg.destroy ()
         self.save_dlg.hide ()
+        self.save_dlg.destroy()
+        self.save_dlg = None
 
     def on_observer_mi_activate (self, menu_item):
         self._set_observer (menu_item.get_active ())

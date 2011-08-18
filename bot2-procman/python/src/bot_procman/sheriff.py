@@ -494,40 +494,22 @@ class Sheriff (gobject.GObject):
             for cmd in dep.commands.values ():
                 self.schedule_command_for_removal (cmd)
 
-        nohost_commands = []
-
-        for group in config_node.groups.values ():
-            for cmd in group.commands:
-                if cmd.host:
-                    self.add_command (cmd.host, cmd.name, cmd.nickname, group.name)
-                    dbg ("[%s] %s (%s) -> %s" % (group.name, cmd.name, cmd.nickname, cmd.host))
-                else:
-                    nohost_commands.append ((cmd, group))
-
-        if nohost_commands:
-            try:
-                deputy = self.deputies.values ()[0]
-            except IndexError:
-                deputy = self._get_or_make_deputy ("unknown")
-            for cmd, group in nohost_commands:
-                self.add_command (deputy.name, cmd.name, cmd.nickname, group.name)
-                dbg ("[%s] %s (%s) -> %s" % (group.name, cmd.name, cmd.nickname, deputy.name))
+        for host in config_node.hosts.values ():
+            for cmd in host.commands:
+                self.add_command(host.name, cmd.name, cmd.nickname, cmd.group)
+                dbg ("[%s] %s (%s) -> %s" % (cmd.group, cmd.name, cmd.nickname, host.name))
 
     def save_config (self, file_obj):
         config_node = sheriff_config.ConfigNode ()
         for deputy in self.deputies.values ():
+            host_node = sheriff_config.HostNode(deputy.name)
+            config_node.add_host(host_node)
             for cmd in deputy.commands.values ():
                 cmd_node = sheriff_config.CommandNode ()
                 cmd_node.name = cmd.name
                 cmd_node.nickname = cmd.nickname
-                cmd_node.host = deputy.name
-
-                if config_node.has_group (cmd.group):
-                    group = config_node.get_group (cmd.group)
-                else:
-                    group = sheriff_config.GroupNode (cmd.group)
-                    config_node.add_group (group)
-                group.add_command (cmd_node)
+                cmd_node.group = cmd.group
+                host_node.add_command (cmd_node)
         file_obj.write (str (config_node))
 
 if __name__ == "__main__":
