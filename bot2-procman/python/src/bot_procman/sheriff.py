@@ -515,30 +515,35 @@ class Sheriff (gobject.GObject):
             for cmd in dep.commands.values ():
                 self.schedule_command_for_removal (cmd)
 
-        for host in config_node.hosts.values ():
-            for cmd in host.commands:
+        for group in config_node.groups.values ():
+            for cmd in group.commands:
                 auto_respawn = cmd.attributes.get("auto_respawn", "").lower() in [ "true", "yes" ]
-                newcmd = self.add_command(host.name, 
+                newcmd = self.add_command(cmd.attributes["host"], 
                         cmd.attributes["exec"],
                         cmd.attributes["nickname"],
                         cmd.attributes["group"],
                         auto_respawn
                         )
-                dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, host.name))
+                dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, cmd.attributes["host"]))
 
     def save_config (self, file_obj):
         config_node = sheriff_config.ConfigNode ()
         for deputy in self.deputies.values ():
-            host_node = sheriff_config.HostNode(deputy.name)
-            config_node.add_host(host_node)
             for cmd in deputy.commands.values ():
                 cmd_node = sheriff_config.CommandNode ()
                 cmd_node.attributes["exec"] = cmd.name
                 cmd_node.attributes["nickname"] = cmd.nickname
                 cmd_node.attributes["group"] = cmd.group
+                cmd_node.attributes["host"] = deputy.name
                 if cmd.auto_respawn:
                     cmd_node.attributes["auto_respawn"] = "true"
-                host_node.add_command (cmd_node)
+
+                if config_node.has_group (cmd.group):
+                    group = config_node.get_group (cmd.group)
+                else:
+                    group = sheriff_config.GroupNode (cmd.group)
+                    config_node.add_group (group)
+                group.add_command (cmd_node)
         file_obj.write (str (config_node))
 
 if __name__ == "__main__":
