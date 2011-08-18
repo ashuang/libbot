@@ -48,6 +48,7 @@ class SheriffDeputyCommand (gobject.GObject):
         self.force_quit = 0
         self.scheduled_for_removal = False
         self.actual_runid = 0
+        self.auto_respawn = False
 
     def _update_from_cmd_info (self, cmd_info):
         self.pid = cmd_info.pid
@@ -176,6 +177,7 @@ class SheriffDeputy (gobject.GObject):
                 cmd.nickname = cmd_info.nickname
                 cmd.group = cmd_info.group
                 cmd.desired_runid = cmd_info.actual_runid
+                cmd.auto_respawn = cmd_info.auto_respawn
                 self._add_command(cmd)
                 old_status = None
 
@@ -220,6 +222,7 @@ class SheriffDeputy (gobject.GObject):
                 cmd.nickname = cmd_order.nickname
                 cmd.group = cmd_order.group
                 cmd.desired_runid = cmd_order.desired_runid
+                cmd.auto_respawn = cmd_order.auto_respawn
                 self._add_command(cmd)
                 old_status = None
             cmd._update_from_cmd_order (cmd_order)
@@ -270,6 +273,7 @@ class SheriffDeputy (gobject.GObject):
             cmd_msg.desired_runid = cmd.desired_runid
             cmd_msg.force_quit = cmd.force_quit
             cmd_msg.group = cmd.group
+            cmd_msg.auto_respawn = cmd.auto_respawn
             orders.cmds.append (cmd_msg)
         orders.nvars = len(self.variables)
         for name, val in self.variables.items():
@@ -388,7 +392,7 @@ class Sheriff (gobject.GObject):
             msg = deputy._make_orders_message (self.name)
             self.lc.publish ("PMD_ORDERS", msg.encode ())
 
-    def add_command (self, deputy_name, cmd_name, cmd_nickname, group):
+    def add_command (self, deputy_name, cmd_name, cmd_nickname, group, auto_respawn):
         if self._is_observer:
             raise ValueError ("Can't add commands in Observer mode")
         dep = self._get_or_make_deputy (deputy_name)
@@ -397,6 +401,7 @@ class Sheriff (gobject.GObject):
         newcmd.nickname = cmd_nickname
         newcmd.group = group
         newcmd.sheriff_id = self.__get_free_sheriff_id ()
+        newcmd.auto_respawn = auto_respawn
         dep._add_command (newcmd)
         self.emit ("command-added", dep, newcmd)
         self.send_orders ()
@@ -460,7 +465,7 @@ class Sheriff (gobject.GObject):
 
     def move_command_to_deputy(self, cmd, newdeputy):
         self.schedule_command_for_removal (cmd)
-        self.add_command (newdeputy.name, cmd.name, cmd.nickname, cmd.group)
+        self.add_command (newdeputy.name, cmd.name, cmd.nickname, cmd.group, cmd.auto_respawn)
 
     def set_observer (self, is_observer): self._is_observer = is_observer
     def is_observer (self): return self._is_observer
@@ -509,10 +514,12 @@ class Sheriff (gobject.GObject):
 
         for host in config_node.hosts.values ():
             for cmd in host.commands:
+                auto_respawn = cmd.attributes.get("auto_respawn", "").lower() in [ "true", "yes" ]
                 newcmd = self.add_command(host.name, 
                         cmd.attributes["exec"],
                         cmd.attributes["nickname"],
                         cmd.attributes["group"],
+                        auto_respawn
                         )
                 dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, host.name))
 
@@ -526,6 +533,8 @@ class Sheriff (gobject.GObject):
                 cmd_node.attributes["exec"] = cmd.name
                 cmd_node.attributes["nickname"] = cmd.nickname
                 cmd_node.attributes["group"] = cmd.group
+                if cmd.auto_respawn:
+                    cmd_node.attributes["auto_respawn"] = "true"
                 host_node.add_command (cmd_node)
         file_obj.write (str (config_node))
 

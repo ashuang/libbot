@@ -7,7 +7,7 @@ import cStringIO as StringIO
 import struct
 
 class sheriff_cmd_t(object):
-    __slots__ = ["name", "nickname", "group", "desired_runid", "force_quit", "sheriff_id"]
+    __slots__ = ["name", "nickname", "group", "desired_runid", "force_quit", "sheriff_id", "auto_respawn"]
 
     def __init__(self):
         self.name = ""
@@ -16,6 +16,7 @@ class sheriff_cmd_t(object):
         self.desired_runid = 0
         self.force_quit = 0
         self.sheriff_id = 0
+        self.auto_respawn = False
 
     def encode(self):
         buf = StringIO.StringIO()
@@ -36,7 +37,7 @@ class sheriff_cmd_t(object):
         buf.write(struct.pack('>I', len(__group_encoded)+1))
         buf.write(__group_encoded)
         buf.write("\0")
-        buf.write(struct.pack(">ibi", self.desired_runid, self.force_quit, self.sheriff_id))
+        buf.write(struct.pack(">ibib", self.desired_runid, self.force_quit, self.sheriff_id, self.auto_respawn))
 
     def decode(data):
         if hasattr(data, 'read'):
@@ -56,14 +57,14 @@ class sheriff_cmd_t(object):
         self.nickname = buf.read(__nickname_len)[:-1].decode('utf-8')
         __group_len = struct.unpack('>I', buf.read(4))[0]
         self.group = buf.read(__group_len)[:-1].decode('utf-8')
-        self.desired_runid, self.force_quit, self.sheriff_id = struct.unpack(">ibi", buf.read(9))
+        self.desired_runid, self.force_quit, self.sheriff_id, self.auto_respawn = struct.unpack(">ibib", buf.read(10))
         return self
     _decode_one = staticmethod(_decode_one)
 
     _hash = None
     def _get_hash_recursive(parents):
         if sheriff_cmd_t in parents: return 0
-        tmphash = (0x6185ab5e35ffc1a7) & 0xffffffffffffffff
+        tmphash = (0x3fbd1729a0aee378) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff)  + (tmphash>>63)) & 0xffffffffffffffff 
         return tmphash
     _get_hash_recursive = staticmethod(_get_hash_recursive)

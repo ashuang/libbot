@@ -7,7 +7,7 @@ import cStringIO as StringIO
 import struct
 
 class deputy_cmd_t(object):
-    __slots__ = ["name", "nickname", "group", "pid", "actual_runid", "exit_code", "cpu_usage", "mem_vsize_bytes", "mem_rss_bytes", "sheriff_id"]
+    __slots__ = ["name", "nickname", "group", "pid", "actual_runid", "exit_code", "cpu_usage", "mem_vsize_bytes", "mem_rss_bytes", "sheriff_id", "auto_respawn"]
 
     def __init__(self):
         self.name = ""
@@ -16,10 +16,11 @@ class deputy_cmd_t(object):
         self.pid = 0
         self.actual_runid = 0
         self.exit_code = 0
-        self.cpu_usage = 0
+        self.cpu_usage = 0.0
         self.mem_vsize_bytes = 0
         self.mem_rss_bytes = 0
         self.sheriff_id = 0
+        self.auto_respawn = False
 
     def encode(self):
         buf = StringIO.StringIO()
@@ -40,7 +41,7 @@ class deputy_cmd_t(object):
         buf.write(struct.pack('>I', len(__group_encoded)+1))
         buf.write(__group_encoded)
         buf.write("\0")
-        buf.write(struct.pack(">iiifqqi", self.pid, self.actual_runid, self.exit_code, self.cpu_usage, self.mem_vsize_bytes, self.mem_rss_bytes, self.sheriff_id))
+        buf.write(struct.pack(">iiifqqib", self.pid, self.actual_runid, self.exit_code, self.cpu_usage, self.mem_vsize_bytes, self.mem_rss_bytes, self.sheriff_id, self.auto_respawn))
 
     def decode(data):
         if hasattr(data, 'read'):
@@ -60,14 +61,14 @@ class deputy_cmd_t(object):
         self.nickname = buf.read(__nickname_len)[:-1].decode('utf-8')
         __group_len = struct.unpack('>I', buf.read(4))[0]
         self.group = buf.read(__group_len)[:-1].decode('utf-8')
-        self.pid, self.actual_runid, self.exit_code, self.cpu_usage, self.mem_vsize_bytes, self.mem_rss_bytes, self.sheriff_id = struct.unpack(">iiifqqi", buf.read(36))
+        self.pid, self.actual_runid, self.exit_code, self.cpu_usage, self.mem_vsize_bytes, self.mem_rss_bytes, self.sheriff_id, self.auto_respawn = struct.unpack(">iiifqqib", buf.read(37))
         return self
     _decode_one = staticmethod(_decode_one)
 
     _hash = None
     def _get_hash_recursive(parents):
         if deputy_cmd_t in parents: return 0
-        tmphash = (0xa73b90ddf937e9f6) & 0xffffffffffffffff
+        tmphash = (0xed5fbe5982ac8353) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff)  + (tmphash>>63)) & 0xffffffffffffffff 
         return tmphash
     _get_hash_recursive = staticmethod(_get_hash_recursive)

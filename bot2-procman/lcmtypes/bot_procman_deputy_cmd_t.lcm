@@ -35,4 +35,7 @@ struct deputy_cmd_t {
 
     // assigned by the sheriff, identifies the command
     int32_t sheriff_id;
+
+    // automatically restart when the process should be running
+    boolean auto_respawn;
 }

@@ -111,6 +111,7 @@ typedef struct _pmd_cmd_moreinfo {
 
     char *group;
     char *nickname;
+    int auto_respawn;
 
     int num_kills_sent;
     int64_t last_kill_time;
@@ -365,6 +366,7 @@ check_for_dead_children (procman_deputy_t *pmd)
             cmd->user = NULL;
             procman_remove_cmd (pmd->pm, cmd);
         }
+
         cmd = NULL;
         procman_check_for_dead_children (pmd->pm, &cmd);
         transmit_proc_info (pmd);
@@ -417,7 +419,7 @@ transmit_proc_info (procman_deputy_t *s)
         pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
 
         msg.cmds[i].name = cmd->cmd->str;
-    msg.cmds[i].nickname = mi->nickname;
+        msg.cmds[i].nickname = mi->nickname;
         msg.cmds[i].actual_runid = mi->actual_runid;
         msg.cmds[i].pid = cmd->pid;
         msg.cmds[i].exit_code = cmd->exit_status;
@@ -426,6 +428,7 @@ transmit_proc_info (procman_deputy_t *s)
         msg.cmds[i].cpu_usage = mi->cpu_usage;
         msg.cmds[i].mem_vsize_bytes = mi->cpu_time[1].vsize;
         msg.cmds[i].mem_rss_bytes = mi->cpu_time[1].rss;
+        msg.cmds[i].auto_respawn = mi->auto_respawn;
 
         iter = iter->next;
     }
@@ -676,7 +679,8 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
             mi = (pmd_cmd_moreinfo_t*) calloc (1, sizeof (pmd_cmd_moreinfo_t));
             mi->sheriff_id = cmd->sheriff_id;
             mi->group = strdup (cmd->group);
-        mi->nickname = strdup (cmd->nickname);
+            mi->nickname = strdup (cmd->nickname);
+            mi->auto_respawn = cmd->auto_respawn;
             p->user = mi;
             action_taken = 1;
         }
@@ -701,6 +705,11 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
             action_taken = 1;
         }
 
+        // has auto-respawn changed?
+        if (cmd->auto_respawn != mi->auto_respawn) {
+            dbgt ("setting auto-respawn of [%s] to %d\n", p->cmd->str, cmd->auto_respawn);
+            mi->auto_respawn = cmd->auto_respawn;
+        }
 
         // change the group of a command?
         if (strcmp (mi->group, cmd->group)) {
@@ -711,8 +720,9 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
         }
 
         if (PROCMAN_CMD_STOPPED == cmd_status &&
-            (mi->actual_runid != cmd->desired_runid) && 
-            ! cmd->force_quit) {
+            ! cmd->force_quit &&
+            (cmd->desired_runid > 0) &&
+            ((mi->actual_runid != cmd->desired_runid) || mi->auto_respawn)) {
             start_cmd (s, p, cmd->desired_runid);
             action_taken = 1;
             mi->actual_runid = cmd->desired_runid;

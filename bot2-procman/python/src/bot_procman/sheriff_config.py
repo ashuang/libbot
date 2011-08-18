@@ -215,7 +215,7 @@ class Parser:
         if not self._eat_token (TokIdentifier): 
             return
         attrib_name = self._cur_tok.val
-        if attrib_name not in [ "exec", "group", "nickname" ]:
+        if attrib_name not in [ "exec", "group", "nickname", "auto_respawn" ]:
             self._fail("Unrecognized attribute %s" % attrib_name)
 
         if not self._eat_token (TokAssign): 

@@ -899,6 +899,8 @@ class SheriffGtk:
             cmd_nickname = dlg.get_nickname()
             deputy = dlg.get_deputy ()
             group = dlg.get_group ().strip ()
+            # TODO auto respawn option
+            auto_respawn = False
             if not cmd.strip ():
                 msgdlg = gtk.MessageDialog (self.window, 
                         gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
@@ -912,7 +914,7 @@ class SheriffGtk:
                 msgdlg.run ()
                 msgdlg.destroy ()
             else:
-                self.sheriff.add_command (deputy.name, cmd, cmd_nickname, group)
+                self.sheriff.add_command (deputy.name, cmd, cmd_nickname, group, auto_respawn)
                 break
         dlg.destroy ()
 
