@@ -455,6 +455,9 @@ class Sheriff (gobject.GObject):
             cmd._set_group (group_name)
             self.emit ("command-group-changed", cmd)
 
+    def set_auto_respawn (self, cmd, newauto_respawn):
+        cmd.auto_respawn = newauto_respawn
+
     def schedule_command_for_removal (self, command):
         if self._is_observer:
             raise ValueError ("Can't remove commands in Observer mode")

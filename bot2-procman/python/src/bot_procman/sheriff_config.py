@@ -129,7 +129,9 @@ class CommandNode:
         s = "    " * indent
         lines = []
         lines.append (s + "cmd {")
-        for key, val in self.attributes.items():
+        pairs = self.attributes.items()
+        pairs.sort()
+        for key, val in pairs:
             if not val:
                 continue
             lines.append (s + "    %s = \"%s\";" % (key, escape_str(val)))

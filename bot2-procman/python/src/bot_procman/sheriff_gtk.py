@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-#import re
 import sys
 import time
 import traceback
@@ -72,13 +71,14 @@ def now_str (): return time.strftime ("[%H:%M:%S] ")
 
 class AddModifyCommandDialog (gtk.Dialog):
     def __init__ (self, parent, deputies, groups,
-            initial_cmd="", initial_nickname="", initial_deputy=None, initial_group=""):
+            initial_cmd="", initial_nickname="", initial_deputy=None, 
+            initial_group="", initial_auto_respawn=False):
         # add command dialog
         gtk.Dialog.__init__ (self, "Add/Modify Command", parent,
                 gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
                 (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,
                  gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
-        table = gtk.Table (3, 2)
+        table = gtk.Table (4, 2)
 
         # deputy
         table.attach (gtk.Label ("Host"), 0, 1, 0, 1, 0, 0)
@@ -107,7 +107,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         table.attach (gtk.Label ("Command"), 0, 1, 1, 2, 0, 0)
         self.name_te = gtk.Entry ()
         self.name_te.set_text (initial_cmd)
-        self.name_te.set_width_chars (40)
+        self.name_te.set_width_chars (60)
         table.attach (self.name_te, 1, 2, 1, 2)
         self.name_te.connect ("activate", 
                 lambda e: self.response (gtk.RESPONSE_ACCEPT))
@@ -117,7 +117,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         table.attach (gtk.Label ("Nickname"), 0, 1, 2, 3, 0, 0)
         self.nickname_te = gtk.Entry ()
         self.nickname_te.set_text (initial_nickname)
-        self.nickname_te.set_width_chars (40)
+        self.nickname_te.set_width_chars (60)
         table.attach (self.nickname_te, 1, 2, 2, 3)
         self.nickname_te.connect ("activate", 
                 lambda e: self.response (gtk.RESPONSE_ACCEPT))
@@ -134,6 +134,12 @@ class AddModifyCommandDialog (gtk.Dialog):
         self.group_cbe.child.connect ("activate",
                 lambda e: self.response (gtk.RESPONSE_ACCEPT))
 
+        # auto respawn
+        table.attach (gtk.Label ("Auto-restart"), 0, 1, 4, 5, 0, 0)
+        self.auto_respawn_cb = gtk.CheckButton ()
+        self.auto_respawn_cb.set_active (initial_auto_respawn)
+        table.attach (self.auto_respawn_cb, 1, 2, 4, 5)
+
         self.vbox.pack_start (table, False, False, 0)
         table.show_all ()
 
@@ -145,29 +151,31 @@ class AddModifyCommandDialog (gtk.Dialog):
     def get_command (self): return self.name_te.get_text ()
     def get_nickname (self): return self.nickname_te.get_text ()
     def get_group (self): return self.group_cbe.child.get_text ()
+    def get_auto_respawn (self): return self.auto_respawn_cb.get_active ()
 
 class CommandExtraData:
     def __init__ (self, text_tag_table):
         self.tb = gtk.TextBuffer (text_tag_table)
         self.printf_keep_count = [ 0, 0, 0, 0, 0, 0 ]
         self.printf_drop_count = 0
-#        self.summary = ""
+
+COL_CMDS_TV_OBJ, \
+COL_CMDS_TV_CMD, \
+COL_CMDS_TV_NICKNAME, \
+COL_CMDS_TV_HOST, \
+COL_CMDS_TV_STATUS_ACTUAL, \
+COL_CMDS_TV_CPU_USAGE, \
+COL_CMDS_TV_MEM_VSIZE, \
+COL_CMDS_TV_AUTO_RESPAWN, \
+NUM_CMDS_ROWS = range(9)
+
+COL_HOSTS_TV_OBJ, \
+COL_HOSTS_TV_NAME, \
+COL_HOSTS_TV_LAST_UPDATE, \
+COL_HOSTS_TV_LOAD, \
+NUM_HOSTS_ROWS = range(5)
 
 class SheriffGtk:
-    COL_CMDS_TV_OBJ, \
-    COL_CMDS_TV_CMD, \
-    COL_CMDS_TV_NICKNAME, \
-    COL_CMDS_TV_HOST, \
-    COL_CMDS_TV_STATUS_ACTUAL, \
-    COL_CMDS_TV_CPU_USAGE, \
-    COL_CMDS_TV_MEM_VSIZE = range(7)
-#    COL_CMDS_TV_SUMMARY = range(8)
-
-    COL_HOSTS_TV_OBJ, \
-    COL_HOSTS_TV_NAME, \
-    COL_HOSTS_TV_LAST_UPDATE, \
-    COL_HOSTS_TV_LOAD = range(4)
-
     def __init__ (self, lc):
         self.lc = lc
         self.stdout_maxlines = 2000
@@ -192,10 +200,6 @@ class SheriffGtk:
 
         self.lc.subscribe ("PMD_PRINTF", self.on_procman_printf)
         self.lc.subscribe ("PMD_ORDERS", self.on_procman_orders)
-
-#        # regexes
-#        self.warn_regex = re.compile ("warning", re.IGNORECASE)
-#        self.summary_regex = re.compile ("summary", re.IGNORECASE)
 
         # setup GUI
         self.window = gtk.Window (gtk.WINDOW_TOPLEVEL)
@@ -354,7 +358,7 @@ class SheriffGtk:
                 gobject.TYPE_STRING, # status actual
                 gobject.TYPE_STRING, # CPU usage
                 gobject.TYPE_INT,    # memory vsize
-#                gobject.TYPE_STRING  # summary
+                gobject.TYPE_BOOLEAN,# auto-respawn
                 )
 
         self.cmds_tv = gtk.TreeView (self.cmds_ts)
@@ -370,29 +374,29 @@ class SheriffGtk:
         status_tr = gtk.CellRendererText ()
 
         cols = []
-        col = gtk.TreeViewColumn ("Name", cmds_tr, text=1)
-        col.set_sort_column_id (1)
+        col = gtk.TreeViewColumn ("Name", cmds_tr, text=COL_CMDS_TV_CMD)
+        col.set_sort_column_id (COL_CMDS_TV_CMD)
         cols.append (col)
 
-#        col = gtk.TreeViewColumn ("Nickname", plain_tr, text=2)
-#        col.set_sort_column_id (2)
+#        col = gtk.TreeViewColumn ("Nickname", plain_tr, text=COL_CMDS_TV_NICKNAME)
+#        col.set_sort_column_id (COL_CMDS_TV_NICKNAME)
 #        cols.append (col)
 
-        col = gtk.TreeViewColumn ("Host", plain_tr, text=3)
-        col.set_sort_column_id (3)
+        col = gtk.TreeViewColumn ("Host", plain_tr, text=COL_CMDS_TV_HOST)
+        col.set_sort_column_id (COL_CMDS_TV_HOST)
         cols.append (col)
 
-        col = gtk.TreeViewColumn ("Status", status_tr, text=4)
-        col.set_sort_column_id (4)
+        col = gtk.TreeViewColumn ("Status", status_tr, text=COL_CMDS_TV_STATUS_ACTUAL)
+        col.set_sort_column_id (COL_CMDS_TV_STATUS_ACTUAL)
         col.set_cell_data_func (status_tr, self._status_cell_data_func)
 
         cols.append (col)
-        col = gtk.TreeViewColumn ("CPU %", plain_tr, text=5)
-        col.set_sort_column_id (5)
+        col = gtk.TreeViewColumn ("CPU %", plain_tr, text=COL_CMDS_TV_CPU_USAGE)
+        col.set_sort_column_id (COL_CMDS_TV_CPU_USAGE)
         cols.append (col)
 
-        col = gtk.TreeViewColumn ("Mem (kB)", plain_tr, text=6)
-        col.set_sort_column_id (6)
+        col = gtk.TreeViewColumn ("Mem (kB)", plain_tr, text=COL_CMDS_TV_MEM_VSIZE)
+        col.set_sort_column_id (COL_CMDS_TV_MEM_VSIZE)
         cols.append (col)
 
         for col in cols:
@@ -569,7 +573,7 @@ class SheriffGtk:
         selection = self.cmds_tv.get_selection ()
         if selection is None: return []
         model, rows = selection.get_selected_rows ()
-        col = SheriffGtk.COL_CMDS_TV_OBJ
+        col = COL_CMDS_TV_OBJ
         selected = []
         for path in rows:
             cmds_iter = model.get_iter (path)
@@ -597,7 +601,7 @@ class SheriffGtk:
             # add the group name to the command name column if visible
             # otherwise, add it to the nickname column
             ts_iter = self.cmds_ts.append (None, 
-                      ((None, group_name, "", "", "", "", 0)))
+                      ((None, group_name, "", "", "", "", 0, False)))
 
             trr = gtk.TreeRowReference (self.cmds_ts, 
                     self.cmds_ts.get_path (ts_iter))
@@ -622,16 +626,16 @@ class SheriffGtk:
                 return "<never>"
 
         def _update_host_row (model, path, model_iter, user_data):
-            deputy = model.get_value (model_iter, SheriffGtk.COL_HOSTS_TV_OBJ)
+            deputy = model.get_value (model_iter, COL_HOSTS_TV_OBJ)
             if deputy in to_update:
                 model.set (model_iter, 
-                        SheriffGtk.COL_HOSTS_TV_LAST_UPDATE, 
+                        COL_HOSTS_TV_LAST_UPDATE, 
                         _deputy_last_update_str (deputy),
-                        SheriffGtk.COL_HOSTS_TV_LOAD, 
+                        COL_HOSTS_TV_LOAD, 
                         "%f" % deputy.cpu_load,
-#                        SheriffGtk.COL_HOSTS_TV_SKEW, 
+#                        COL_HOSTS_TV_SKEW, 
 #                        "%f" % (deputy.clock_skew_usec * 1e-3),
-#                        SheriffGtk.COL_HOSTS_TV_JITTER, 
+#                        COL_HOSTS_TV_JITTER, 
 #                        "%f" % (deputy.last_orders_jitter_usec * 1e-3),
                         )
                 to_update.remove (deputy)
@@ -670,7 +674,7 @@ class SheriffGtk:
         to_reparent = []
 
         def _update_cmd_row (model, path, model_iter, user_data):
-            obj_col = SheriffGtk.COL_CMDS_TV_OBJ
+            obj_col = COL_CMDS_TV_OBJ
             cmd = model.get_value (model_iter, obj_col)
             if not cmd: 
                 # row represents a procman group
@@ -696,17 +700,17 @@ class SheriffGtk:
                 cpu_str = "%.2f" % (cpu_total * 100)
                 
                 model.set (model_iter, 
-                        SheriffGtk.COL_CMDS_TV_STATUS_ACTUAL, status_str,
-                        SheriffGtk.COL_CMDS_TV_CPU_USAGE, cpu_str,
-                        SheriffGtk.COL_CMDS_TV_MEM_VSIZE, mem_total)
+                        COL_CMDS_TV_STATUS_ACTUAL, status_str,
+                        COL_CMDS_TV_CPU_USAGE, cpu_str,
+                        COL_CMDS_TV_MEM_VSIZE, mem_total)
 
                 cur_grpname = \
-                        model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_CMD)
+                        model.get_value(model_iter, COL_CMDS_TV_CMD)
 
                 if not cur_grpname:
                     # add the group name to the command name column
                     model.set (model_iter, 
-                               SheriffGtk.COL_CMDS_TV_CMD, cmd.group)
+                               COL_CMDS_TV_CMD, cmd.group)
                 return
             if cmd in cmds:
 #                extradata = cmd.get_data ("extradata")
@@ -718,16 +722,13 @@ class SheriffGtk:
                     name = cmd.nickname
 
                 model.set (model_iter, 
-                        SheriffGtk.COL_CMDS_TV_CMD, name,
-                        SheriffGtk.COL_CMDS_TV_NICKNAME, cmd.nickname,
-                        SheriffGtk.COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
-                        SheriffGtk.COL_CMDS_TV_HOST, cmd_deps[cmd].name,
-                        SheriffGtk.COL_CMDS_TV_CPU_USAGE, cpu_str,
-                        SheriffGtk.COL_CMDS_TV_MEM_VSIZE, mem_usage)
-
-#                if extradata:
-#                    model.set (model_iter,
-#                            SheriffGtk.COL_CMDS_TV_SUMMARY, extradata.summary)
+                        COL_CMDS_TV_CMD, name,
+                        COL_CMDS_TV_NICKNAME, cmd.nickname,
+                        COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
+                        COL_CMDS_TV_HOST, cmd_deps[cmd].name,
+                        COL_CMDS_TV_CPU_USAGE, cpu_str,
+                        COL_CMDS_TV_MEM_VSIZE, mem_usage,
+                        COL_CMDS_TV_AUTO_RESPAWN, cmd.auto_respawn)
 
                 # check that the command is in the correct group in the
                 # treemodel
@@ -760,7 +761,7 @@ class SheriffGtk:
         # reparent rows that are in the wrong group
         for trr, newparent_rr in to_reparent:
             orig_iter = self.cmds_ts.get_iter (trr.get_path ())
-            rowdata = self.cmds_ts.get (orig_iter, *range(7))
+            rowdata = self.cmds_ts.get (orig_iter, *range(NUM_CMDS_ROWS))
             self.cmds_ts.remove (orig_iter)
 
             newparent_iter = None
@@ -772,22 +773,22 @@ class SheriffGtk:
         for trr in to_remove:
             cmds_iter = self.cmds_ts.get_iter (trr.get_path())
             if not self.cmds_ts.get_value (cmds_iter, 
-                    SheriffGtk.COL_CMDS_TV_OBJ):
+                    COL_CMDS_TV_OBJ):
                 self._delete_group_row_reference (self.cmds_ts.get_value (cmds_iter,
-                    SheriffGtk.COL_CMDS_TV_CMD))
+                    COL_CMDS_TV_CMD))
             self.cmds_ts.remove (cmds_iter)
 
         # remove group rows with no children
         groups_to_remove = []
         def _check_for_lonely_groups (model, path, model_iter, user_data):
-            isgroup = not model.get_value(model_iter, SheriffGtk.COL_CMDS_TV_OBJ)
+            isgroup = not model.get_value(model_iter, COL_CMDS_TV_OBJ)
             if isgroup and not model.iter_has_child (model_iter): 
                 groups_to_remove.append (gtk.TreeRowReference (model, path))
         self.cmds_ts.foreach (_check_for_lonely_groups, None)
         for trr in groups_to_remove:
             model_iter = self.cmds_ts.get_iter (trr.get_path())
             self._delete_group_row_reference (self.cmds_ts.get_value (model_iter,
-                SheriffGtk.COL_CMDS_TV_CMD))
+                COL_CMDS_TV_CMD))
             self.cmds_ts.remove (model_iter)
 
         # create new rows for new commands
@@ -795,8 +796,15 @@ class SheriffGtk:
             deputy = cmd_deps[cmd]
             parent = self._find_or_make_group_row_reference (cmd.group)
 
-#            new_row = (cmd, cmd.name, deputy.name, cmd.status (), "0", 0, "")
-            new_row = (cmd, cmd.name, cmd.nickname, deputy.name, cmd.status (), "0", 0)
+            new_row = (cmd,        # COL_CMDS_TV_OBJ
+                cmd.name,          # COL_CMDS_TV_CMD
+                cmd.nickname,      # COL_CMDS_TV_NICKNAME
+                deputy.name,       # COL_CMDS_TV_HOST
+                cmd.status (),     # COL_CMDS_TV_STATUS_ACTUAL
+                "0",               # COL_CMDS_TV_CPU_USAGE
+                0,                 # COL_CMDS_TV_MEM_VSIZE
+                cmd.auto_respawn,  # COL_CMDS_TV_AUTO_RESPAWN
+                )
             if parent:
                 parent_iter = self.cmds_ts.get_iter (parent.get_path ())
             else:
@@ -899,8 +907,7 @@ class SheriffGtk:
             cmd_nickname = dlg.get_nickname()
             deputy = dlg.get_deputy ()
             group = dlg.get_group ().strip ()
-            # TODO auto respawn option
-            auto_respawn = False
+            auto_respawn = dlg.get_auto_respawn ()
             if not cmd.strip ():
                 msgdlg = gtk.MessageDialog (self.window, 
                         gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
@@ -996,7 +1003,7 @@ class SheriffGtk:
                 sheriff.UNKNOWN : "Red"
                 }
 
-        col = SheriffGtk.COL_CMDS_TV_OBJ
+        col = COL_CMDS_TV_OBJ
         cmd = model.get_value (model_iter, col)
         if not cmd:
             # group node
@@ -1036,7 +1043,7 @@ class SheriffGtk:
             # expand a group row when user presses right arrow key
             model, rows = self.cmds_tv.get_selection ().get_selected_rows ()
             if len (rows) == 1:
-#                col = SheriffGtk.COL_CMDS_TV_OBJ
+#                col = COL_CMDS_TV_OBJ
                 model_iter = model.get_iter (rows[0])
                 if model.iter_has_child (model_iter):
                     self.cmds_tv.expand_row (rows[0], True)
@@ -1045,7 +1052,7 @@ class SheriffGtk:
             # collapse a group row when user presses left arrow key
             model, rows = self.cmds_tv.get_selection ().get_selected_rows ()
             if len (rows) == 1:
-#                col = SheriffGtk.COL_CMDS_TV_OBJ
+#                col = COL_CMDS_TV_OBJ
                 model_iter = model.get_iter (rows[0])
                 if model.iter_has_child (model_iter):
                     self.cmds_tv.collapse_row (rows[0])
@@ -1146,7 +1153,7 @@ class SheriffGtk:
 
     def _on_cmds_tv_row_activated (self, treeview, path, column):
         model_iter = self.cmds_ts.get_iter (path)
-        cmd = self.cmds_ts.get_value (model_iter, SheriffGtk.COL_CMDS_TV_OBJ)
+        cmd = self.cmds_ts.get_value (model_iter, COL_CMDS_TV_OBJ)
         if not cmd:
             return
 
@@ -1154,19 +1161,23 @@ class SheriffGtk:
         dlg = AddModifyCommandDialog (self.window, 
                 self.sheriff.get_deputies (),
                 self._get_known_group_names (),
-                cmd.name, cmd.nickname, old_deputy, cmd.group)
+                cmd.name, cmd.nickname, old_deputy, 
+                cmd.group, cmd.auto_respawn)
         if dlg.run () == gtk.RESPONSE_ACCEPT:
             newname = dlg.get_command ()
             newnickname = dlg.get_nickname ()
             newdeputy = dlg.get_deputy ()
             newgroup = dlg.get_group ().strip ()
-            
+            newauto_respawn = dlg.get_auto_respawn ()
 
             if newname != cmd.name:
                 self.sheriff.set_command_name (cmd, newname)
 
             if newnickname != cmd.nickname:
                 self.sheriff.set_command_nickname (cmd, newnickname)
+
+            if newauto_respawn != cmd.auto_respawn:
+                self.sheriff.set_auto_respawn (cmd, newauto_respawn)
 
             if newdeputy != old_deputy:
                 self.sheriff.move_command_to_deputy(cmd, newdeputy)
@@ -1179,8 +1190,6 @@ class SheriffGtk:
     def _on_sheriff_command_added (self, sheriff, deputy, command):
         extradata = CommandExtraData (self.sheriff_tb.get_tag_table())
         command.set_data ("extradata", extradata)
-#        for tt in self.text_tags.values():
-#            extradata.tb.get_tag_table().add(tt)
         self._add_text_to_buffer (self.sheriff_tb, now_str() + 
                 "Added [%s] [%s]\n" % (deputy.name, command.name))
         self._repopulate_cmds_tv ()
@@ -1222,8 +1231,6 @@ class SheriffGtk:
     def _add_text_to_buffer (self, tb, text):
         if not text:
             return
-#        end_iter = tb.get_end_iter()
-#        tb.insert(end_iter, text)
 
         # interpret text as ANSI escape sequences?  Try to format colors...
         tag = self.text_tags["normal"]
@@ -1298,15 +1305,6 @@ class SheriffGtk:
                 toadd = msg.text
 
             self._add_text_to_buffer (extradata.tb, toadd)
-
-#            for line in toadd.split ("\n"):
-#                if self.warn_regex.match (line):
-#                    self._add_text_to_buffer (self.sheriff_tb, now_str() + 
-#                            "[%s] %s\n" % (cmd.name, line))
-#                    extradata.summary = line[8:]
-#                elif self.summary_regex.match (line):
-#                    extradata.summary = line[8:]
-
 
 def usage():
     sys.stdout.write(
