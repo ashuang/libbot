@@ -1091,9 +1091,7 @@ class SheriffGtk:
 
                             if old_dep == newdeputy: continue
 
-                            self.sheriff.schedule_command_for_removal (cmd)
-                            self.sheriff.add_command (newdeputy.name, cmd.name,
-                                                      cmd.nickname, cmd.group)
+                            self.sheriff.move_command_to_deputy(cmd, newdeputy)
 
                     dmi.connect ("activate", _onclick, deputy)
 
@@ -1169,8 +1167,7 @@ class SheriffGtk:
                 self.sheriff.set_command_nickname (cmd, newnickname)
 
             if newdeputy != old_deputy:
-                self.sheriff.schedule_command_for_removal (cmd)
-                self.sheriff.add_command (newdeputy.name, cmd.name, cmd.nickname, cmd.group)
+                self.sheriff.move_command_to_deputy(cmd, newdeputy)
 
             if newgroup != cmd.group:
                 self.sheriff.set_command_group (cmd, newgroup)

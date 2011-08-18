@@ -33,22 +33,21 @@ RESTARTING = "Command Sent"
 
 class SheriffDeputyCommand (gobject.GObject):
 
-    def __init__ (self, sheriff_id, name, nickname, group, desired_runid):
+    def __init__ (self):
         gobject.GObject.__init__ (self)
-        self.sheriff_id = sheriff_id
+        self.sheriff_id = 0
         self.pid = -1
         self.exit_code = 0
         self.cpu_usage = 0
         self.mem_vsize_bytes = 0
         self.mem_rss_bytes = 0
-        self.name = name
-        self.nickname = nickname
-        self.group = group
-        self.desired_runid = desired_runid
+        self.name = ""
+        self.nickname = ""
+        self.group = ""
+        self.desired_runid = 0
         self.force_quit = 0
         self.scheduled_for_removal = False
-
-        self.actual_runid = desired_runid
+        self.actual_runid = 0
 
     def _update_from_cmd_info (self, cmd_info):
         self.pid = cmd_info.pid
@@ -171,10 +170,13 @@ class SheriffDeputy (gobject.GObject):
                 cmd = self.commands[cmd_info.sheriff_id]
                 old_status = cmd.status ()
             else:
-                cmd = SheriffDeputyCommand (cmd_info.sheriff_id,
-                                cmd_info.name, cmd_info.nickname, cmd_info.group,
-                                cmd_info.actual_runid)
-                self.commands[cmd_info.sheriff_id] = cmd
+                cmd = SheriffDeputyCommand ()
+                cmd.sheriff_id = cmd_info.sheriff_id
+                cmd.name = cmd_info.name
+                cmd.nickname = cmd_info.nickname
+                cmd.group = cmd_info.group
+                cmd.desired_runid = cmd_info.actual_runid
+                self._add_command(cmd)
                 old_status = None
 
             cmd._update_from_cmd_info (cmd_info)
@@ -212,10 +214,13 @@ class SheriffDeputy (gobject.GObject):
                 cmd = self.commands[cmd_order.sheriff_id]
                 old_status = cmd.status ()
             else:
-                cmd = SheriffDeputyCommand (cmd_order.sheriff_id,
-                        cmd_order.name, cmd_order.nickname, cmd_order.group, 
-                        cmd_order.desired_runid)
-                self.commands[cmd_order.sheriff_id] = cmd
+                cmd = SheriffDeputyCommand()
+                cmd.sheriff_id = cmd_order.sheriff_id
+                cmd.name = cmd_order.name
+                cmd.nickname = cmd_order.nickname
+                cmd.group = cmd_order.group
+                cmd.desired_runid = cmd_order.desired_runid
+                self._add_command(cmd)
                 old_status = None
             cmd._update_from_cmd_order (cmd_order)
             new_status = cmd.status ()
@@ -232,10 +237,10 @@ class SheriffDeputy (gobject.GObject):
         # TODO update variables
         return status_changes
 
-    def _add_command (self, cmd_name, cmd_nickname, group, sheriff_id):
-        newcmd = SheriffDeputyCommand (sheriff_id, cmd_name, cmd_nickname, group, 0)
-        self.commands[sheriff_id] = newcmd
-        return newcmd
+    def _add_command (self, newcmd):
+        assert newcmd.sheriff_id != 0
+        assert isinstance(newcmd, SheriffDeputyCommand)
+        self.commands[newcmd.sheriff_id] = newcmd
 
     def _schedule_command_for_removal (self, cmd):
         if not self.owns_command (cmd): raise KeyError ("invalid command")
@@ -387,8 +392,12 @@ class Sheriff (gobject.GObject):
         if self._is_observer:
             raise ValueError ("Can't add commands in Observer mode")
         dep = self._get_or_make_deputy (deputy_name)
-        sheriff_id = self.__get_free_sheriff_id ()
-        newcmd = dep._add_command (cmd_name, cmd_nickname, group, sheriff_id)
+        newcmd = SheriffDeputyCommand()
+        newcmd.name = cmd_name
+        newcmd.nickname = cmd_nickname
+        newcmd.group = group
+        newcmd.sheriff_id = self.__get_free_sheriff_id ()
+        dep._add_command (newcmd)
         self.emit ("command-added", dep, newcmd)
         self.send_orders ()
         return newcmd
@@ -449,6 +458,10 @@ class Sheriff (gobject.GObject):
         self._maybe_emit_status_change_signals (deputy, status_changes)
         self.send_orders ()
 
+    def move_command_to_deputy(self, cmd, newdeputy):
+        self.schedule_command_for_removal (cmd)
+        self.add_command (newdeputy.name, cmd.name, cmd.nickname, cmd.group)
+
     def set_observer (self, is_observer): self._is_observer = is_observer
     def is_observer (self): return self._is_observer
 
@@ -496,11 +509,12 @@ class Sheriff (gobject.GObject):
 
         for host in config_node.hosts.values ():
             for cmd in host.commands:
-                cmd_name = cmd.attributes["exec"]
-                cmd_nickname = cmd.attributes["nickname"]
-                cmd_group = cmd.attributes["group"]
-                self.add_command(host.name, cmd_name, cmd_nickname, cmd_group)
-                dbg ("[%s] %s (%s) -> %s" % (cmd_group, cmd_name, cmd_nickname, host.name))
+                newcmd = self.add_command(host.name, 
+                        cmd.attributes["exec"],
+                        cmd.attributes["nickname"],
+                        cmd.attributes["group"],
+                        )
+                dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, host.name))
 
     def save_config (self, file_obj):
         config_node = sheriff_config.ConfigNode ()
