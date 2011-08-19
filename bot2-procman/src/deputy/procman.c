@@ -12,7 +12,12 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+
+#ifdef __APPLE__
+#include <util.h>
+#else
 #include <pty.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/wait.h>
