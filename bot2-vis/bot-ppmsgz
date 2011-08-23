@@ -138,7 +138,7 @@ def main(args):
         framrate = args[1]
         output_fname = args[2]
         ffmpeg_execute(["-r", bitrate, "-y", "-vcodec", "ppm", 
-            "-f", "image2pipe", "-i", "-", "-vcodec", "mspeg4v2", 
+            "-f", "image2pipe", "-i", "-", "-vcodec", "msmpeg4v2", 
             "-b", bitrate, "-f", "avi", output_fname], gzfile)
     else:
         usage()
