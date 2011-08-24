@@ -1261,7 +1261,10 @@ class SheriffGtk(object):
             if not seg:
                 continue
             if segnum > 0:
-                tag, seg = self._tag_from_seg(seg)
+                try:
+                    tag, seg = self._tag_from_seg(seg)
+                except ValueError:
+                    pass
             end_iter = tb.get_end_iter()
             tb.insert_with_tags(end_iter, seg, tag)
 
