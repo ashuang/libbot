@@ -46,6 +46,10 @@
 
 #define ESTIMATED_MAX_CLOCK_ERROR_RATE 1.001
 
+#define MIN_RESPAWN_DELAY_MS 10
+#define MAX_RESPAWN_DELAY_MS 1000
+#define RESPAWN_BACKOFF_RATE 2
+
 #define dbg(args...) fprintf(stderr, args)
 //#undef dbg
 //#define dbg(args...)
@@ -100,11 +104,13 @@ typedef struct _procman_deputy {
 } procman_deputy_t;
 
 typedef struct _pmd_cmd_moreinfo {
+    procman_deputy_t *deputy;
     // glib handles for IO watches
     GIOChannel *stdout_ioc;
     guint stdout_sid;
     int32_t actual_runid;
     int32_t sheriff_id;
+    int32_t should_be_stopped;
 
     proc_cpu_mem_t cpu_time[2];
     float cpu_usage;
@@ -112,6 +118,9 @@ typedef struct _pmd_cmd_moreinfo {
     char *group;
     char *nickname;
     int auto_respawn;
+    guint respawn_timeout_id;
+    int64_t last_start_time;
+    int respawn_backoff;
 
     int num_kills_sent;
     int64_t last_kill_time;
@@ -123,6 +132,9 @@ static procman_deputy_t global_pmd;
 
 static void
 transmit_proc_info (procman_deputy_t *s);
+
+static gboolean 
+on_scheduled_respawn(procman_cmd_t *cmd);
 
 static void
 transmit_str (procman_deputy_t *pmd, int sid, char * str)
@@ -222,37 +234,61 @@ pipe_data_ready (GIOChannel *source, GIOCondition condition,
     return result;
 }
 
+static void
+maybe_schedule_respawn(procman_deputy_t *pmd, procman_cmd_t *cmd)
+{
+    pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
+    if(mi->auto_respawn && !mi->should_be_stopped) {
+        mi->respawn_timeout_id = 
+            g_timeout_add(mi->respawn_backoff, (GSourceFunc)on_scheduled_respawn, cmd);
+    }
+}
+
 static int 
 start_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd, int desired_runid) 
 {
     int status;
+    pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
+    mi->should_be_stopped = 0;
+    mi->respawn_timeout_id = 0;
+    // update the respawn backoff counter, to throttle how quickly a
+    // process respawns
+    int ms_since_started = (timestamp_now() - mi->last_start_time) / 1000;
+    if(ms_since_started < MAX_RESPAWN_DELAY_MS) {
+        mi->respawn_backoff = MIN(MAX_RESPAWN_DELAY_MS,
+                mi->respawn_backoff * RESPAWN_BACKOFF_RATE);
+    } else {
+        int d = ms_since_started / MAX_RESPAWN_DELAY_MS;
+        mi->respawn_backoff = MAX(MIN_RESPAWN_DELAY_MS,
+                mi->respawn_backoff >> d);
+    }
+    mi->last_start_time = timestamp_now();
+
     status = procman_start_cmd (pmd->pm, cmd);
     if (0 != status) {
         printf_and_transmit (pmd, 0, "couldn't start [%s]\n", cmd->cmd->str);
         dbgt ("couldn't start [%s]\n", cmd->cmd->str);
-
-        pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
+        maybe_schedule_respawn(pmd, cmd);
         printf_and_transmit (pmd, mi->sheriff_id, 
                 "ERROR!  couldn't start [%s]\n", cmd->cmd->str);
         return -1;
     }
-    pmd_cmd_moreinfo_t *gh = (pmd_cmd_moreinfo_t*)cmd->user;
 
     // add stdout for this process to IO watch list
-    if (gh->stdout_ioc) {
-        dbgt ("ERROR: expected gh->stdout_ioc to be NULL [%s]\n",
+    if (mi->stdout_ioc) {
+        dbgt ("ERROR: expected mi->stdout_ioc to be NULL [%s]\n",
                 cmd->cmd->str);
     }
 
-    gh->stdout_ioc = g_io_channel_unix_new (cmd->stdout_fd);
-    g_io_channel_set_encoding (gh->stdout_ioc, NULL, NULL);
+    mi->stdout_ioc = g_io_channel_unix_new (cmd->stdout_fd);
+    g_io_channel_set_encoding (mi->stdout_ioc, NULL, NULL);
     fcntl (cmd->stdout_fd, F_SETFL, O_NONBLOCK);
-    gh->stdout_sid = g_io_add_watch (gh->stdout_ioc,
+    mi->stdout_sid = g_io_add_watch (mi->stdout_ioc,
             G_IO_IN, (GIOFunc)pipe_data_ready, cmd);
 
-    gh->actual_runid = desired_runid;
-    gh->num_kills_sent = 0;
-    gh->last_kill_time = 0;
+    mi->actual_runid = desired_runid;
+    mi->num_kills_sent = 0;
+    mi->last_kill_time = 0;
     return 0;
 }
 
@@ -262,6 +298,10 @@ stop_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd)
     if (!cmd->pid) return 0;
 
     pmd_cmd_moreinfo_t *gh = (pmd_cmd_moreinfo_t*)cmd->user;
+    gh->should_be_stopped = 1;
+
+    if(gh->respawn_timeout_id)
+        g_source_remove(gh->respawn_timeout_id);
 
     /* Try killing no faster than 1 Hz */
     int64_t now = timestamp_now ();
@@ -342,21 +382,19 @@ check_for_dead_children (procman_deputy_t *pmd)
         }
 
         // cleanup the glib hooks if necessary
-        pmd_cmd_moreinfo_t *gh = (pmd_cmd_moreinfo_t*)cmd->user;
-
-        if (gh->stdout_ioc) {
+        if (mi->stdout_ioc) {
             dbgt ("removing [%s] glib event sources\n", cmd->cmd->str);
             // detach from the glib event loop
-            g_io_channel_unref (gh->stdout_ioc);
-            g_source_remove (gh->stdout_sid);
-            gh->stdout_ioc = NULL;
-            gh->stdout_sid = 0;
+            g_io_channel_unref (mi->stdout_ioc);
+            g_source_remove (mi->stdout_sid);
+            mi->stdout_ioc = NULL;
+            mi->stdout_sid = 0;
 
             procman_close_dead_pipes (pmd->pm, cmd);
         }
 
         // remove ?
-        if (gh->remove_requested) {
+        if (mi->remove_requested) {
             dbgt ("removing [%s]\n", cmd->cmd->str);
             // cleanup the private data structure used
             pmd_cmd_moreinfo_t *mi = cmd->user;
@@ -366,6 +404,8 @@ check_for_dead_children (procman_deputy_t *pmd)
             cmd->user = NULL;
             procman_remove_cmd (pmd->pm, cmd);
         }
+
+        maybe_schedule_respawn(pmd, cmd);
 
         cmd = NULL;
         procman_check_for_dead_children (pmd->pm, &cmd);
@@ -504,6 +544,16 @@ update_cpu_times (procman_deputy_t *s)
     }
 
     memcpy (&s->cpu_time[0], &s->cpu_time[1], sizeof (sys_cpu_mem_t));
+}
+
+static gboolean
+on_scheduled_respawn(procman_cmd_t *cmd)
+{
+    pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
+    if(mi->auto_respawn && !mi->should_be_stopped) {
+        start_cmd(mi->deputy, cmd, mi->actual_runid);
+    }
+    return FALSE;
 }
 
 static gboolean
@@ -677,10 +727,14 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
 
             // allocate a private data structure for glib info
             mi = (pmd_cmd_moreinfo_t*) calloc (1, sizeof (pmd_cmd_moreinfo_t));
+            mi->deputy = s;
             mi->sheriff_id = cmd->sheriff_id;
             mi->group = strdup (cmd->group);
             mi->nickname = strdup (cmd->nickname);
             mi->auto_respawn = cmd->auto_respawn;
+            mi->last_start_time = 0;
+            mi->respawn_backoff = MIN_RESPAWN_DELAY_MS;
+            mi->respawn_timeout_id = 0;
             p->user = mi;
             action_taken = 1;
         }
@@ -719,16 +773,17 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
             action_taken = 1;
         }
 
+        mi->should_be_stopped = cmd->force_quit;
+
         if (PROCMAN_CMD_STOPPED == cmd_status &&
-            ! cmd->force_quit &&
-            (cmd->desired_runid > 0) &&
-            ((mi->actual_runid != cmd->desired_runid) || mi->auto_respawn)) {
+            (mi->actual_runid != cmd->desired_runid) && 
+            ! mi->should_be_stopped) {
             start_cmd (s, p, cmd->desired_runid);
             action_taken = 1;
             mi->actual_runid = cmd->desired_runid;
         } else if (PROCMAN_CMD_RUNNING == cmd_status && 
-                (cmd->force_quit || (cmd->desired_runid != mi->actual_runid))) {
-            stop_cmd (s, p);
+                (mi->should_be_stopped || (cmd->desired_runid != mi->actual_runid))) {
+            stop_cmd(s, p);
             action_taken = 1;
         } else {
             mi->actual_runid = cmd->desired_runid;
