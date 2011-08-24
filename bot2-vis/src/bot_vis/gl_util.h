@@ -131,6 +131,19 @@ int _bot_gl_check_errors(const char *file, int line);
  */
 void bot_gl_print_current_matrix(void);
 
+
+/**
+ * bot_glutBitmapString
+ *
+ * Renders a given string in the specified font in the current window. 
+ * Reverts to the FreeGLUT implementation, if available.
+ */
+void
+bot_glutBitmapString(void* font, const unsigned char* text);
+
+
+
+
 #ifdef __cplusplus
 }
 #endif
