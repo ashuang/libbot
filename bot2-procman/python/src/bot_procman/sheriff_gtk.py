@@ -697,8 +697,11 @@ class SheriffGtk(object):
                     to_remove.append (gtk.TreeRowReference (model, path))
                     return
                 statuses = [ cmd.status () for cmd in children ]
+                stopped_statuses = [sheriff.STOPPED_OK, sheriff.STOPPED_ERROR]
                 if all ([s == statuses[0] for s in statuses]):
                     status_str = statuses[0]
+                elif all ([s in stopped_statuses for s in statuses]):
+                    status_str = "Stopped (Mixed)"
                 else:
                     status_str = "Mixed"
                 cpu_total = sum ([cmd.cpu_usage for cmd in children])
