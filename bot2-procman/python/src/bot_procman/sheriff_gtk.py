@@ -494,8 +494,6 @@ class SheriffGtk(object):
                 gobject.TYPE_STRING, # deputy name
                 gobject.TYPE_STRING, # last update time
                 gobject.TYPE_STRING, # load
-#                gobject.TYPE_STRING, # jitter
-#                gobject.TYPE_STRING, # skew
                 )
 
         self.hosts_tv = gtk.TreeView (self.hosts_ts)
@@ -504,27 +502,21 @@ class SheriffGtk(object):
         hpane.pack2 (sw, resize = False)
         sw.add (self.hosts_tv)
 
-        col = gtk.TreeViewColumn ("Host", plain_tr, text=1)
+        col = gtk.TreeViewColumn ("Host", plain_tr, text=COL_HOSTS_TV_NAME)
         col.set_sort_column_id (1)
         col.set_resizable (True)
         self.hosts_tv.append_column (col)
 
-        col = gtk.TreeViewColumn ("Last update", plain_tr, text=2)
+        last_update_tr = gtk.CellRendererText()
+        col = gtk.TreeViewColumn ("Last update", last_update_tr, text=COL_HOSTS_TV_LAST_UPDATE)
 #        col.set_sort_column_id (2) # XXX this triggers really weird bugs...
         col.set_resizable (True)
+        col.set_cell_data_func(last_update_tr, self._deputy_last_update_cell_data_func)
         self.hosts_tv.append_column (col)
 
-        col = gtk.TreeViewColumn ("Load", plain_tr, text=3)
+        col = gtk.TreeViewColumn ("Load", plain_tr, text=COL_HOSTS_TV_LOAD)
         col.set_resizable (True)
         self.hosts_tv.append_column (col)
-
-#        col = gtk.TreeViewColumn ("Clock Skew (ms)", plain_tr, text=4)
-#        col.set_resizable (True)
-#        self.hosts_tv.append_column (col)
-#
-#        col = gtk.TreeViewColumn ("Jitter (ms)", plain_tr, text=5)
-#        col.set_resizable (True)
-#        self.hosts_tv.append_column (col)
 
         self.hosts_tv.connect ("button-press-event", 
                 self._on_hosts_tv_button_press_event)
@@ -654,10 +646,6 @@ class SheriffGtk(object):
                         _deputy_last_update_str (deputy),
                         COL_HOSTS_TV_LOAD, 
                         "%f" % deputy.cpu_load,
-#                        COL_HOSTS_TV_SKEW, 
-#                        "%f" % (deputy.clock_skew_usec * 1e-3),
-#                        COL_HOSTS_TV_JITTER, 
-#                        "%f" % (deputy.last_orders_jitter_usec * 1e-3),
                         )
                 to_update.remove (deputy)
             else:
@@ -672,8 +660,6 @@ class SheriffGtk(object):
             print "adding %s to treeview" % deputy.name
             new_row = (deputy, deputy.name, _deputy_last_update_str (deputy),
                     "%f" % deputy.cpu_load,
-#                    "%f" % (deputy.clock_skew_usec * 1e-3),
-#                    "%f" % (deputy.last_orders_jitter_usec * 1e-3),
                     )
             self.hosts_ts.append (new_row)
 
@@ -1056,6 +1042,21 @@ class SheriffGtk(object):
 
         cell.set_property ("cell-background-set", True)
         cell.set_property ("cell-background", color_map[cmd.status ()])
+
+    def _deputy_last_update_cell_data_func (self, column, cell, model, model_iter):
+        # bit of a hack to pull out the last update time
+        try:
+            last_update = float(model.get_value(model_iter, COL_HOSTS_TV_LAST_UPDATE).split()[0])
+        except:
+            last_update = None
+        if not last_update or last_update > 5:
+            cell.set_property("cell-background-set", True)
+            cell.set_property("cell-background", "Red")
+        elif last_update > 2:
+            cell.set_property("cell-background-set", True)
+            cell.set_property("cell-background", "Yellow")
+        else:
+            cell.set_property("cell-background-set", False)
 
     def _maybe_send_orders (self):
         if not self.sheriff.is_observer (): self.sheriff.send_orders ()
