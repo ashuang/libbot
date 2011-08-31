@@ -1052,7 +1052,7 @@ class SheriffGtk(object):
             last_update = float(model.get_value(model_iter, COL_HOSTS_TV_LAST_UPDATE).split()[0])
         except:
             last_update = None
-        if not last_update or last_update > 5:
+        if last_update is None or last_update > 5:
             cell.set_property("cell-background-set", True)
             cell.set_property("cell-background", "Red")
         elif last_update > 2:
