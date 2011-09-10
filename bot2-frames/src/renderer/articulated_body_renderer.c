@@ -73,7 +73,7 @@ typedef struct _RendererArticulated RendererArticulated;
 
 struct _RendererArticulated {
   BotRenderer renderer;
-  BotGtkParamWidget *pw;
+//  BotGtkParamWidget *pw;
   BotViewer *viewer;
   BotParam * param;
   BotFrames * frames;
@@ -325,24 +325,24 @@ static void articulated_body_free(BotRenderer *renderer)
   free(self->body_properties);
   free(self);
 }
-
-static void on_param_widget_changed(BotGtkParamWidget *pw, const char *param, void *user_data)
-{
-  RendererArticulated *self = (RendererArticulated*) user_data;
-  bot_viewer_request_redraw(self->viewer);
-}
-
-static void on_load_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user_data)
-{
-  RendererArticulated *self = user_data;
-  bot_gtk_param_widget_load_from_key_file(self->pw, keyfile, self->articulated_name);
-}
-
-static void on_save_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user_data)
-{
-  RendererArticulated *self = user_data;
-  bot_gtk_param_widget_save_to_key_file(self->pw, keyfile, self->articulated_name);
-}
+//
+//static void on_param_widget_changed(BotGtkParamWidget *pw, const char *param, void *user_data)
+//{
+//  RendererArticulated *self = (RendererArticulated*) user_data;
+//  bot_viewer_request_redraw(self->viewer);
+//}
+//
+//static void on_load_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user_data)
+//{
+//  RendererArticulated *self = user_data;
+//  bot_gtk_param_widget_load_from_key_file(self->pw, keyfile, self->articulated_name);
+//}
+//
+//static void on_save_preferences(BotViewer *viewer, GKeyFile *keyfile, void *user_data)
+//{
+//  RendererArticulated *self = user_data;
+//  bot_gtk_param_widget_save_to_key_file(self->pw, keyfile, self->articulated_name);
+//}
 
 void bot_frames_add_articulated_body_renderer_to_viewer(BotViewer *viewer, int render_priority, BotParam * param,
     BotFrames * frames, const char * model_path, const char * param_articulated_name)
@@ -367,10 +367,10 @@ void bot_frames_add_articulated_body_renderer_to_viewer(BotViewer *viewer, int r
   //
   //  g_signal_connect (G_OBJECT (self->pw), "changed",
   //      G_CALLBACK (on_param_widget_changed), self);
-  g_signal_connect (G_OBJECT (viewer), "load-preferences",
-      G_CALLBACK (on_load_preferences), self);
-  g_signal_connect (G_OBJECT (viewer), "save-preferences",
-      G_CALLBACK (on_save_preferences), self);
+//  g_signal_connect (G_OBJECT (viewer), "load-preferences",
+//      G_CALLBACK (on_load_preferences), self);
+//  g_signal_connect (G_OBJECT (viewer), "save-preferences",
+//      G_CALLBACK (on_save_preferences), self);
 
   self->num_bodies = bot_param_get_num_subkeys(self->param, self->articulated_name);
   if (self->num_bodies == -1) {
