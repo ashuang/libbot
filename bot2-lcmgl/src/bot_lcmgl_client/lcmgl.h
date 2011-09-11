@@ -94,11 +94,11 @@ void bot_lcmgl_depth_func(bot_lcmgl_t *lcmgl, unsigned int func);
 
 
 //vector versions of some of the above
-static inline void bot_lcmgl_vertex3fv(bot_lcmgl_t * lcmgl, float v[3]){bot_lcmgl_vertex3f(lcmgl,v[0],v[1],v[2]);}
-static inline void bot_lcmgl_vertex3dv(bot_lcmgl_t * lcmgl, double v[3]){bot_lcmgl_vertex3d(lcmgl,v[0],v[1],v[2]);}
+static inline void bot_lcmgl_vertex3fv(bot_lcmgl_t * lcmgl, const float v[3]){bot_lcmgl_vertex3f(lcmgl,v[0],v[1],v[2]);}
+static inline void bot_lcmgl_vertex3dv(bot_lcmgl_t * lcmgl, const double v[3]){bot_lcmgl_vertex3d(lcmgl,v[0],v[1],v[2]);}
 
-static inline void bot_lcmgl_color3fv(bot_lcmgl_t * lcmgl, float v[3]){bot_lcmgl_color3f(lcmgl,v[0],v[1],v[2]);}
-static inline void bot_lcmgl_color4fv(bot_lcmgl_t * lcmgl, double v[4]){bot_lcmgl_color4f(lcmgl,v[0],v[1],v[2],v[3]);}
+static inline void bot_lcmgl_color3fv(bot_lcmgl_t * lcmgl, const float v[3]){bot_lcmgl_color3f(lcmgl,v[0],v[1],v[2]);}
+static inline void bot_lcmgl_color4fv(bot_lcmgl_t * lcmgl, const double v[4]){bot_lcmgl_color4f(lcmgl,v[0],v[1],v[2],v[3]);}
 
 // these macros provide better "work-alike" interface to GL.  They
 // expect that an lcmgl* is defined in the current scope.
