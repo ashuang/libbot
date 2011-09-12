@@ -48,7 +48,7 @@ static inline int bot_irand(int bound)
 }
 
 /*seed bot_gauss_rand (defaults to 13 if bot_gauss_rand() called before bot_gauss_rand_init()*/
-void bot_gauss_rand_init(uint32_t seed)
+void bot_gauss_rand_init(uint32_t seed);
 
 /*return a normally distributed random number */
 double bot_gauss_rand(double mu, double sigma);
