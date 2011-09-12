@@ -119,12 +119,17 @@ void zigset(uint32_t jsrseed)
   }
 }
 
-
 static int zigInit=0;
+void bot_gauss_rand_init(uint32_t seed)
+{
+  zigset(seed);
+  zigInit=1;
+}
+
+
 double bot_gauss_rand(double mu, double sigma){
   if (!zigInit){
-    zigset(time(NULL));
-    zigInit=1;
+    bot_gauss_rand_init(13);
   }
   float r = RNOR;
   return mu+r*sigma;
