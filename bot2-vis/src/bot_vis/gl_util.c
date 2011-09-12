@@ -637,3 +637,28 @@ bot_gl_print_current_matrix(void)
     printf("  %8.3f %8.3f %8.3f %8.3f\n", 
            mtx_val[3], mtx_val[7], mtx_val[11], mtx_val[15]);
 }
+
+void bot_gl_draw_axes()
+{
+  //x-axis
+  glBegin(GL_LINES);
+  glColor3f(1, 0, 0);
+  glVertex3f(1, 0, 0);
+  glVertex3f(0, 0, 0);
+  glEnd();
+
+  //y-axis
+  glBegin(GL_LINES);
+  glColor3f(0, 1, 0);
+  glVertex3f(0, 1, 0);
+  glVertex3f(0, 0, 0);
+  glEnd();
+
+  //z-axis
+  glBegin(GL_LINES);
+  glColor3f(0, 0, 1);
+  glVertex3f(0, 0, 1);
+  glVertex3f(0, 0, 0);
+  glEnd();
+
+}
