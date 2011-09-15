@@ -14,6 +14,9 @@
 extern "C" {
 #endif
 
+//allow multiple simultaneous frames renders
+void bot_frames_add_named_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames, const char * name);
+
 void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames);
 
 void bot_frames_add_articulated_body_renderer_to_viewer(BotViewer *viewer, int render_priority, BotParam * param,

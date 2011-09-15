@@ -384,10 +384,7 @@ static void frames_update_handler(BotFrames *bot_frames, const char *frame, cons
   bot_viewer_request_redraw(self->viewer);
 }
 
-void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames)
-{
-
-  const char * renderer_name = "BOT_FRAMES";
+void bot_frames_add_named_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames, const char * renderer_name){
 
   RendererFrames *self = (RendererFrames*) calloc(1, sizeof(RendererFrames));
 
@@ -472,4 +469,9 @@ void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, B
 
   g_signal_connect(G_OBJECT(viewer), "load-preferences", G_CALLBACK(on_load_preferences), self);
   g_signal_connect(G_OBJECT(viewer), "save-preferences", G_CALLBACK(on_save_preferences), self);
+}
+
+void bot_frames_add_renderer_to_viewer(BotViewer *viewer, int render_priority, BotFrames * frames)
+{
+  bot_frames_add_named_renderer_to_viewer(viewer,render_priority,frames,"BOT_FRAMES");
 }
