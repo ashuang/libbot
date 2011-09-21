@@ -14,7 +14,7 @@ add_subdirectory(python)
 set(script_name bot-spy)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${script_name} 
     "#!/bin/sh\n"
-    "CLASSPATH=`pkg-config --variable=classpath lcm-java`\n"
+    "CLASSPATH=`PKG_CONFIG_PATH=PKG_CONFIG_PATH:${CMAKE_INSTALL_PREFIX}/lib/pkgconfig pkg-config --variable=classpath lcm-java`\n"
     "for d in . .. ../.. ../../.. ../../../.. \"${CMAKE_INSTALL_PREFIX}\"; do\n"
     #    "for d in \"${CMAKE_INSTALL_PREFIX}\"; do\n"
     "  if [ -d $d/share/java ]; then\n"
