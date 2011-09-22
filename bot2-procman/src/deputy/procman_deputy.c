@@ -325,32 +325,6 @@ stop_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd)
     return status;
 }
 
-static int 
-remove_all_cmds (procman_deputy_t *pmd)
-{
-    int status = 0;
-    const GList *all_cmds = procman_get_cmds (pmd->pm);
-
-    GList *toremove = g_list_copy ((GList*) all_cmds);
-    for (GList *iter=toremove; iter; iter=iter->next) {
-        procman_cmd_t *cmd = (procman_cmd_t*)iter->data;
-        
-        if (cmd->pid) {
-            if (0 != stop_cmd (pmd, cmd)) {
-                status = -1;
-            }
-        }
-        pmd_cmd_moreinfo_t *mi = cmd->user;
-        free(mi->group);
-        free(mi->nickname);
-        free(mi);
-        cmd->user = NULL;
-        procman_remove_cmd (pmd->pm, cmd);
-    }
-    g_list_free(toremove);
-    return status;
-}
-
 static void
 check_for_dead_children (procman_deputy_t *pmd)
 {
@@ -424,7 +398,26 @@ glib_handle_signal (int signal, procman_deputy_t *pmd) {
         // quit was requested.  kill all processes and quit
         dbgt ("received signal %d (%s).  stopping all processes\n", signal,
                 strsignal (signal));
-        remove_all_cmds (pmd);
+
+        const GList *all_cmds = procman_get_cmds (pmd->pm);
+
+        GList *toremove = g_list_copy ((GList*) all_cmds);
+        for (GList *iter=toremove; iter; iter=iter->next) {
+            procman_cmd_t *cmd = (procman_cmd_t*)iter->data;
+
+            if (cmd->pid) {
+                procman_kill_cmd (pmd->pm, cmd, SIGTERM);
+                procman_kill_cmd (pmd->pm, cmd, SIGKILL);
+            }
+            pmd_cmd_moreinfo_t *mi = cmd->user;
+            free(mi->group);
+            free(mi->nickname);
+            free(mi);
+            cmd->user = NULL;
+            procman_remove_cmd (pmd->pm, cmd);
+        }
+        g_list_free(toremove);
+
         dbgt ("stopping deputy main loop\n");
         g_main_loop_quit (pmd->mainloop);
     }
