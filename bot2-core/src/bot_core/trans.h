@@ -63,6 +63,15 @@ void bot_trans_set_from_quat_trans(BotTrans *dest, const double rot_quat[4],
         const double trans_vec[3]);
 
 /**
+ * bot_trans_set_from_velocities:
+ *
+ * computes BotTrans for rigid body moving with constant motion over t of angular_rate and velocity,
+ * expressed in the rigid body's frame
+ */
+void bot_trans_set_from_velocities(BotTrans *dest, const double angular_rate[3],
+    const double velocity[3], double t);
+
+/**
  * bot_trans_interpolate:
  * @dest: output parameter
  * @trans_a: rigid body transformation A
@@ -172,6 +181,8 @@ void bot_trans_get_trans_vec(const BotTrans * btrans, double trans_vec[3]);
  * as (x,y,z) (r,p,y)
  */
 void bot_trans_print_trans(const BotTrans * tran);
+
+
 
 
 /**

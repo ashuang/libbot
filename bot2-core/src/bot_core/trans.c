@@ -35,6 +35,66 @@ bot_trans_set_from_quat_trans(BotTrans *btrans, const double rot_quat[4],
 }
 
 void
+bot_trans_set_from_velocities(BotTrans *dest, const double angular_rate[3],
+    const double velocity[3], double dt)
+{
+  //see Frazolli notes, Aircraft Stability and Control, lecture 2, page 15
+  if (dt == 0) {
+    bot_trans_set_identity(dest);
+    return;
+  }
+
+  double identity_quat[4] = { 1, 0, 0, 0 };
+  double norm_angular_rate = bot_vector_magnitude_3d(angular_rate);
+
+  if (norm_angular_rate == 0) {
+    double delta[3];
+    memcpy(delta, velocity, 3 * sizeof(double));
+    bot_vector_scale_3d(delta, dt);
+    bot_trans_set_from_quat_trans(dest, identity_quat, delta);
+    return;
+  }
+
+  //"exponential of a twist: R=exp(skew(omega*t));
+  //rescale vel, omega, t so ||omega||=1
+  //trans =  (I-R)*(omega \cross v) + (omega \dot v) *omega* t
+  //                term2                       term3
+  // R*(omega \cross v)
+  //     term1
+  //rescale
+  double t = dt * norm_angular_rate;
+  double omega[3], vel[3];
+  memcpy(omega, angular_rate, 3 * sizeof(double));
+  memcpy(vel, velocity, 3 * sizeof(double));
+  bot_vector_scale_3d(omega, 1.0/norm_angular_rate);
+  bot_vector_scale_3d(vel, 1.0/norm_angular_rate);
+
+  //compute R (quat in our case)
+  bot_angle_axis_to_quat(t, omega, dest->rot_quat);
+
+  //cross and dot products
+  double omega_cross_vel[3];
+  bot_vector_cross_3d(omega, vel, omega_cross_vel);
+  double omega_dot_vel = bot_vector_dot_3d(omega, vel);
+
+
+  double term1[3];
+  double term2[3];
+  double term3[3];
+
+  //(I-R)*(omega \cross v) = term2
+  memcpy(term1, omega_cross_vel, 3 * sizeof(double));
+  bot_quat_rotate(dest->rot_quat, term1);
+  bot_vector_subtract_3d(omega_cross_vel, term1, term2);
+
+  //(omega \dot v) *omega* t
+  memcpy(term3, omega, 3 * sizeof(double));
+  bot_vector_scale_3d(term3, omega_dot_vel * t);
+
+  bot_vector_add_3d(term2, term3, dest->trans_vec);
+}
+
+void
 bot_trans_apply_trans(BotTrans *dest, const BotTrans * src)
 {
     bot_quat_rotate(src->rot_quat, dest->trans_vec);
