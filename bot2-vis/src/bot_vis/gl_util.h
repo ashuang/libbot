@@ -141,10 +141,13 @@ void bot_gl_print_current_matrix(void);
 void
 bot_glutBitmapString(void* font, const unsigned char* text);
 
+/**
+ * bot_gl_draw_axes():
+ *
+ * draw rgb xyz axes of unit length
+ */
 void
 bot_gl_draw_axes();
-
-
 
 
 #ifdef __cplusplus
