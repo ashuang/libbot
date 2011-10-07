@@ -65,8 +65,7 @@ signal_handler (int signal)
 {
     dbg("signal_pipe: caught signal %d\n", signal);
     int wstatus = write (g_sp.fds[1], &signal, sizeof(int));
-    if(wstatus < 0)
-        perror("signal-pipe-write");
+    (void) wstatus;
 }
 
 static int

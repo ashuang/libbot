@@ -1387,7 +1387,7 @@ def run ():
     if spawn_deputy:
         gui.on_spawn_deputy_activate()
     if cfg is not None:
-        gobject.timeout_add (2000, lambda: gui.sheriff.load_config (cfg))
+        gobject.timeout_add (1300, lambda: gui.sheriff.load_config (cfg))
         gui.load_save_dir = os.path.dirname(args[0])
     try:
         gtk.main ()

@@ -101,6 +101,7 @@ typedef struct _procman_deputy {
     float cpu_load;
 
     int verbose;
+    int exiting;
 } procman_deputy_t;
 
 typedef struct _pmd_cmd_moreinfo {
@@ -387,39 +388,73 @@ check_for_dead_children (procman_deputy_t *pmd)
     }
 }
 
+static gboolean
+on_quit_timeout(procman_deputy_t* pmd)
+{
+    const GList *all_cmds = procman_get_cmds (pmd->pm);
+
+    GList *toremove = g_list_copy ((GList*) all_cmds);
+    for (GList *iter=toremove; iter; iter=iter->next) {
+        procman_cmd_t *cmd = (procman_cmd_t*)iter->data;
+
+        if (cmd->pid) {
+            procman_kill_cmd (pmd->pm, cmd, SIGKILL);
+        }
+        pmd_cmd_moreinfo_t *mi = cmd->user;
+        free(mi->group);
+        free(mi->nickname);
+        free(mi);
+        cmd->user = NULL;
+        procman_remove_cmd (pmd->pm, cmd);
+    }
+    g_list_free(toremove);
+
+    dbgt ("stopping deputy main loop\n");
+    g_main_loop_quit (pmd->mainloop);
+    return FALSE;
+}
+
 static void
 glib_handle_signal (int signal, procman_deputy_t *pmd) {
     if (signal == SIGCHLD) {
         // a child process died.  check to see which one, and cleanup its
         // remains.
         check_for_dead_children (pmd);
-    }
-    else {
+    } else {
         // quit was requested.  kill all processes and quit
         dbgt ("received signal %d (%s).  stopping all processes\n", signal,
                 strsignal (signal));
 
+        // first, send everything a SIGTERM to give them a chance to exit
+        // cleanly.
         const GList *all_cmds = procman_get_cmds (pmd->pm);
-
-        GList *toremove = g_list_copy ((GList*) all_cmds);
-        for (GList *iter=toremove; iter; iter=iter->next) {
+        for (const GList *iter=all_cmds; iter; iter=iter->next) {
             procman_cmd_t *cmd = (procman_cmd_t*)iter->data;
-
             if (cmd->pid) {
                 procman_kill_cmd (pmd->pm, cmd, SIGTERM);
-                procman_kill_cmd (pmd->pm, cmd, SIGKILL);
             }
-            pmd_cmd_moreinfo_t *mi = cmd->user;
-            free(mi->group);
-            free(mi->nickname);
-            free(mi);
-            cmd->user = NULL;
-            procman_remove_cmd (pmd->pm, cmd);
         }
-        g_list_free(toremove);
+        pmd->exiting = 1;
+        // set a timer, after which everything will be more forcefully
+        // terminated.
+        g_timeout_add(3500, (GSourceFunc)on_quit_timeout, pmd);
+    }
 
-        dbgt ("stopping deputy main loop\n");
-        g_main_loop_quit (pmd->mainloop);
+    if(pmd->exiting) {
+        // if we're exiting, and all child processes are dead, then exit.
+        int all_dead = 1;
+        const GList *all_cmds = procman_get_cmds (pmd->pm);
+        for (const GList *iter=all_cmds; iter; iter=iter->next) {
+            procman_cmd_t *cmd = (procman_cmd_t*)iter->data;
+            if (cmd->pid) {
+                all_dead = 0;
+                break;
+            }
+        }
+        if(all_dead) {
+            dbg("all child processes are dead, exiting.\n");
+            g_main_loop_quit(pmd->mainloop);
+        }
     }
 }
 
@@ -553,10 +588,16 @@ static gboolean
 one_second_timeout (procman_deputy_t *s)
 {
     update_cpu_times (s);
-
     transmit_proc_info (s);
-
     return TRUE;
+}
+
+static gboolean
+initial_transmit(procman_deputy_t* s)
+{
+    update_cpu_times (s);
+    transmit_proc_info(s);
+    return FALSE;
 }
 
 static gboolean
@@ -920,6 +961,7 @@ int main (int argc, char **argv)
      pmd->norders_forme_slm = 0;
      pmd->observed_sheriffs_slm = NULL;
      pmd->last_sheriff_name = NULL;
+     pmd->exiting = 0;
 
      pmd->mainloop = g_main_loop_new (NULL, FALSE);
      if (!pmd->mainloop) {
@@ -965,6 +1007,8 @@ int main (int argc, char **argv)
 
      // setup a timer to periodically transmit status information
      g_timeout_add (1000, (GSourceFunc) one_second_timeout, pmd);
+
+     g_timeout_add (300, (GSourceFunc) initial_transmit, pmd);
 
      // periodically check memory usage
      g_timeout_add (120000, (GSourceFunc) introspection_timeout, pmd);
