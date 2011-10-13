@@ -378,9 +378,9 @@ check_for_dead_children (procman_deputy_t *pmd)
             free(mi);
             cmd->user = NULL;
             procman_remove_cmd (pmd->pm, cmd);
+        } else {
+            maybe_schedule_respawn(pmd, cmd);
         }
-
-        maybe_schedule_respawn(pmd, cmd);
 
         cmd = NULL;
         procman_check_for_dead_children (pmd->pm, &cmd);
