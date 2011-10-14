@@ -6,13 +6,14 @@ TokEndStatement = "EndStatement"
 TokString = "String"
 TokEOF = "EOF"
 TokComment = "Comment"
+TokInteger = "Integer"
 
-class Token:
+class Token(object):
     def __init__ (self, type, val):
         self.type = type
         self.val = val
 
-class Tokenizer:
+class Tokenizer(object):
     def __init__ (self, f):
         self.f = f
         self.unget_char = None
@@ -101,6 +102,14 @@ class Tokenizer:
                     return Token (TokIdentifier, "".join (tok_chars))
                 tok_chars.append (c)
 
+        if c.isdigit():
+            while True:
+                c = self._next_char()
+                if not c.isdigit():
+                    self._ungetc(c)
+                    return Token(TokInteger, "".join(tok_chars))
+                tok_chars.append(c)
+
         se = SyntaxError ()
         se.filename = ""
         se.lineno = self.line_num
@@ -116,7 +125,7 @@ def escape_str(text):
 
     return "".join([ escape_char(c) for c in text ])
 
-class CommandNode:
+class CommandNode(object):
     def __init__ (self):
         self.attributes = { \
                 "exec" : None,
@@ -143,7 +152,7 @@ class CommandNode:
     def __str__ (self):
         return self._get_str ()
 
-class GroupNode:
+class GroupNode(object):
     def __init__ (self, name):
         self.name = name
         self.commands = []
@@ -153,14 +162,75 @@ class GroupNode:
         self.commands.append (command)
 
     def __str__ (self):
-        val = "group \"%s\" {" % self.name
-        for cmd in self.commands: val = val + "\n" + cmd._get_str (1)
+        if self.name == "":
+            val = "\n".join([cmd._get_str(0) for cmd in self.commands])
+        else:
+            val = "group \"%s\" {\n" % self.name
+            val += "\n".join([cmd._get_str(1) for cmd in self.commands])
+            val = val + "\n}\n"
+        return val
+
+class StartStopRestartActionNode(object):
+    def __init__(self, action_type, ident_type, ident, wait_status):
+        assert action_type in ["start", "stop", "restart"]
+        assert ident_type in [ "everything", "group", "cmd" ]
+        self.action_type = action_type
+        self.ident_type = ident_type
+        self.wait_status = wait_status
+        if self.ident_type == "everything":
+            self.ident = None
+        else:
+            self.ident = ident
+            assert self.ident is not None
+
+    def __str__(self):
+        if self.wait_status is not None:
+            return "%s %s \"%s\" wait \"%s\";" % (self.action_type,
+                    self.ident_type, escape_str(self.ident), self.wait_status)
+        elif self.ident_type == "everything":
+            return "%s %s;" % (self.action_type, self.ident_type)
+        else:
+            return "%s %s \"%s\";" % \
+                    (self.action_type, self.ident_type, escape_str(self.ident))
+
+class WaitMsActionNode(object):
+    def __init__(self, delay_ms):
+        self.delay_ms = delay_ms
+        self.action_type = "wait_ms"
+
+    def __str__(self):
+        return "wait ms %d;" % self.delay_ms
+
+class WaitStatusActionNode(object):
+    def __init__(self, ident_type, ident, wait_status):
+        self.ident_type = ident_type
+        self.ident = ident
+        self.wait_status = wait_status
+        self.action_type = "wait_status"
+
+    def __str__(self):
+        return "wait %s \"%s\" status \"%s\";" % \
+                (self.ident_type, escape_str(self.ident), self.wait_status)
+
+class ScriptNode(object):
+    def __init__(self, name):
+        self.name = name
+        self.actions = []
+
+    def add_action(self, action):
+        self.actions.append(action)
+
+    def __str__(self):
+        val = "script \"%s\" {" % escape_str(self.name)
+        for action in self.actions:
+            val = val + "\n    " + str(action)
         val = val + "\n}\n"
         return val
 
-class ConfigNode:
+class ConfigNode(object):
     def __init__ (self):
         self.groups = {}
+        self.scripts = {}
         self.add_group (GroupNode (""))
 
     def has_group (self, group_name):
@@ -173,21 +243,25 @@ class ConfigNode:
         assert group.name not in self.groups
         self.groups[group.name] = group
 
+    def add_script (self, script):
+        assert script.name not in self.scripts
+        self.scripts[script.name] = script
+
     def add_command (self, command):
         none_group = self.groups[""]
         none_group.add_command (command)
 
     def __str__ (self):
         val = ""
-        none_group = self.groups[""]
-        for cmd in none_group.commands:
-            val = val + "\n" + cmd._get_str (0)
+        groups = sorted(self.groups.values(), key=lambda g: g.name.lower())
+        val += "\n".join ([str (group) for group in groups ])
+        val += "\n"
 
-        return val + "\n" + \
-                "\n".join ([str (group) for group in self.groups.values () \
-                if group.name != "" ])
+        scripts = sorted(self.scripts.values(), key=lambda s: s.name.lower())
+        val += "\n".join ([str (script) for script in scripts])
+        return val
 
-class ParseError (Exception):
+class ParseError (ValueError):
     def __init__ (self, tokenizer, token, msg):
         self.lineno = tokenizer.line_num
         self.offset = tokenizer.line_pos
@@ -228,6 +302,30 @@ class Parser:
     def _fail (self, msg):
         raise ParseError (self.tokenizer, self._cur_tok, msg)
 
+    def _eat_token_or_fail(self, tok_type, err_msg):
+        if not self._eat_token(tok_type):
+            self._fail(err_msg)
+        return self._cur_tok.val
+
+    def _expect_identifier(self, identifier, err_msg = None):
+        if err_msg is None:
+            err_msg = "Expected %s" % identifier
+        self._eat_token_or_fail(TokIdentifier, err_msg)
+        if self._cur_tok.val != identifier:
+            self._fail(err_msg)
+
+    def _parse_identifier_one_of(self, valid_identifiers):
+        err_msg = "Expected one of %s" % str(valid_identifiers)
+        self._eat_token_or_fail(TokIdentifier, err_msg)
+        result = self._cur_tok.val
+        if result not in valid_identifiers:
+            self._fail(err_msg)
+        return result
+
+    def _parse_string_or_fail(self):
+        self._eat_token_or_fail(TokString, "Expected string literal")
+        return self._cur_tok.val
+
     def _parse_command_param_list (self, cmd):
         if not self._eat_token (TokIdentifier):
             return
@@ -235,22 +333,18 @@ class Parser:
         if attrib_name not in [ "exec", "host", "nickname", "auto_respawn", "group" ]:
             self._fail("Unrecognized attribute %s" % attrib_name)
 
-        if not self._eat_token (TokAssign):
-            self._fail ("Expected '='")
-        if not self._eat_token (TokString):
-            self._fail ("Expected string literal")
-        attrib_val = self._cur_tok.val
-        if not self._eat_token (TokEndStatement):
-            self._fail ("Expected ';'")
+        self._eat_token_or_fail(TokAssign, "Expected '='")
+        attrib_val = self._parse_string_or_fail()
+        self._eat_token_or_fail(TokEndStatement, "Expected ';'")
         cmd.attributes[attrib_name] = attrib_val
 
         return self._parse_command_param_list (cmd)
 
     def _parse_command (self):
         cmd = CommandNode ()
-        if not self._eat_token (TokOpenStruct): self._fail ("Expected '{'")
+        self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         self._parse_command_param_list (cmd)
-        if not self._eat_token (TokCloseStruct): self._fail ("Expected '}'")
+        self._eat_token_or_fail (TokCloseStruct, "Expected '}'")
         if not cmd.attributes["exec"]:
             self._fail ("Invalid command defined -- no executable specified")
         return cmd
@@ -262,33 +356,82 @@ class Parser:
         return cmds
 
     def _parse_group (self):
-        if not self._eat_token (TokString):
-            self._fail ("Expected group name string")
-
+        self._eat_token_or_fail (TokString, "Expected group name string")
         name = self._cur_tok.val
         group = GroupNode (name)
-
-        if not self._eat_token (TokOpenStruct): self._fail ("Expected '{'")
-
+        self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         for cmd in self._parse_command_list ():
             group.add_command (cmd)
-
-        if not self._eat_token (TokCloseStruct): self._fail ("Expected '}'")
+        self._eat_token_or_fail(TokCloseStruct, "Expected '}'")
         return group
+
+    def _parse_start_stop_restart_action(self, action_type):
+        valid_ident_types = [ "everything", "cmd", "group" ]
+        ident_type = self._parse_identifier_one_of(valid_ident_types)
+        ident = None
+        if ident_type != "everything":
+            ident = self._parse_string_or_fail()
+        if self._eat_token(TokEndStatement):
+            return StartStopRestartActionNode(action_type, ident_type, ident,
+                    None)
+        self._expect_identifier("wait", "Expected ';' or 'wait'")
+        wait_status = self._parse_string_or_fail()
+        self._eat_token_or_fail(TokEndStatement, "Expected ';'")
+        return StartStopRestartActionNode(action_type, ident_type, ident,
+                wait_status)
+
+    def _parse_wait_action(self):
+        wait_type = self._parse_identifier_one_of(["ms", "cmd", "group"])
+        if wait_type == "ms":
+            err_msg = "Expected integer constant"
+            delay_ms = int(self._eat_token_or_fail(TokInteger, err_msg))
+            self._eat_token_or_fail(TokEndStatement, "Expected ';'")
+            return WaitMsActionNode(delay_ms)
+        else:
+            ident = self._parse_string_or_fail()
+            self._expect_identifier("status")
+            wait_status = self._parse_string_or_fail()
+            self._eat_token_or_fail(TokEndStatement, "Expected ';'")
+            return WaitStatusActionNode(wait_type, ident, wait_status)
+
+    def _parse_script_action_list(self):
+        actions = []
+        while self._eat_token(TokIdentifier):
+            action_type = self._cur_tok.val
+            if action_type in [ "start", "stop", "restart" ]:
+                actions.append(self._parse_start_stop_restart_action(action_type))
+            elif action_type == "wait":
+                actions.append(self._parse_wait_action())
+            else:
+                self._fail("Unexpected token %s" % action_type)
+        return actions
+
+    def _parse_script(self):
+        self._eat_token_or_fail(TokString, "expected script name")
+        name = self._cur_tok.val
+        node = ScriptNode(name)
+        self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
+        for action in self._parse_script_action_list():
+            node.add_action(action)
+        self._eat_token_or_fail(TokCloseStruct, "Expected '}'")
+        return node
 
     def _parse_listdecl (self, node):
         if self._eat_token (TokEOF):
             return node
 
         if not self._eat_token (TokIdentifier) or \
-                self._cur_tok.val not in [ "cmd", "group" ]:
-            self._fail ("Expected command or group declaration")
+                self._cur_tok.val not in [ "cmd", "group", "script" ]:
+            self._fail ("Expected 'cmd', 'group', or 'script'")
 
         if self._cur_tok.val == "cmd":
             node.add_command (self._parse_command ())
 
         if self._cur_tok.val == "group":
             node.add_group (self._parse_group ())
+
+        if self._cur_tok.val == "script":
+            node.add_script(self._parse_script())
 
         return self._parse_listdecl (node)
 

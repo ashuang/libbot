@@ -22,7 +22,7 @@ import bot_procman.sheriff_config as sheriff_config
 
 import bot_procman.sheriff_gtk.command_model as cm
 import bot_procman.sheriff_gtk.command_treeview as ctv
-import bot_procman.sheriff_gtk.add_modify_command_dialog as amcd
+import bot_procman.sheriff_gtk.sheriff_dialogs as sd
 import bot_procman.sheriff_gtk.command_console as cc
 
 try:
@@ -116,7 +116,7 @@ class SheriffHostTreeView(gtk.TreeView):
         col.set_resizable (True)
         self.append_column (col)
 
-        self.connect ("button-press-event", 
+        self.connect ("button-press-event",
                 self._on_hosts_tv_button_press_event)
 
         # hosts treeview context menu
@@ -203,6 +203,10 @@ class SheriffGtk(object):
         self.sheriff.connect ("command-removed", self._update_commands_model)
         self.sheriff.connect ("command-status-changed", self._update_commands_model)
         self.sheriff.connect ("command-group-changed", self._update_commands_model)
+        self.sheriff.connect("script-started", self._on_script_started)
+        self.sheriff.connect("script-finished", self._on_script_finished)
+        self.sheriff.connect("script-added", self._on_script_added)
+        self.sheriff.connect("script-removed", self._on_script_removed)
 
         gobject.timeout_add (1000, self._maybe_send_orders)
         gobject.timeout_add (1000, 
@@ -256,7 +260,8 @@ class SheriffGtk(object):
         options_mi = gtk.MenuItem ("_Options")
         commands_mi = gtk.MenuItem ("_Commands")
         view_mi = gtk.MenuItem ("_View")
-        
+        scripts_mi = gtk.MenuItem ("_Scripts")
+
         # file menu
         file_menu = gtk.Menu ()
         file_mi.set_submenu (file_menu)
@@ -323,7 +328,7 @@ class SheriffGtk(object):
         self.new_cmd_mi.add_accelerator ("activate", self.accel_group, ord("n"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
         self.new_cmd_mi.connect ("activate", 
-                lambda *s: amcd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.window))
+                lambda *s: sd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.window))
         commands_menu.append (self.new_cmd_mi)
 
         # options menu
@@ -352,18 +357,34 @@ class SheriffGtk(object):
         view_menu = gtk.Menu ()
         view_mi.set_submenu (view_menu)
 
+        # scripts menu
+        self.scripts_menu = gtk.Menu()
+        scripts_mi.set_submenu(self.scripts_menu)
+        self.scripts_menu.append (gtk.SeparatorMenuItem ())
+
+        add_script_mi = gtk.MenuItem("New script")
+        add_script_mi.connect("activate", self._on_add_script_activate)
+        self.scripts_menu.append(add_script_mi)
+
+        self.abort_script_mi = gtk.MenuItem("Abort script")
+        self.abort_script_mi.connect("activate", self._on_abort_script_activate)
+        self.abort_script_mi.set_sensitive(False)
+        self.scripts_menu.append(self.abort_script_mi)
+
         menu_bar.append (file_mi)
         menu_bar.append (options_mi)
         menu_bar.append (commands_mi)
         menu_bar.append (view_mi)
+        menu_bar.append (scripts_mi)
 
         vpane = gtk.VPaned ()
         vbox.pack_start (vpane, True, True, 0)
 
+
         # setup the command treeview
         hpane = gtk.HPaned ()
         vpane.add1 (hpane)
-        
+
         sw = gtk.ScrolledWindow ()
         sw.set_policy (gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         hpane.pack1 (sw, resize = True)
@@ -440,10 +461,78 @@ class SheriffGtk(object):
         if self.is_observer_cmi != is_observer:
             self.is_observer_cmi.set_active (is_observer)
 
+    def run_script(self, menuitem, script):
+        errors = self.sheriff.execute_script(script)
+        if errors:
+            msgdlg = gtk.MessageDialog (self.window,
+                    gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
+                    gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE,
+                    "Script failed to run.  Errors detected:\n" + \
+                    "\n".join(errors))
+            msgdlg.run ()
+            msgdlg.destroy ()
+
+    def _on_script_started(self, sheriff, script):
+        self._update_menu_item_sensitivities()
+
+    def _on_script_finished(self, sheriff, script):
+        self._update_menu_item_sensitivities()
+
+    def _on_abort_script_activate(self, menuitem):
+        self.sheriff.abort_script()
+
+    def _on_add_script_activate(self, menuitem):
+        sd.do_add_script_dialog(self.sheriff, self.window)
+
+    def _maybe_add_script_menu_item(self, script):
+        insert_point = 0
+        for i, smi in enumerate(self.scripts_menu.children()):
+            other_script = smi.get_data("sheriff-script")
+            if other_script is script:
+                return
+            if other_script is None:
+                break
+            if other_script.name < script.name:
+                insert_point += 1
+
+        # make a submenu for every script
+        smi = gtk.MenuItem(script.name)
+        smi.set_data("sheriff-script", script)
+        smi_menu = gtk.Menu()
+        run_mi = gtk.MenuItem("run")
+        run_mi.connect("activate", self.run_script, script)
+
+        edit_mi = gtk.MenuItem("edit")
+        edit_mi.set_data("sheriff-script", script)
+        edit_mi.connect("activate",
+                lambda mi: sd.do_edit_script_dialog(self.sheriff, self.window, script))
+        delete_mi = gtk.MenuItem("delete")
+        delete_mi.set_data("sheriff-script", script)
+        delete_mi.connect("activate",
+                lambda mi: self.sheriff.remove_script(mi.get_data("sheriff-script")))
+        smi_menu.append(run_mi)
+        smi_menu.append(edit_mi)
+        smi_menu.append(delete_mi)
+        smi.set_submenu(smi_menu)
+        self.scripts_menu.insert(smi, insert_point)
+        self.scripts_menu.show_all()
+
+    def _on_script_added(self, sheriff, script):
+        self._maybe_add_script_menu_item(script)
+
+    def _on_script_removed(self, sheriff, script):
+        for smi in self.scripts_menu.children():
+            if smi.get_data("sheriff-script") is script:
+                self.scripts_menu.remove(smi)
+                break
+
+    def load_config(self, cfg):
+        self.sheriff.load_config(cfg)
+
     # GTK signal handlers
     def _do_load_config_dialog (self, *args):
         if not self.load_dlg:
-            self.load_dlg = gtk.FileChooserDialog ("Load Config", self.window, 
+            self.load_dlg = gtk.FileChooserDialog ("Load Config", self.window,
                     buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT,
                         gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
         if self.load_save_dir:
@@ -461,7 +550,7 @@ class SheriffGtk(object):
                 msgdlg.run ()
                 msgdlg.destroy ()
             else:
-                self.sheriff.load_config (cfg)
+                self.load_config (cfg)
         self.load_dlg.hide()
         self.load_dlg.destroy()
         self.load_dlg = None
@@ -510,8 +599,12 @@ class SheriffGtk(object):
     def _update_menu_item_sensitivities (self):
         # enable/disable menu options based on sheriff state and user selection
         selected_cmds = self.cmds_tv.get_selected_commands ()
-        can_modify = len(selected_cmds) > 0 and not self.sheriff.is_observer ()
-        can_add_load = not self.sheriff.is_observer ()
+        script_active = self.sheriff.get_active_script() is not None
+        can_modify = len(selected_cmds) > 0 and \
+                not self.sheriff.is_observer () and \
+                not script_active
+        can_add_load = not self.sheriff.is_observer () and \
+                not script_active
 
         self.start_cmd_mi.set_sensitive (can_modify)
         self.stop_cmd_mi.set_sensitive (can_modify)
@@ -520,6 +613,8 @@ class SheriffGtk(object):
 
         self.new_cmd_mi.set_sensitive (can_add_load)
         self.load_cfg_mi.set_sensitive (can_add_load)
+
+        self.abort_script_mi.set_sensitive(script_active)
 
     def _on_cmds_selection_changed (self, selection):
         selected_cmds = self.cmds_tv.get_selected_commands ()
@@ -599,7 +694,7 @@ def run ():
     if spawn_deputy:
         gui.on_spawn_deputy_activate()
     if cfg is not None:
-        gobject.timeout_add (1300, lambda: gui.sheriff.load_config (cfg))
+        gobject.timeout_add (1300, lambda: gui.load_config (cfg))
         gui.load_save_dir = os.path.dirname(args[0])
     try:
         gtk.main ()

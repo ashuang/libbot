@@ -12,15 +12,14 @@ from bot_procman.info_t import info_t
 from bot_procman.orders_t import orders_t
 from bot_procman.sheriff_cmd_t import sheriff_cmd_t
 import bot_procman.sheriff_config as sheriff_config
+from bot_procman.sheriff_script import SheriffScript
 
-#def warn (*args):
-#    return common.print_to_stderr_with_lineno (*args)
-
-def dbg (*args):
+def dbg(*args):
     return
     sys.stderr.write(*args)
 
-def timestamp_now (): return int (time.time () * 1000000)
+def timestamp_now():
+    return int(time.time() * 1000000)
 
 TRYING_TO_START = "Command Sent"
 RUNNING = "Running"
@@ -31,7 +30,7 @@ STOPPED_ERROR = "Stopped (Error)"
 UNKNOWN = "Unknown"
 RESTARTING = "Command Sent"
 
-class SheriffDeputyCommand (gobject.GObject):
+class SheriffDeputyCommand(gobject.GObject):
 
     def __init__ (self):
         gobject.GObject.__init__ (self)
@@ -72,7 +71,6 @@ class SheriffDeputyCommand (gobject.GObject):
     def _start (self):
         # if the command is already running, then ignore
         if self.pid > 0:
-#            warn ("command already running")
             return
 
         self.desired_runid += 1
@@ -134,8 +132,6 @@ class SheriffDeputy (gobject.GObject):
         self.commands = {}
         self.last_update_utime = 0
         self.cpu_load = 0
-#        self.clock_skew_usec = 0
-#        self.last_orders_jitter_usec = 0
         self.phys_mem_total_bytes = 0
         self.phys_mem_free_bytes = 0
         self.variables = {}
@@ -202,8 +198,6 @@ class SheriffDeputy (gobject.GObject):
         # TODO update variables
 
         self.last_update_utime = timestamp_now ()
-#        self.clock_skew_usec = dep_info.clock_skew_usec
-#        self.last_orders_jitter_usec = dep_info.last_orders_jitter_usec
         self.cpu_load = dep_info.cpu_load
         self.phys_mem_total_bytes = dep_info.phys_mem_total_bytes
         self.phys_mem_free_bytes = dep_info.phys_mem_free_bytes
@@ -297,6 +291,16 @@ class Sheriff (gobject.GObject):
                 (gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT,
                     gobject.TYPE_PYOBJECT)),
             'command-group-changed' : (gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
+            'script-added' : (gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
+            'script-removed' : (gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
+            'script-started' : (gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
+            'script-finished' : (gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
+            'script-action-event' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,))
             }
 
@@ -311,6 +315,13 @@ class Sheriff (gobject.GObject):
                 ":" + str (timestamp_now ())
         self._next_sheriff_id = 1
 
+        # variables for scripts
+        self.scripts = []
+        self.active_script = None
+        self.current_script_action = -1
+        self.waiting_on_commands = []
+        self.waiting_for_status = None
+
     def _get_or_make_deputy (self, deputy_name):
         if deputy_name not in self.deputies:
             self.deputies[deputy_name] = SheriffDeputy (deputy_name)
@@ -318,13 +329,14 @@ class Sheriff (gobject.GObject):
 
     def _maybe_emit_status_change_signals (self, deputy, status_changes):
         for cmd, old_status, new_status in status_changes:
-            if old_status == new_status: continue
+            if old_status == new_status:
+                continue
             if old_status is None:
                 self.emit ("command-added", deputy, cmd)
             elif new_status is None:
-                print "command-removed"
                 self.emit ("command-removed", deputy, cmd)
             else:
+                self._check_wait_action_status()
                 self.emit ("command-status-changed", cmd,
                         old_status, new_status)
 
@@ -357,9 +369,6 @@ class Sheriff (gobject.GObject):
         dep_orders = orders_t.decode (data)
 
         if not self._is_observer:
-#            if dep_orders.sheriff_name != self.name:
-#                warn ("multiple sheriffs.detected: [%s]" % \
-#                        dep_orders.sheriff_name)
             return
 
         deputy = self._get_or_make_deputy (dep_orders.host)
@@ -504,6 +513,172 @@ class Sheriff (gobject.GObject):
             cmds.extend (dep.commands.values ())
         return cmds
 
+    def get_commands_by_nickname(self, nickname):
+        result = []
+        for deputy in self.deputies.values():
+            for cmd in deputy.commands.values():
+                if cmd.nickname == nickname:
+                    result.append(cmd)
+        return result
+
+    def get_commands_by_group(self, group_name):
+        result = []
+        for deputy in self.deputies.values():
+            for cmd in deputy.commands.values():
+                if cmd.group == group_name:
+                    result.append(cmd)
+        return result
+
+    def get_active_script(self):
+        return self.active_script
+
+    def get_script(self, name):
+        for script in self.scripts:
+            if script.name == name:
+                return script
+        return None
+
+    def get_scripts(self):
+        return self.scripts
+
+    def add_script(self, script):
+        if self.get_script(script.name) is not None:
+            raise ValueError("Script [%s] already exists", script.name)
+        self.scripts.append(script)
+        self.emit("script-added", script)
+
+    def remove_script(self, script):
+        if script is self.active_script:
+            self.abort_script()
+        if script in self.scripts:
+            self.emit("script-removed", script)
+            self.scripts.remove(script)
+        else:
+            raise ValueError("Unknown script [%s]", script.name)
+
+    def _get_action_commands(self, ident_type, ident):
+        if ident_type == "cmd":
+            return self.get_commands_by_nickname(ident)
+        elif ident_type == "group":
+            return self.get_commands_by_group(ident)
+        elif ident_type == "everything":
+            return self.get_all_commands()
+        else:
+            raise ValueError("Invalid ident_type %s" % ident_type)
+
+    def check_script_for_errors(self, script):
+        err_msgs = []
+        for action in script.actions:
+            if action.action_type in \
+                    [ "start", "stop", "restart", "wait_status" ]:
+                if action.ident_type == "cmd":
+                    if not self.get_commands_by_nickname(action.ident):
+                        err_msgs.append("No such command: %s" % action.ident)
+                elif action.ident_type == "group":
+                    if not self.get_commands_by_group(action.ident):
+                        err_msgs.append("No such group: %s" % action.ident)
+            elif action.action_type == "wait_ms":
+                if action.delay_ms < 0:
+                    err_msgs.append("Wait times must be nonnegative")
+            else:
+                err_msgs.append("Unrecognized action %s" % action.action_type)
+        return err_msgs
+
+    def _finish_script_execution(self):
+        script = self.active_script
+        self.active_script = None
+        self.current_script_action = -1
+        self.waiting_on_commands = []
+        self.waiting_for_status = None
+        if script:
+            self.emit("script-finished", script)
+
+    def _check_wait_action_status(self):
+        if not self.waiting_on_commands:
+            return
+
+        if self.waiting_for_status == "running":
+            acceptable_statuses = RUNNING
+        elif self.waiting_for_status == "stopped":
+            acceptable_statuses = [ STOPPED_OK, STOPPED_ERROR ]
+        else:
+            raise ValueError("Invalid desired status %s" % \
+                    self.waiting_for_status)
+
+        for cmd in self.waiting_on_commands:
+            if cmd.status() not in acceptable_statuses:
+                return
+
+        self.emit("script-action-event", self.active_script)
+        # all commands passed the status check.  schedule the next action
+        gobject.timeout_add(0, self._execute_next_script_action)
+
+    def _execute_next_script_action(self):
+        # make sure there's an active script
+        if not self.active_script:
+            return False
+
+        self.waiting_on_commands = []
+        self.waiting_for_status = None
+
+        self.current_script_action += 1
+        if self.current_script_action >= len(self.active_script.actions):
+            # no more actions
+            self._finish_script_execution()
+            return False
+
+        action = self.active_script.actions[self.current_script_action]
+
+        # fixed time wait -- just set a GObject timer to call this function
+        # again
+        if action.action_type == "wait_ms":
+            gobject.timeout_add(action.delay_ms,
+                    self._execute_next_script_action)
+            return False
+
+        # find the commands that we're operating on
+        cmds = self._get_action_commands(action.ident_type, action.ident)
+
+        # execute an immediate action if applicable
+        if action.action_type == "start":
+            for cmd in cmds:
+                self.start_command(cmd)
+        elif action.action_type == "stop":
+            for cmd in cmds:
+                self.stop_command(cmd)
+        elif action.action_type == "restart":
+            for cmd in cmds:
+                self.restart_command(cmd)
+
+        # do we need to wait for the commands to achieve a desired status?
+        if action.wait_status:
+            # yes
+            self.waiting_on_commands = cmds
+            self.waiting_for_status = action.wait_status
+            self._check_wait_action_status()
+        else:
+            # no.  Just move on
+            gobject.timeout_add(0, self._execute_next_script_action)
+
+        self.emit("script-action-event", self.active_script)
+        return False
+
+    def execute_script(self, script):
+        if self.active_script:
+            self.abort_script()
+
+        errors = self.check_script_for_errors(script)
+        if errors:
+            return errors
+
+        self.current_script_action = -1
+        self.active_script = script
+        self.emit("script-started", script)
+        self._execute_next_script_action()
+
+    def abort_script(self):
+        self._finish_script_execution()
+
     def load_config (self, config_node):
         """
         config_node should be an instance of sheriff_config.ConfigNode
@@ -514,6 +689,8 @@ class Sheriff (gobject.GObject):
         for dep in self.deputies.values ():
             for cmd in dep.commands.values ():
                 self.schedule_command_for_removal (cmd)
+        for script in self.scripts[:]:
+            self.remove_script(script)
 
         for group in config_node.groups.values ():
             for cmd in group.commands:
@@ -525,6 +702,9 @@ class Sheriff (gobject.GObject):
                         auto_respawn
                         )
                 dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, cmd.attributes["host"]))
+
+        for script_node in config_node.scripts.values():
+            self.add_script(SheriffScript.from_script_node(script_node))
 
     def save_config (self, file_obj):
         config_node = sheriff_config.ConfigNode ()
@@ -544,20 +724,48 @@ class Sheriff (gobject.GObject):
                     group = sheriff_config.GroupNode (cmd.group)
                     config_node.add_group (group)
                 group.add_command (cmd_node)
+        for script in self.scripts:
+            config_node.add_script(script.toScriptNode())
         file_obj.write (str (config_node))
 
 if __name__ == "__main__":
+    import getopt
+
+    def usage():
+        print "usage: sheriff.py [config_file [script_name]]"
+
+    args = sys.argv[:]
     try:
-        cfg_fname = sys.argv[1]
-    except IndexError:
-        cfg = None
-    else:
+        opts, args = getopt.getopt(sys.argv[1:], 'h', ['help'])
+    except getopt.GetoptError:
+        usage()
+    for o, a in opts:
+        usage()
+
+    cfg = None
+    script_name = None
+
+    if len(args) > 0:
+        cfg_fname = args[0]
         cfg = sheriff_config.config_from_filename (cfg_fname)
+    if len(args) > 1:
+        script_name = args[1]
 
     lc = lcm.LCM ()
     sheriff = Sheriff (lc)
     if cfg is not None:
         sheriff.load_config (cfg)
+
+    if script_name is not None:
+        script = sheriff.get_script(script_name)
+        if not script:
+            print "ERROR! Uknown script %s" % script_name
+            sys.exit(1)
+
+        errors = sheriff.execute_script(script)
+        if errors:
+            print "ERROR!  Unable to execute script:\n%s" % "\n  ".join(errors)
+            sys.exit(1)
 
     sheriff.connect ("deputy-info-received",
             lambda s, dep: sys.stdout.write("deputy info received from %s\n" %

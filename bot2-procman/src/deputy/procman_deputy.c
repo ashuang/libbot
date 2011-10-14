@@ -489,7 +489,15 @@ transmit_proc_info (procman_deputy_t *s)
         msg.cmds[i].name = cmd->cmd->str;
         msg.cmds[i].nickname = mi->nickname;
         msg.cmds[i].actual_runid = mi->actual_runid;
-        msg.cmds[i].pid = cmd->pid;
+        if(cmd->pid > 0) {
+            int ms_since_started =
+              (timestamp_now() - mi->last_start_time) / 1000;
+            if(ms_since_started > 100) {
+                msg.cmds[i].pid = cmd->pid;
+            } else {
+                msg.cmds[i].pid = 0;
+            }
+        }
         msg.cmds[i].exit_code = cmd->exit_status;
         msg.cmds[i].sheriff_id = mi->sheriff_id;
         msg.cmds[i].group = mi->group;

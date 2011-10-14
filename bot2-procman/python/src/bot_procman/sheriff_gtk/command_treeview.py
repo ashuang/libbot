@@ -3,7 +3,7 @@ import pango
 
 import bot_procman.sheriff as sheriff
 import bot_procman.sheriff_gtk.command_model as cm
-import bot_procman.sheriff_gtk.add_modify_command_dialog as amcd
+import bot_procman.sheriff_gtk.sheriff_dialogs as sd
 
 class SheriffCommandTreeView(gtk.TreeView):
     def __init__(self, _sheriff, cmds_ts, gui_config):
@@ -80,7 +80,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         self.new_cmd_ctxt_mi = gtk.MenuItem ("_New Command")
         self.cmd_ctxt_menu.append (self.new_cmd_ctxt_mi)
         self.new_cmd_ctxt_mi.connect ("activate", 
-                lambda *s: amcd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.get_toplevel()))
+                lambda *s: sd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.get_toplevel()))
 
         self.cmd_ctxt_menu.show_all ()
 
@@ -188,8 +188,11 @@ class SheriffCommandTreeView(gtk.TreeView):
 
             # enable/disable menu options based on sheriff state and user
             # selection
-            can_add_load = not self.sheriff.is_observer ()
-            can_modify = pathinfo is not None and not self.sheriff.is_observer()
+            can_add_load = not self.sheriff.is_observer () and\
+                    not self.sheriff.get_active_script()
+            can_modify = pathinfo is not None and \
+                    not self.sheriff.is_observer() and \
+                    not self.sheriff.get_active_script()
 
             self.start_cmd_ctxt_mi.set_sensitive (can_modify)
             self.stop_cmd_ctxt_mi.set_sensitive (can_modify)
@@ -226,7 +229,7 @@ class SheriffCommandTreeView(gtk.TreeView):
             return
 
         old_deputy = self.sheriff.get_command_deputy (cmd)
-        dlg = amcd.AddModifyCommandDialog (self.get_toplevel(), 
+        dlg = sd.AddModifyCommandDialog (self.get_toplevel(), 
                 self.sheriff.get_deputies (),
                 self.cmds_ts.get_known_group_names (),
                 cmd.name, cmd.nickname, old_deputy, 
