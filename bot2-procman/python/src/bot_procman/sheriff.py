@@ -66,12 +66,12 @@ class SheriffDeputyCommand (gobject.GObject):
         self.desired_runid = cmd_order.desired_runid
         self.force_quit = cmd_order.force_quit
 
-    def _set_group (self, group): 
+    def _set_group (self, group):
         self.group = group
 
     def _start (self):
         # if the command is already running, then ignore
-        if self.pid > 0: 
+        if self.pid > 0:
 #            warn ("command already running")
             return
 
@@ -183,7 +183,7 @@ class SheriffDeputy (gobject.GObject):
 
             cmd._update_from_cmd_info (cmd_info)
             new_status = cmd.status ()
-            
+
             if old_status != new_status:
                 status_changes.append ((cmd, old_status, new_status))
 
@@ -284,17 +284,17 @@ class SheriffDeputy (gobject.GObject):
 class Sheriff (gobject.GObject):
 
     __gsignals__ = {
-            'deputy-info-received' : (gobject.SIGNAL_RUN_LAST, 
+            'deputy-info-received' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
             'command-added' : (gobject.SIGNAL_RUN_LAST,
-                gobject.TYPE_NONE, 
+                gobject.TYPE_NONE,
                 (gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT)),
             'command-removed' : (gobject.SIGNAL_RUN_LAST,
-                gobject.TYPE_NONE, 
+                gobject.TYPE_NONE,
                 (gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT)),
             'command-status-changed' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE,
-                (gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT, 
+                (gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT,
                     gobject.TYPE_PYOBJECT)),
             'command-group-changed' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,))
@@ -336,7 +336,7 @@ class Sheriff (gobject.GObject):
 
     def _on_pmd_info (self, channel, data):
         try: dep_info = info_t.decode (data)
-        except ValueError: 
+        except ValueError:
             print ("invalid info message")
             return
 
@@ -373,15 +373,15 @@ class Sheriff (gobject.GObject):
                 if self._next_sheriff_id in deputy.commands:
                     collision = True
                     break
-            
-            if not collision: 
+
+            if not collision:
                 result = self._next_sheriff_id
 
             self._next_sheriff_id += 1
             if self._next_sheriff_id > (1 << 30):
                 self._next_sheriff_id = 1
 
-            if not collision: 
+            if not collision:
                 return result
         raise RuntimeError ("no available sheriff id")
 
@@ -414,7 +414,7 @@ class Sheriff (gobject.GObject):
         cmd._start ()
         new_status = cmd.status ()
         deputy = self.get_command_deputy (cmd)
-        self._maybe_emit_status_change_signals (deputy, 
+        self._maybe_emit_status_change_signals (deputy,
                 ((cmd, old_status, new_status),))
         self.send_orders ()
 
@@ -425,10 +425,10 @@ class Sheriff (gobject.GObject):
         cmd._restart ()
         new_status = cmd.status ()
         deputy = self.get_command_deputy (cmd)
-        self._maybe_emit_status_change_signals (deputy, 
+        self._maybe_emit_status_change_signals (deputy,
                 ((cmd, old_status, new_status),))
         self.send_orders ()
-    
+
     def stop_command (self, cmd):
         if self._is_observer:
             raise ValueError ("Can't modify commands in Observer mode")
@@ -436,7 +436,7 @@ class Sheriff (gobject.GObject):
         cmd._stop ()
         new_status = cmd.status ()
         deputy = self.get_command_deputy (cmd)
-        self._maybe_emit_status_change_signals (deputy, 
+        self._maybe_emit_status_change_signals (deputy,
                 ((cmd, old_status, new_status),))
         self.send_orders ()
 
@@ -481,7 +481,7 @@ class Sheriff (gobject.GObject):
 
     def purge_useless_deputies(self):
         for deputy_name, deputy in self.deputies.items():
-            cmds = deputy.commands.values() 
+            cmds = deputy.commands.values()
             if not deputy.commands or \
                     all([ cmd.scheduled_for_removal for cmd in cmds ]):
                 del self.deputies[deputy_name]
@@ -491,7 +491,7 @@ class Sheriff (gobject.GObject):
             if command_id in deputy.commands:
                 return deputy.commands[command_id]
         raise KeyError ("No such command")
-    
+
     def get_command_deputy (self, command):
         for deputy in self.deputies.values ():
             if command.sheriff_id in deputy.commands:
@@ -518,7 +518,7 @@ class Sheriff (gobject.GObject):
         for group in config_node.groups.values ():
             for cmd in group.commands:
                 auto_respawn = cmd.attributes.get("auto_respawn", "").lower() in [ "true", "yes" ]
-                newcmd = self.add_command(cmd.attributes["host"], 
+                newcmd = self.add_command(cmd.attributes["host"],
                         cmd.attributes["exec"],
                         cmd.attributes["nickname"],
                         cmd.attributes["group"],
@@ -559,8 +559,8 @@ if __name__ == "__main__":
     if cfg is not None:
         sheriff.load_config (cfg)
 
-    sheriff.connect ("deputy-info-received", 
-            lambda s, dep: sys.stdout.write("deputy info received from %s\n" % 
+    sheriff.connect ("deputy-info-received",
+            lambda s, dep: sys.stdout.write("deputy info received from %s\n" %
                 dep.name))
     mainloop = gobject.MainLoop ()
     gobject.io_add_watch (lc, gobject.IO_IN, lambda *s: lc.handle () or True)

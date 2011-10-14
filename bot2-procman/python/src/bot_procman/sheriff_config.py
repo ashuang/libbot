@@ -40,11 +40,11 @@ class Tokenizer:
         if c == '\n':
             self.line_num += 1
         return c
-    
+
     def _ungetc (self, c):
         if not c: return
         self.unget_char = c
-    
+
     def _unescape (self, c):
         d = { "n": "\n",
               "r": "\r",
@@ -55,7 +55,7 @@ class Tokenizer:
     def next_token (self):
         c = self._next_char ()
 
-        while c and c.isspace (): 
+        while c and c.isspace ():
             c = self._next_char ()
         if not c: return Token (TokEOF, "")
 
@@ -67,13 +67,13 @@ class Tokenizer:
                 }
         if c in simple_tokens:
             return Token (simple_tokens[c], c)
-        
+
         tok_chars = [ c ]
 
         if c == "#":
             while True:
                 c = self._next_char ()
-                if not c or c == "\n": 
+                if not c or c == "\n":
                     return Token (TokComment, "".join (tok_chars))
                 tok_chars.append (c)
 
@@ -89,7 +89,7 @@ class Tokenizer:
                     se.text = self.line_buf
                     raise se
                 if c == "\\":   c = self._unescape (self._next_char ())
-                elif not c or c == "\"": 
+                elif not c or c == "\"":
                     return Token (TokString, "".join (tok_chars))
                 tok_chars.append (c)
 
@@ -180,7 +180,7 @@ class ConfigNode:
     def __str__ (self):
         val = ""
         none_group = self.groups[""]
-        for cmd in none_group.commands: 
+        for cmd in none_group.commands:
             val = val + "\n" + cmd._get_str (0)
 
         return val + "\n" + \
@@ -215,10 +215,10 @@ class Parser:
     def _get_token (self):
         self._cur_tok = self._next_tok
         self._next_tok = self.tokenizer.next_token ()
-        while self._next_tok.type == TokComment: 
+        while self._next_tok.type == TokComment:
             self._next_tok = self.tokenizer.next_token ()
         return self._cur_tok
-    
+
     def _eat_token (self, tok_type):
         if self._next_tok and self._next_tok.type == tok_type:
             self._get_token ()
@@ -229,13 +229,13 @@ class Parser:
         raise ParseError (self.tokenizer, self._cur_tok, msg)
 
     def _parse_command_param_list (self, cmd):
-        if not self._eat_token (TokIdentifier): 
+        if not self._eat_token (TokIdentifier):
             return
         attrib_name = self._cur_tok.val
         if attrib_name not in [ "exec", "host", "nickname", "auto_respawn", "group" ]:
             self._fail("Unrecognized attribute %s" % attrib_name)
 
-        if not self._eat_token (TokAssign): 
+        if not self._eat_token (TokAssign):
             self._fail ("Expected '='")
         if not self._eat_token (TokString):
             self._fail ("Expected string literal")
