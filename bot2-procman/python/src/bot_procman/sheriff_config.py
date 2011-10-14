@@ -137,13 +137,17 @@ class CommandNode(object):
     def _get_str (self, indent = 0):
         s = "    " * indent
         lines = []
-        lines.append (s + "cmd {")
+        nickname = self.attributes["nickname"]
+        if len(nickname):
+            lines.append (s + "cmd \"%s\" {" % escape_str(nickname))
+        else:
+            lines.append (s + "cmd {")
         pairs = self.attributes.items()
         pairs.sort()
         for key, val in pairs:
             if not val:
                 continue
-            if key == "group":
+            if key in [ "group", "nickname" ]:
                 continue
             lines.append (s + "    %s = \"%s\";" % (key, escape_str(val)))
         lines.append (s + "}")
@@ -336,12 +340,17 @@ class Parser:
         self._eat_token_or_fail(TokAssign, "Expected '='")
         attrib_val = self._parse_string_or_fail()
         self._eat_token_or_fail(TokEndStatement, "Expected ';'")
+        if attrib_name == "nickname" and len(cmd.attributes["nickname"]):
+            self._fail("Command already has a nickname %s" % \
+                cmd.attributes["nickname"])
         cmd.attributes[attrib_name] = attrib_val
 
         return self._parse_command_param_list (cmd)
 
     def _parse_command (self):
         cmd = CommandNode ()
+        if self._eat_token(TokString):
+            cmd.attributes["nickname"] = self._cur_tok.val
         self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         self._parse_command_param_list (cmd)
         self._eat_token_or_fail (TokCloseStruct, "Expected '}'")

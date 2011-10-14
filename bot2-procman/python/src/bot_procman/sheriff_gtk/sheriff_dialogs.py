@@ -52,7 +52,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         self.name_te.grab_focus ()
 
         # command nickname
-        table.attach (gtk.Label ("Nickname"), 0, 1, 2, 3, 0, 0)
+        table.attach (gtk.Label ("Name"), 0, 1, 2, 3, 0, 0)
         self.nickname_te = gtk.Entry ()
         self.nickname_te.set_text (initial_nickname)
         self.nickname_te.set_width_chars (60)
