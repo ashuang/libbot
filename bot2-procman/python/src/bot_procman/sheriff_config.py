@@ -13,6 +13,27 @@ class Token(object):
         self.type = type
         self.val = val
 
+class ParseError (ValueError):
+    def __init__ (self, lineno, line_pos, line_text, tokenval, msg):
+        self.lineno = lineno
+        self.offset = line_pos
+        self.text = line_text
+        self.token = tokenval
+        self.msg = msg
+
+    def __str__ (self):
+        ntabs = self.text.count ("\t")
+        tokenstr = ""
+        if self.token is not None:
+            tokenstr = "token %s" % self.token
+        s = """%s
+
+line %d col %s %s
+%s
+""" % (self.msg, self.lineno, self.offset, tokenstr, self.text)
+        s += " " * (self.offset - ntabs - 1) + "\t" * ntabs + "^"
+        return s
+
 class Tokenizer(object):
     def __init__ (self, f):
         self.f = f
@@ -21,6 +42,8 @@ class Tokenizer(object):
         self.line_len = 0
         self.line_buf = ""
         self.line_num = 1
+        self.tok_pos = 0
+        self.prev_tok_pos = 0
 
     def _next_char (self):
         if self.unget_char is not None:
@@ -60,6 +83,9 @@ class Tokenizer(object):
             c = self._next_char ()
         if not c: return Token (TokEOF, "")
 
+        self.prev_tok_pos = self.tok_pos
+        self.tok_pos = self.line_pos
+
         simple_tokens = { \
                 "=" : TokAssign,
                 ";" : TokEndStatement,
@@ -83,12 +109,8 @@ class Tokenizer(object):
             while True:
                 c = self._next_char ()
                 if c == "\n":
-                    se = SyntaxError ("Unterminated string constant")
-                    se.filename = ""
-                    se.lineno = self.line_num
-                    se.offset = self.line_pos
-                    se.text = self.line_buf
-                    raise se
+                    raise ParseError (self.line_num, self.tok_pos,
+                        self.line_buf, None, "Unterminated string constant")
                 if c == "\\":   c = self._unescape (self._next_char ())
                 elif not c or c == "\"":
                     return Token (TokString, "".join (tok_chars))
@@ -110,12 +132,8 @@ class Tokenizer(object):
                     return Token(TokInteger, "".join(tok_chars))
                 tok_chars.append(c)
 
-        se = SyntaxError ()
-        se.filename = ""
-        se.lineno = self.line_num
-        se.offset = self.line_pos
-        se.text = self.line_buf
-        raise se
+        raise ParseError (self.line_num, self.line_pos,
+                self.line_buf, None, "Invalid character")
 
 def escape_str(text):
     def escape_char(c):
@@ -181,6 +199,7 @@ class StartStopRestartActionNode(object):
         self.action_type = action_type
         self.ident_type = ident_type
         self.wait_status = wait_status
+        assert wait_status in [None, "running", "stopped"]
         if self.ident_type == "everything":
             self.ident = None
         else:
@@ -211,6 +230,7 @@ class WaitStatusActionNode(object):
         self.ident = ident
         self.wait_status = wait_status
         self.action_type = "wait_status"
+        assert wait_status in ["running", "stopped"]
 
     def __str__(self):
         return "wait %s \"%s\" status \"%s\";" % \
@@ -265,25 +285,6 @@ class ConfigNode(object):
         val += "\n".join ([str (script) for script in scripts])
         return val
 
-class ParseError (ValueError):
-    def __init__ (self, tokenizer, token, msg):
-        self.lineno = tokenizer.line_num
-        self.offset = tokenizer.line_pos
-        self.text = tokenizer.line_buf
-        self.token = token
-        self.msg = msg
-
-    def __str__ (self):
-        ntabs = self.text.count ("\t")
-        s = """%s
-
-line %d col %s token %s
-%s
-""" % (self.msg, self.lineno, self.offset, self.token.val, self.text)
-        s += " " * (self.offset-1 - \
-                len (self.token.val) - ntabs) + "\t" * ntabs + "^"
-        return s
-
 class Parser:
     def __init__ (self):
         self.tokenizer = None
@@ -304,11 +305,20 @@ class Parser:
         return False
 
     def _fail (self, msg):
-        raise ParseError (self.tokenizer, self._cur_tok, msg)
+        raise ParseError (self.tokenizer.line_num,
+            self.tokenizer.prev_tok_pos,
+            self.tokenizer.line_buf,
+            self._cur_tok.val, msg)
+
+    def _fail_next_token (self, msg):
+        raise ParseError (self.tokenizer.line_num,
+            self.tokenizer.tok_pos,
+            self.tokenizer.line_buf,
+            self._next_tok.val, msg)
 
     def _eat_token_or_fail(self, tok_type, err_msg):
         if not self._eat_token(tok_type):
-            self._fail(err_msg)
+            self._fail_next_token(err_msg)
         return self._cur_tok.val
 
     def _expect_identifier(self, identifier, err_msg = None):
@@ -323,6 +333,14 @@ class Parser:
         self._eat_token_or_fail(TokIdentifier, err_msg)
         result = self._cur_tok.val
         if result not in valid_identifiers:
+            self._fail(err_msg)
+        return result
+
+    def _parse_string_one_of(self, valid_strings):
+        err_msg = "Expected one of %s" % str(valid_strings)
+        self._eat_token_or_fail(TokString, err_msg)
+        result = self._cur_tok.val
+        if result not in valid_strings:
             self._fail(err_msg)
         return result
 
@@ -384,7 +402,7 @@ class Parser:
             return StartStopRestartActionNode(action_type, ident_type, ident,
                     None)
         self._expect_identifier("wait", "Expected ';' or 'wait'")
-        wait_status = self._parse_string_or_fail()
+        wait_status = self._parse_string_one_of(["running", "stopped"])
         self._eat_token_or_fail(TokEndStatement, "Expected ';'")
         return StartStopRestartActionNode(action_type, ident_type, ident,
                 wait_status)
@@ -399,38 +417,40 @@ class Parser:
         else:
             ident = self._parse_string_or_fail()
             self._expect_identifier("status")
-            wait_status = self._parse_string_or_fail()
+            wait_status = self._parse_string_one_of(["running", "stopped"])
             self._eat_token_or_fail(TokEndStatement, "Expected ';'")
             return WaitStatusActionNode(wait_type, ident, wait_status)
 
     def _parse_script_action_list(self):
+        self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         actions = []
         while self._eat_token(TokIdentifier):
             action_type = self._cur_tok.val
             if action_type in [ "start", "stop", "restart" ]:
-                actions.append(self._parse_start_stop_restart_action(action_type))
+                action = self._parse_start_stop_restart_action(action_type)
+                actions.append(action)
             elif action_type == "wait":
                 actions.append(self._parse_wait_action())
             else:
                 self._fail("Unexpected token %s" % action_type)
+        self._eat_token_or_fail(TokCloseStruct, "Unexpected token")
         return actions
 
     def _parse_script(self):
         self._eat_token_or_fail(TokString, "expected script name")
         name = self._cur_tok.val
         node = ScriptNode(name)
-        self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         for action in self._parse_script_action_list():
             node.add_action(action)
-        self._eat_token_or_fail(TokCloseStruct, "Expected '}'")
         return node
 
     def _parse_listdecl (self, node):
         if self._eat_token (TokEOF):
             return node
 
-        if not self._eat_token (TokIdentifier) or \
-                self._cur_tok.val not in [ "cmd", "group", "script" ]:
+        if not self._eat_token (TokIdentifier):
+            self._fail_next_token("Expected 'cmd', 'group', or 'script'")
+        if self._cur_tok.val not in [ "cmd", "group", "script" ]:
             self._fail ("Expected 'cmd', 'group', or 'script'")
 
         if self._cur_tok.val == "cmd":

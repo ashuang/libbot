@@ -171,7 +171,7 @@ class AddModifyScriptDialog (gtk.Dialog):
     wait ms ###;
 
     Examples:
-        start "server" wait "running";
+        start cmd "server" wait "running";
         wait ms 500;
         stop cmd "some command" wait "stopped";
         restart group "other commands";
@@ -189,7 +189,8 @@ class AddModifyScriptDialog (gtk.Dialog):
 def _do_err_dialog(window, msg):
     msgdlg = gtk.MessageDialog (window,
             gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
-            gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, msg)
+            gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
+    msgdlg.set_markup("<span font_family=\"monospace\">%s</span>" % msg)
     msgdlg.run ()
     msgdlg.destroy ()
 
