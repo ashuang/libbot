@@ -33,6 +33,10 @@ class SheriffCommandTreeView(gtk.TreeView):
                 col.set_cell_data_func(renderer, cell_data_func)
             self.columns.append(col)
 
+        # set an initial width for the name column
+        self.columns[0].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        self.columns[0].set_fixed_width(150)
+
         for col in self.columns:
             col.set_resizable (True)
             self.append_column (col)

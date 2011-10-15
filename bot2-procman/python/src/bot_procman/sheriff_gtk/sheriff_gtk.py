@@ -208,8 +208,13 @@ class SheriffGtk(object):
         self.sheriff.connect("script-added", self._on_script_added)
         self.sheriff.connect("script-removed", self._on_script_removed)
 
+        # update very soon
+        gobject.timeout_add(100, lambda *s: self.hosts_ts.update() and False)
+        gobject.timeout_add(100, lambda *s: self._update_commands_model() and False)
+
+        # and then periodically
         gobject.timeout_add (1000, self._maybe_send_orders)
-        gobject.timeout_add (1000, 
+        gobject.timeout_add (1000,
                 lambda *s: self._update_commands_model () or True)
 
         self.lc.subscribe ("PMD_ORDERS", self.on_procman_orders)
@@ -645,7 +650,7 @@ class SheriffGtk(object):
 
 def usage():
     sys.stdout.write(
-"""usage: %s [options] <procman_config_file>
+"""usage: %s [options] [<procman_config_file> [<script_name>]]
 
 Process Management operating console.
 
@@ -658,6 +663,9 @@ Options:
 
 If <procman_config_file> is specified, then the sheriff tries to load
 deputy commands from the file.
+
+If <script_name> is additionally specified, then the sheriff executes the
+named script once the config file is loaded.
 
 """ % os.path.basename(sys.argv[0]))
     sys.exit(1)
@@ -679,8 +687,16 @@ def run ():
             usage()
 
     cfg = None
+    script_name = None
     if len(args) > 0:
-        cfg = sheriff_config.config_from_filename(args[0])
+        try:
+            cfg = sheriff_config.config_from_filename(args[0])
+        except Exception, xcp:
+            print "Unable to load config file."
+            print xcp
+            sys.exit(1)
+    if len(args) > 1:
+        script_name = args[1]
 
     lc = LCM ()
     def handle (*a):
@@ -694,8 +710,21 @@ def run ():
     if spawn_deputy:
         gui.on_spawn_deputy_activate()
     if cfg is not None:
-        gobject.timeout_add (1300, lambda: gui.load_config (cfg))
+        gui.load_config(cfg)
         gui.load_save_dir = os.path.dirname(args[0])
+        script = gui.sheriff.get_script(script_name)
+        if not script:
+            print "No such script: %s" % script_name
+            gui._terminate_spawned_deputy()
+            sys.exit(1)
+        errors = gui.sheriff.check_script_for_errors(script)
+        if errors:
+            print "Unable to run script.  Errors were detected:\n\n"
+            print "\n    ".join(errors)
+            gui._terminate_spawned_deputy()
+            sys.exit(1)
+        if script_name:
+            gobject.timeout_add(200, lambda *s: gui.run_script(None, script))
     try:
         gtk.main ()
     except KeyboardInterrupt:
