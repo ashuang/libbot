@@ -236,6 +236,14 @@ class WaitStatusActionNode(object):
         return "wait %s \"%s\" status \"%s\";" % \
                 (self.ident_type, escape_str(self.ident), self.wait_status)
 
+class RunScriptActionNode(object):
+    def __init__(self, script_name):
+        self.script_name = script_name
+        self.action_type = "run_script"
+
+    def __str__(self):
+        return "run_script \"%s\";" % escape_str(self.script_name)
+
 class ScriptNode(object):
     def __init__(self, name):
         self.name = name
@@ -421,6 +429,11 @@ class Parser:
             self._eat_token_or_fail(TokEndStatement, "Expected ';'")
             return WaitStatusActionNode(wait_type, ident, wait_status)
 
+    def _parse_run_script(self):
+        script_name = self._eat_token_or_fail(TokString, "expected script name")
+        self._eat_token_or_fail(TokEndStatement, "Expected ';'")
+        return RunScriptActionNode(script_name)
+
     def _parse_script_action_list(self):
         self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         actions = []
@@ -431,14 +444,15 @@ class Parser:
                 actions.append(action)
             elif action_type == "wait":
                 actions.append(self._parse_wait_action())
+            elif action_type == "run_script":
+                actions.append(self._parse_run_script())
             else:
                 self._fail("Unexpected token %s" % action_type)
         self._eat_token_or_fail(TokCloseStruct, "Unexpected token")
         return actions
 
     def _parse_script(self):
-        self._eat_token_or_fail(TokString, "expected script name")
-        name = self._cur_tok.val
+        name = self._eat_token_or_fail(TokString, "expected script name")
         node = ScriptNode(name)
         for action in self._parse_script_action_list():
             node.add_action(action)

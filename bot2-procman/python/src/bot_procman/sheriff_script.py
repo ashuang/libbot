@@ -1,4 +1,4 @@
-from bot_procman.sheriff_config import ScriptNode, WaitStatusActionNode, WaitMsActionNode, StartStopRestartActionNode, escape_str
+from bot_procman.sheriff_config import ScriptNode, WaitStatusActionNode, WaitMsActionNode, StartStopRestartActionNode, RunScriptActionNode, escape_str
 
 class StartStopRestartAction(object):
     def __init__(self, action_type, ident_type, ident, wait_status):
@@ -53,6 +53,17 @@ class WaitStatusAction(object):
         return "wait %s \"%s\" status \"%s\";" % \
                 (self.ident_type, escape_str(self.ident), self.wait_status)
 
+class RunScriptAction(object):
+    def __init__(self, script_name):
+        self.script_name = script_name
+        self.action_type = "run_script"
+
+    def toScriptNode(self):
+        return RunScriptActionNode(self.script_name)
+
+    def __str__(self):
+        return "run_script \"%s\";" % escape_str(self.script_name)
+
 class SheriffScript(object):
     def __init__(self, name):
         self.name = name
@@ -89,6 +100,8 @@ class SheriffScript(object):
                 action = WaitStatusAction(action_node.ident_type,
                         action_node.ident,
                         action_node.wait_status)
+            elif action_node.action_type == "run_script":
+                action = RunScriptAction(action_node.script_name)
             else:
                 raise ValueError("unrecognized action %s" % \
                         action_node.action_type)

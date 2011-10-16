@@ -169,6 +169,7 @@ class AddModifyScriptDialog (gtk.Dialog):
     start|stop|restart everything;
     start|stop|restart cmd|group "nickname" [wait "running"|"stopped"];
     wait ms ###;
+    run_script "other-script-name";
 
     Examples:
         start cmd "server" wait "running";
@@ -240,8 +241,8 @@ def do_add_script_dialog(sheriff, window):
     dlg.destroy ()
 
 def do_edit_script_dialog(sheriff, window, script):
-    if sheriff.get_active_script() is script:
-        _do_err_dialog("Editing the active script is not allowed.  Abort it first.")
+    if sheriff.get_active_script():
+        _do_err_dialog("Script editing is not allowed while a script is running.")
         return
 
     dlg = AddModifyScriptDialog (window, script)

@@ -70,7 +70,7 @@ class SheriffDeputyCommand(gobject.GObject):
 
     def _start (self):
         # if the command is already running, then ignore
-        if self.pid > 0:
+        if self.pid > 0 and not self.force_quit:
             return
 
         self.desired_runid += 1
@@ -275,6 +275,37 @@ class SheriffDeputy (gobject.GObject):
             orders.varvals.append(val)
         return orders
 
+class ScriptExecutionContext(object):
+    def __init__(self, sheriff, script):
+        assert(script is not None)
+        self.script = script
+        self.current_action = -1
+        self.subscript_context = None
+        self.sheriff = sheriff
+
+    def get_next_action(self):
+        if self.subscript_context:
+            # if we're recursing into a called script, return its next action
+            action = self.subscript_context.get_next_action()
+            if action:
+                return action
+            else:
+                # unless it's done, in which case fall through to our next
+                # action
+                self.subscript_context = None
+        self.current_action += 1
+        if self.current_action >= len(self.script.actions):
+            # no more actions
+            return None
+        action = self.script.actions[self.current_action]
+
+        if action.action_type == "run_script":
+            subscript = self.sheriff.get_script(action.script_name)
+            self.subscript_context = ScriptExecutionContext(self.sheriff, subscript)
+            return self.get_next_action()
+        else:
+            return action
+
 class Sheriff (gobject.GObject):
 
     __gsignals__ = {
@@ -299,8 +330,6 @@ class Sheriff (gobject.GObject):
             'script-started' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
             'script-finished' : (gobject.SIGNAL_RUN_LAST,
-                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
-            'script-action-event' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,))
             }
 
@@ -317,8 +346,7 @@ class Sheriff (gobject.GObject):
 
         # variables for scripts
         self.scripts = []
-        self.active_script = None
-        self.current_script_action = -1
+        self.active_script_context = None
         self.waiting_on_commands = []
         self.waiting_for_status = None
 
@@ -530,7 +558,9 @@ class Sheriff (gobject.GObject):
         return result
 
     def get_active_script(self):
-        return self.active_script
+        if self.active_script_context:
+            return self.active_script_context.script
+        return None
 
     def get_script(self, name):
         for script in self.scripts:
@@ -548,8 +578,9 @@ class Sheriff (gobject.GObject):
         self.emit("script-added", script)
 
     def remove_script(self, script):
-        if script is self.active_script:
-            self.abort_script()
+        if self.active_script_context is not None:
+            raise RuntimeError("Script removal is not allowed while a script is running.")
+
         if script in self.scripts:
             self.emit("script-removed", script)
             self.scripts.remove(script)
@@ -566,8 +597,15 @@ class Sheriff (gobject.GObject):
         else:
             raise ValueError("Invalid ident_type %s" % ident_type)
 
-    def check_script_for_errors(self, script):
+    def check_script_for_errors(self, script, path_to_root=None):
+        if path_to_root is None:
+            path_to_root = []
         err_msgs = []
+        check_subscripts = True
+        if path_to_root and script in path_to_root:
+            err_msgs.append("Infinite loop: script %s eventually calls itself" % script.name)
+            check_subscripts = False
+
         for action in script.actions:
             if action.action_type in \
                     [ "start", "stop", "restart", "wait_status" ]:
@@ -580,14 +618,29 @@ class Sheriff (gobject.GObject):
             elif action.action_type == "wait_ms":
                 if action.delay_ms < 0:
                     err_msgs.append("Wait times must be nonnegative")
+            elif action.action_type == "run_script":
+                # action is to run another script.
+                subscript = self.get_script(action.script_name)
+                if subscript is None:
+                    # couldn't find that script.  error out
+                    err_msgs.append("Unknown script \"%s\"" % \
+                            action.script_name)
+                elif check_subscripts:
+                    # Recursively check the caleld script for errors.
+                    path = path_to_root + [script]
+                    sub_messages = self.check_script_for_errors(subscript,
+                            path)
+                    parstr = "->".join([s.name for s in (path + [subscript])])
+                    for msg in sub_messages:
+                        err_msgs.append("%s - %s" % (parstr, msg))
+
             else:
                 err_msgs.append("Unrecognized action %s" % action.action_type)
         return err_msgs
 
     def _finish_script_execution(self):
-        script = self.active_script
-        self.active_script = None
-        self.current_script_action = -1
+        script = self.active_script_context.script
+        self.active_script_context = None
         self.waiting_on_commands = []
         self.waiting_for_status = None
         if script:
@@ -609,25 +662,24 @@ class Sheriff (gobject.GObject):
             if cmd.status() not in acceptable_statuses:
                 return
 
-        self.emit("script-action-event", self.active_script)
         # all commands passed the status check.  schedule the next action
         gobject.timeout_add(0, self._execute_next_script_action)
 
     def _execute_next_script_action(self):
         # make sure there's an active script
-        if not self.active_script:
+        if not self.active_script_context:
             return False
 
-        self.waiting_on_commands = []
-        self.waiting_for_status = None
+        action = self.active_script_context.get_next_action()
 
-        self.current_script_action += 1
-        if self.current_script_action >= len(self.active_script.actions):
-            # no more actions
+        if action is None:
+            # no more actions, script is done.
             self._finish_script_execution()
             return False
 
-        action = self.active_script.actions[self.current_script_action]
+#        print "next action: %s" % str(action)
+
+        assert action.action_type != "run_script"
 
         # fixed time wait -- just set a GObject timer to call this function
         # again
@@ -660,19 +712,17 @@ class Sheriff (gobject.GObject):
             # no.  Just move on
             gobject.timeout_add(0, self._execute_next_script_action)
 
-        self.emit("script-action-event", self.active_script)
         return False
 
     def execute_script(self, script):
-        if self.active_script:
+        if self.active_script_context:
             self.abort_script()
 
         errors = self.check_script_for_errors(script)
         if errors:
             return errors
 
-        self.current_script_action = -1
-        self.active_script = script
+        self.active_script_context = ScriptExecutionContext(self, script)
         self.emit("script-started", script)
         self._execute_next_script_action()
 

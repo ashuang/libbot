@@ -189,7 +189,7 @@ class SheriffGtkConfig(object):
 class SheriffGtk(object):
     def __init__ (self, lc):
         self.lc = lc
-        self.next_cmds_update_time = 0
+        self.cmds_update_scheduled = False
         self.config_filename = None
         self.gui_config = SheriffGtkConfig()
         self.gui_config.load()
@@ -199,10 +199,10 @@ class SheriffGtk(object):
 
         # create sheriff and subscribe to events
         self.sheriff = sheriff.Sheriff (self.lc)
-        self.sheriff.connect ("command-added", self._update_commands_model)
-        self.sheriff.connect ("command-removed", self._update_commands_model)
-        self.sheriff.connect ("command-status-changed", self._update_commands_model)
-        self.sheriff.connect ("command-group-changed", self._update_commands_model)
+        self.sheriff.connect ("command-added", self._schedule_cmds_update)
+        self.sheriff.connect ("command-removed", self._schedule_cmds_update)
+        self.sheriff.connect ("command-status-changed", self._schedule_cmds_update)
+        self.sheriff.connect ("command-group-changed", self._schedule_cmds_update)
         self.sheriff.connect("script-started", self._on_script_started)
         self.sheriff.connect("script-finished", self._on_script_finished)
         self.sheriff.connect("script-added", self._on_script_added)
@@ -210,12 +210,12 @@ class SheriffGtk(object):
 
         # update very soon
         gobject.timeout_add(100, lambda *s: self.hosts_ts.update() and False)
-        gobject.timeout_add(100, lambda *s: self._update_commands_model() and False)
+        gobject.timeout_add(100, lambda *s: self._schedule_cmds_update() and False)
 
         # and then periodically
         gobject.timeout_add (1000, self._maybe_send_orders)
         gobject.timeout_add (1000,
-                lambda *s: self._update_commands_model () or True)
+                lambda *s: self._schedule_cmds_update () or True)
 
         self.lc.subscribe ("PMD_ORDERS", self.on_procman_orders)
 
@@ -439,12 +439,14 @@ class SheriffGtk(object):
         self._terminate_spawned_deputy()
         self.gui_config.save()
 
-    def _update_commands_model (self, *unused):
-        now = time.time()
-        if now < self.next_cmds_update_time:
-            return
+    def _do_repopulate(self):
         self.cmds_ts.repopulate()
-        self.next_cmds_update_time = time.time() + 0.3
+        self.cmds_update_scheduled = False
+
+    def _schedule_cmds_update(self, *unused):
+        if not self.cmds_update_scheduled:
+            gobject.timeout_add(100, self._do_repopulate)
+        return True
 
     def _terminate_spawned_deputy(self):
         if self.spawned_deputy:
@@ -712,18 +714,19 @@ def run ():
     if cfg is not None:
         gui.load_config(cfg)
         gui.load_save_dir = os.path.dirname(args[0])
-        script = gui.sheriff.get_script(script_name)
-        if not script:
-            print "No such script: %s" % script_name
-            gui._terminate_spawned_deputy()
-            sys.exit(1)
-        errors = gui.sheriff.check_script_for_errors(script)
-        if errors:
-            print "Unable to run script.  Errors were detected:\n\n"
-            print "\n    ".join(errors)
-            gui._terminate_spawned_deputy()
-            sys.exit(1)
+
         if script_name:
+            script = gui.sheriff.get_script(script_name)
+            if not script:
+                print "No such script: %s" % script_name
+                gui._terminate_spawned_deputy()
+                sys.exit(1)
+            errors = gui.sheriff.check_script_for_errors(script)
+            if errors:
+                print "Unable to run script.  Errors were detected:\n\n"
+                print "\n    ".join(errors)
+                gui._terminate_spawned_deputy()
+                sys.exit(1)
             gobject.timeout_add(200, lambda *s: gui.run_script(None, script))
     try:
         gtk.main ()
