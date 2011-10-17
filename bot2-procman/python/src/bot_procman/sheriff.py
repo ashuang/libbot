@@ -663,6 +663,8 @@ class Sheriff (gobject.GObject):
                 return
 
         # all commands passed the status check.  schedule the next action
+        self.waiting_on_commands = []
+        self.waiting_for_status = None
         gobject.timeout_add(0, self._execute_next_script_action)
 
     def _execute_next_script_action(self):
