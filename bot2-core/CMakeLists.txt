@@ -8,3 +8,4 @@ include(cmake/lcmtypes.cmake)
 lcmtypes_build(C_AGGREGATE_HEADER bot_core.h)
 
 add_subdirectory(src/bot_core)
+add_subdirectory(java)

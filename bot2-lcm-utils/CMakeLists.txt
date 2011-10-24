@@ -6,7 +6,6 @@ add_subdirectory(src/logfilter)
 add_subdirectory(src/logsplice)
 add_subdirectory(src/who)
 add_subdirectory(src/tunnel)
-add_subdirectory(java)
 add_subdirectory(python)
 
 

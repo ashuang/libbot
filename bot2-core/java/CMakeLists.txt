@@ -8,9 +8,9 @@ execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE
 string(STRIP ${LCM_JAR} LCM_JAR)
 
 # where is lcmtypes_bot2-core.jar?
-set(bot2_core_jar ${CMAKE_INSTALL_PREFIX}/share/java/lcmtypes_bot2-core.jar)
+#set(bot2_core_jar ${CMAKE_INSTALL_PREFIX}/share/java/lcmtypes_bot2-core.jar)
 
-set(classpath ${src_dir}:${LCM_JAR}:${bot2_core_jar})
+set(classpath ${src_dir}:${LCM_JAR}:${LCMTYPES_JAR})
 
 
 # =============
@@ -36,7 +36,7 @@ endif()
 # add a rule to build the .class files from from the .java files
 add_custom_command(OUTPUT ${class_files} COMMAND 
     ${JAVA_COMPILE} -source 6 -cp ${classpath} -d ${class_dir} ${java_files} 
-    DEPENDS ${java_files})
+    DEPENDS ${java_files} ${LCMTYPES_JAR})
 
 # add a rule to build a .jar file from the .class files
 add_custom_command(OUTPUT ${jar_fname} COMMAND
