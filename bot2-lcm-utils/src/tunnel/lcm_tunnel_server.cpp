@@ -134,4 +134,5 @@ int LcmTunnelServer::disconnectClient(LcmTunnel * client){
       fprintf(stderr,"All clients disconnected, exiting\n");
     destroyServer();
   }
+  return 0;
 }

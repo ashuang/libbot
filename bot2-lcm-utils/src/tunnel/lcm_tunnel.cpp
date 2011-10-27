@@ -99,6 +99,24 @@ LcmTunnel::~LcmTunnel()
     lcm_unsubscribe(lcm, subscription);
   }
 
+  //cleanup the sending thread state
+  g_mutex_lock(sendQueueLock);
+  stopSendThread = true;
+  g_cond_broadcast(sendQueueCond);
+  g_mutex_unlock(sendQueueLock);
+  g_thread_join(sendThread); //wait for thread to exit
+
+  g_mutex_lock(sendQueueLock);
+  while (!sendQueue.empty()) {
+    delete sendQueue.front();
+    sendQueue.pop_front();
+  }
+  g_mutex_unlock(sendQueueLock);
+
+  g_mutex_free(sendQueueLock);
+  g_cond_free(sendQueueCond);
+
+
   if (udp_fd >= 0) {
     //send out a disconnect message
     lcm_tunnel_disconnect_msg_t disc_msg;
@@ -128,28 +146,11 @@ LcmTunnel::~LcmTunnel()
   if (ldpc_dec != NULL)
     delete ldpc_dec;
 
-  //cleanup the sending thread state
-  g_mutex_lock(sendQueueLock);
-  stopSendThread = true;
-  g_cond_broadcast(sendQueueCond);
-  g_mutex_unlock(sendQueueLock);
-  g_thread_join(sendThread); //wait for thread to exit
-
-  g_mutex_lock(sendQueueLock);
-  while (!sendQueue.empty()) {
-    delete sendQueue.front();
-    sendQueue.pop_front();
-  }
-  g_mutex_unlock(sendQueueLock);
-
-  g_mutex_free(sendQueueLock);
-  g_cond_free(sendQueueCond);
-
 }
 
 void LcmTunnel::closeTCPSocket()
 {
-  fprintf(stderr, "closing TCP socket\n");
+  //  fprintf(stderr, "closing TCP socket\n");
   if (tcp_sock != NULL)
     ssocket_destroy(tcp_sock);
   tcp_sock = NULL;
@@ -681,10 +682,12 @@ gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
     //release lock for sending
 
     //process whats in the queue
-    self->send_lcm_messages(tmpQueue, bytesInTmpQueue);
+    bool success = self->send_lcm_messages(tmpQueue, bytesInTmpQueue);
 
     //reaquire lock to go around the loop
     g_mutex_lock(self->sendQueueLock);
+    if (!success)
+      break;
   }
   g_mutex_unlock(self->sendQueueLock);
 
@@ -694,14 +697,12 @@ gpointer LcmTunnel::sendThreadFunc(gpointer user_data)
 void LcmTunnel::send_to_remote(const void *data, uint32_t len, const char *lcm_channel)
 {
   lcm_recv_buf_t rbuf;
-  rbuf.data = (void*) malloc(len); //TODO: this extra copy probably isn't necessary
+  rbuf.data = (void *) data;
   rbuf.data_size = len;
   rbuf.recv_utime = _timestamp_now(); //use current timestamp, should be close to when received...
   rbuf.lcm = this->lcm;
-  memcpy(rbuf.data, data, len);
   send_to_remote(&rbuf, lcm_channel);
-  free(rbuf.data);
-}
+ }
 
 void LcmTunnel::send_to_remote(const lcm_recv_buf_t *rbuf, const char *lcm_channel)
 {
@@ -762,11 +763,11 @@ void LcmTunnel::checkUDPSendStatus(int send_status)
   }
 }
 
-void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint32_t bytesInQueue)
+bool LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint32_t bytesInQueue)
 {
   if (udp_fd >= 0) {
     if (server_udp_port <= 0)
-      return; //connection hasn't been setup yet.
+      return true; //connection hasn't been setup yet.
 
     udp_send_seqno++;//increment the sequence counter
     udp_send_seqno = udp_send_seqno % SEQNO_WRAP_VAL;
@@ -883,27 +884,23 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
         int chan_len = strlen(msg->sub_msg->channel);
         uint32_t chan_len_n = htonl(chan_len);
         if (4 != _fileutils_write_fully(cfd, &chan_len_n, 4)) {
-          LcmTunnelServer::disconnectClient(this);
           delete msg;
-          return;
+          return false;
         }
         if (chan_len != _fileutils_write_fully(cfd, msg->sub_msg->channel, chan_len)) {
-          LcmTunnelServer::disconnectClient(this);
           delete msg;
-          return;
+          return false;
         }
 
         // send data
         int data_size_n = htonl(msg->sub_msg->data_size);
         if (4 != _fileutils_write_fully(cfd, &data_size_n, 4)) {
-          LcmTunnelServer::disconnectClient(this);
           delete msg;
-          return;
+          return false;
         }
         if (msg->sub_msg->data_size != _fileutils_write_fully(cfd, msg->sub_msg->data, msg->sub_msg->data_size)) {
-          LcmTunnelServer::disconnectClient(this);
           delete msg;
-          return;
+          return false;
         }
       }
       if (verbose)
@@ -912,7 +909,7 @@ void LcmTunnel::send_lcm_messages(std::deque<TunnelLcmMessage *> &msgQueue, uint
     }
   }
 
-  return;
+  return true;
 }
 
 static gboolean on_introspect_timer(void* user_data)
