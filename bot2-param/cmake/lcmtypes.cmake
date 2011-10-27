@@ -206,34 +206,21 @@ function(lcmtypes_build_c)
     unset(__agg_h_fname)
 
     # make header files and libraries public
-    #install(TARGETS "${libname}-static" ARCHIVE DESTINATION lib)
-    install(TARGETS ${libname} ARCHIVE DESTINATION lib)
-    #install(TARGETS "${libname}" LIBRARY DESTINATION lib)
-    install(FILES ${_lcmtypes_h_files} DESTINATION include/lcmtypes)
+    pods_install_libraries(${libname})
+    pods_install_headers(${_lcmtypes_h_files} DESTINATION lcmtypes)
 
     # set some compilation variables
     set(LCMTYPES_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lcmtypes/c PARENT_SCOPE)
     set(LCMTYPES_LIBS ${libname} PARENT_SCOPE)
 
     # create a pkg-config file
-    set(pc_fname "${CMAKE_BINARY_DIR}/lib/pkgconfig/${libname}.pc")
-    file(WRITE ${pc_fname}
-        "prefix=${CMAKE_INSTALL_PREFIX}\n"
-        "exec_prefix=\${prefix}\n"
-        "libdir=\${exec_prefix}/lib\n"
-        "includedir=\${prefix}/include\n"
-        "\n"
-        "Name: ${libname}\n"
-        "Description: LCM types for ${PROJECT_NAME}\n"
-        "Version: 0.0.0\n"
-        "Requires: lcm\n"
-        "Libs: -L\${exec_prefix}/lib -l${libname}\n"
-        "Cflags: -I\${includedir}\n"
-        )
-
-    # mark the pkg-config file for installation to the lib/pkgconfig directory
-    install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
-
+  	pods_install_pkg_config_file(${libname}
+    	CFLAGS
+    	DESCRIPTION "LCM types for ${PROJECT_NAME}"
+        LIBS -l${libname}
+    	REQUIRES lcm
+    	VERSION 0.0.0)
+  
     lcmtypes_add_clean_dir("${PROJECT_SOURCE_DIR}/lcmtypes/c")
 endfunction()
 
