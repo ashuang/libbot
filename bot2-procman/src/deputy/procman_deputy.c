@@ -493,15 +493,7 @@ transmit_proc_info (procman_deputy_t *s)
         msg.cmds[i].name = cmd->cmd->str;
         msg.cmds[i].nickname = mi->nickname;
         msg.cmds[i].actual_runid = mi->actual_runid;
-        if(cmd->pid > 0) {
-            int ms_since_started =
-              (timestamp_now() - mi->last_start_time) / 1000;
-            if(ms_since_started > 100) {
-                msg.cmds[i].pid = cmd->pid;
-            } else {
-                msg.cmds[i].pid = 0;
-            }
-        }
+        msg.cmds[i].pid = cmd->pid;
         msg.cmds[i].exit_code = cmd->exit_status;
         msg.cmds[i].sheriff_id = mi->sheriff_id;
         msg.cmds[i].group = mi->group;
@@ -831,7 +823,6 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
             ! mi->should_be_stopped) {
             start_cmd (s, p, cmd->desired_runid);
             action_taken = 1;
-            mi->actual_runid = cmd->desired_runid;
         } else if (PROCMAN_CMD_RUNNING == cmd_status && 
                 (mi->should_be_stopped || (cmd->desired_runid != mi->actual_runid))) {
             stop_cmd(s, p);

@@ -57,6 +57,14 @@ class SheriffDeputyCommand(gobject.GObject):
         self.mem_vsize_bytes = cmd_info.mem_vsize_bytes
         self.mem_rss_bytes = cmd_info.mem_rss_bytes
 
+        # if the command has run to completion and we don't need it to respawn,
+        # then prevent it from respawning if the deputy restarts
+        if self.pid == 0 and \
+            self.actual_runid == self.desired_runid and \
+            not self.auto_respawn and \
+            not self.force_quit:
+              self.force_quit = 1
+
     def _update_from_cmd_order (self, cmd_order):
         assert self.sheriff_id == cmd_order.sheriff_id
         self.name = cmd_order.name
@@ -349,6 +357,7 @@ class Sheriff (gobject.GObject):
         self.active_script_context = None
         self.waiting_on_commands = []
         self.waiting_for_status = None
+        self.last_script_action_time = None
 
     def _get_or_make_deputy (self, deputy_name):
         if deputy_name not in self.deputies:
@@ -650,6 +659,11 @@ class Sheriff (gobject.GObject):
         if not self.waiting_on_commands:
             return
 
+        # hack.. don't execute actions faster than 10 Hz
+        time_elapsed_ms = (timestamp_now() - self.last_script_action_time) * 1000
+        if time_elapsed_ms < 100:
+            return
+
         if self.waiting_for_status == "running":
             acceptable_statuses = RUNNING
         elif self.waiting_for_status == "stopped":
@@ -692,6 +706,8 @@ class Sheriff (gobject.GObject):
 
         # find the commands that we're operating on
         cmds = self._get_action_commands(action.ident_type, action.ident)
+
+        self.last_script_action_time = timestamp_now()
 
         # execute an immediate action if applicable
         if action.action_type == "start":
