@@ -239,7 +239,7 @@ static void
 maybe_schedule_respawn(procman_deputy_t *pmd, procman_cmd_t *cmd)
 {
     pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
-    if(mi->auto_respawn && !mi->should_be_stopped) {
+    if(mi->auto_respawn && !mi->should_be_stopped && !pmd->exiting) {
         mi->respawn_timeout_id = 
             g_timeout_add(mi->respawn_backoff, (GSourceFunc)on_scheduled_respawn, cmd);
     }
@@ -248,6 +248,10 @@ maybe_schedule_respawn(procman_deputy_t *pmd, procman_cmd_t *cmd)
 static int 
 start_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd, int desired_runid) 
 {
+    if(pmd->exiting) {
+        return -1;
+    }
+
     int status;
     pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
     mi->should_be_stopped = 0;
@@ -586,7 +590,7 @@ static gboolean
 on_scheduled_respawn(procman_cmd_t *cmd)
 {
     pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
-    if(mi->auto_respawn && !mi->should_be_stopped) {
+    if(mi->auto_respawn && !mi->should_be_stopped && !mi->deputy->exiting) {
         start_cmd(mi->deputy, cmd, mi->actual_runid);
     }
     return FALSE;
@@ -697,6 +701,11 @@ procman_deputy_order_received (const lcm_recv_buf_t *rbuf, const char *channel,
     procman_deputy_t *s = user_data;
     const GList *iter = NULL;
     s->norders_slm ++;
+
+    // ignore orders if we're exiting
+    if (s->exiting) {
+        return;
+    }
 
     // ignore orders for other deputies
     if (strcmp (orders->host, s->hostname)) {
