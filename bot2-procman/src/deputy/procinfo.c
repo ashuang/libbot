@@ -8,7 +8,11 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <inttypes.h>
+#include <assert.h>
+
+#include <glib.h>
 
 #include "procinfo.h"
 
@@ -143,6 +147,118 @@ procinfo_read_sys_cpu_mem_linux(sys_cpu_mem_t *s)
 
     fclose (fp);
 
+    return 0;
+}
+
+typedef struct _pid_info_t pid_info_t;
+struct _pid_info_t
+{
+    int pid;
+    int ppid;
+    int pgrp;
+    int session;
+    char state;
+    GPtrArray* children;
+};
+
+static void pid_info_destroy(pid_info_t* pinfo)
+{
+    g_ptr_array_free(pinfo->children, TRUE);
+    memset(pinfo, 0, sizeof(pid_info_t));
+    g_slice_free1(sizeof(pid_info_t), pinfo);
+}
+static pid_info_t* pid_info_new(int pid)
+{
+    pid_info_t* result = g_slice_new0(pid_info_t);
+    result->pid = pid;
+    result->children = g_ptr_array_new();
+    char* fname = g_strdup_printf("/proc/%d/stat", pid);
+    char* stat_contents = NULL;
+    FILE* fp = fopen(fname, "r");
+    if(!fp) {
+        g_free(fname);
+        pid_info_destroy(result);
+        return NULL;
+    }
+    int read_pid;
+    char exec_name[PATH_MAX + 1];
+    int numwords = fscanf(fp, "%d %s %c %d %d %d", &read_pid, exec_name,
+            &result->state, &result->ppid, &result->pgrp, &result->session);
+    fclose(fp);
+    g_free(fname);
+    if(6 != numwords) {
+        pid_info_destroy(result);
+        return NULL;
+    }
+    return result;
+}
+static void pid_info_get_descendants(pid_info_t* pinfo, GArray* result)
+{
+    for(int i=0; i<pinfo->children->len; i++) {
+        pid_info_t* child = (pid_info_t*)g_ptr_array_index(pinfo->children, i);
+        assert(child->ppid == pinfo->pid);
+        g_array_append_val(result, child->pid);
+        pid_info_get_descendants(child, result);
+    }
+}
+
+int
+procinfo_is_orphaned_child_of(int orphan, int parent)
+{
+    pid_info_t* pinfo = pid_info_new(orphan);
+    if(!pinfo)
+        return 0;
+    int result = (pinfo->ppid == 1 && pinfo->pgrp == parent && pinfo->session == parent);
+    pid_info_destroy(pinfo);
+    return result;
+}
+
+static GHashTable*
+get_all_pids_and_ppids()
+{
+    GHashTable* result = g_hash_table_new_full(g_int_hash, g_int_equal, NULL,
+            (GDestroyNotify)pid_info_destroy);
+    GDir* dir = g_dir_open("/proc", 0, NULL);
+    if(!dir)
+        return result;
+    for(const char* entry = g_dir_read_name(dir);
+            entry;
+            entry = g_dir_read_name(dir)) {
+        int pid = atoi(entry);
+        if(!pid)
+            continue;
+        pid_info_t* pinfo = pid_info_new(pid);
+        if(!pinfo)
+            continue;
+        pid_info_t* parent = g_hash_table_lookup(result, &pinfo->ppid);
+        if(parent) {
+            g_ptr_array_add(parent->children, pinfo);
+        }
+        g_hash_table_replace(result, &pinfo->pid, pinfo);
+    }
+    g_dir_close(dir);
+    return result;
+}
+
+GArray*
+procinfo_get_descendants (int pid)
+{
+    GArray* result = g_array_new(FALSE, FALSE, sizeof(int));
+    GHashTable* pid_graph = get_all_pids_and_ppids();
+    pid_info_t* root = g_hash_table_lookup(pid_graph, &pid);
+    if(root)
+        pid_info_get_descendants(root, result);
+    return result;
+}
+#else
+GArray*
+procinfo_get_descendants (int pid)
+{
+    return g_array_new(FALSE, FALSE, sizeof(int));
+}
+int
+procinfo_is_orphaned_child_of(int orphan, int parent)
+{
     return 0;
 }
 #endif

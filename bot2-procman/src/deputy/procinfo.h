@@ -42,6 +42,13 @@ int procinfo_read_proc_cpu_mem (int pid, proc_cpu_mem_t *s);
 
 int procinfo_read_sys_cpu_mem (sys_cpu_mem_t *s);
 
+/**
+ * returns a GArray of ints.
+ */
+GArray* procinfo_get_descendants (int pid);
+
+int procinfo_is_orphaned_child_of(int orphan, int parent);
+
 #ifdef __cplusplus
 }
 #endif

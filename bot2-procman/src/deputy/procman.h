@@ -44,6 +44,8 @@ typedef struct _procman_cmd {
     int argc;    //number of arguments, shouldn't be needed
     char **argv; // don't touch this
 
+    GArray* descendants_to_kill; // Used internally when killing a process.
+
     void *user;  // use this for application-specific data
 } procman_cmd_t;
 

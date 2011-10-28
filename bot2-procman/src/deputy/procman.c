@@ -28,6 +28,7 @@
 #include <libgen.h>
 
 #include "procman.h"
+#include "procinfo.h"
 
 #define dbg (args...) fprintf(stderr, args)
 //#undef dbg
@@ -220,9 +221,30 @@ procman_kill_cmd (procman_t *pm, procman_cmd_t *p, int signum)
         dbgt ("%s has no PID.  not stopping (already dead)\n", p->cmd->str);
         return -EINVAL;
     }
+    // get a list of the process's descendants
+    GArray* descendants = procinfo_get_descendants(p->pid);
+
     dbgt ("sending signal %d to %s\n", signum, p->cmd->str);
     if (0 != kill (p->pid, signum)) {
+        g_array_free(descendants, TRUE);
         return -errno;
+    }
+
+    // send the same signal to all of the process's descendants
+    for(int i=0; i<descendants->len; i++) {
+        int child_pid = g_array_index(descendants, int, i);
+        printf("Sending %d to descendant %d (%p)\n", signum, child_pid, p);
+        kill(child_pid, signum);
+
+        int new_descendant = 1;
+        for(int j=0; j<p->descendants_to_kill->len; j++) {
+            if(g_array_index(p->descendants_to_kill, int, j) == child_pid) {
+                new_descendant = 0;
+                break;
+            }
+        }
+        if(new_descendant)
+            g_array_append_val(p->descendants_to_kill, child_pid);
     }
     return 0;
 }
@@ -260,31 +282,41 @@ procman_check_for_dead_children (procman_t *pm, procman_cmd_t **dead_child)
     // check for dead children
     *dead_child = NULL;
     int pid = waitpid (-1, &status, WNOHANG);
+    if(pid <= 0)
+        return 0;
 
-    if (pid > 0) {
-        GList *iter;
-        for (iter = pm->commands; iter != NULL; iter = iter->next) {
-            procman_cmd_t *p = (procman_cmd_t*)iter->data;
-            if (p->pid != 0 && pid == p->pid) {
-                dbgt ("reaped [%s]\n", p->cmd->str);
-                *dead_child = p;
-                p->pid = 0;
-                p->exit_status = status;
+    GList *iter;
+    for (iter = pm->commands; iter != NULL; iter = iter->next) {
+        procman_cmd_t *p = (procman_cmd_t*)iter->data;
+        if(p->pid == 0 || pid != p->pid)
+            continue;
+        dbgt ("reaped [%s]\n", p->cmd->str);
+        *dead_child = p;
+        p->pid = 0;
+        p->exit_status = status;
 
-                if (WIFSIGNALED (status)) {
-                    int signum = WTERMSIG (status);
-                    dbgt ("[%s] terminated by signal %d (%s)\n",
-                            p->cmd->str, signum, strsignal (signum));
-                } else if (status != 0) {
-                    dbgt ("[%s] exited with nonzero status %d!\n",
-                            p->cmd->str, WEXITSTATUS (status));
-                }
-                return status;
+        if (WIFSIGNALED (status)) {
+            int signum = WTERMSIG (status);
+            dbgt ("[%s] terminated by signal %d (%s)\n",
+                    p->cmd->str, signum, strsignal (signum));
+        } else if (status != 0) {
+            dbgt ("[%s] exited with nonzero status %d!\n",
+                    p->cmd->str, WEXITSTATUS (status));
+        }
+
+        // check for and kill orphaned children.
+        for(int orphan_index=0; orphan_index<p->descendants_to_kill->len; orphan_index++) {
+            int child_pid = g_array_index(p->descendants_to_kill, int, orphan_index);
+            if(procinfo_is_orphaned_child_of(child_pid, pid)) {
+                dbgt("sending SIGKILL to orphan process %d\n", child_pid);
+                kill(child_pid, SIGKILL);
             }
         }
 
-        dbgt ("reaped [%d] but couldn't find process\n", pid);
+        return status;
     }
+
+    dbgt ("reaped [%d] but couldn't find process\n", pid);
     return 0;
 }
 
@@ -520,6 +552,7 @@ procman_cmd_create (const char *cmd, int32_t cmd_id)
     pcmd->argc = 0;
     pcmd->envp = NULL;
     pcmd->envc = 0;
+    pcmd->descendants_to_kill = g_array_new(FALSE, FALSE, sizeof(int));
 
     return pcmd;
 }
@@ -529,6 +562,7 @@ procman_cmd_destroy (procman_cmd_t *cmd)
 {
     g_string_free (cmd->cmd, TRUE);
     g_strfreev (cmd->argv);
+    g_array_free(cmd->descendants_to_kill, TRUE);
     for(int i=0;i<cmd->envc;i++)
        g_strfreev (cmd->envp[i]);
     free(cmd->envp);
