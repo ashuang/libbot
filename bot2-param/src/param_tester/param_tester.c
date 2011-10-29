@@ -12,6 +12,11 @@
 #include <bot_param/param_client.h>
 #include <lcmtypes/bot2_param.h>
 
+void param_update_handler(BotParam * old_param,BotParam * new_param, int64_t utime, void *user){
+  fprintf(stderr, "some parameters were updated %p!\n",user);
+}
+
+
 int main()
 {
   lcm_t * lcm = lcm_create(NULL);
@@ -22,14 +27,16 @@ int main()
     exit(1);
   }
 
+  bot_param_add_update_subscriber(param,param_update_handler,lcm);
+
   char * s;
   int ret = bot_param_write_to_string(param, &s);
   fprintf(stderr, "%s", s);
   free(s);
 
-  double foo = bot_param_get_double_or_fail(param, "foo");
-  double bar = bot_param_get_double_or_fail(param, "bar");
-  printf("foo=%f, bar = %f\n", foo, bar);
+//  double foo = bot_param_get_double_or_fail(param, "foo");
+//  double bar = bot_param_get_double_or_fail(param, "bar");
+//  printf("foo=%f, bar = %f\n", foo, bar);
 
   bot_param_write(param, stderr);
 

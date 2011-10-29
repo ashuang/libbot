@@ -37,6 +37,32 @@ typedef struct _BotParam BotParam;
 BotParam *
 bot_param_new_from_server (lcm_t * lcm, int keep_updated);
 
+
+/**
+ * bot_param_update_handler_t
+ *
+ * Handler function template for a BotParam callback
+ *
+ * old_param: The previous BotParam structure
+ * new_param: The new BotParam structure with updated parameters from the server
+ * user: user data that was passed to the function
+ */
+typedef void(bot_param_update_handler_t)(BotParam * old_param,BotParam * new_param, int64_t utime, void *user);
+
+/**
+ * bot_param_add_update_subscriber
+ *
+ * add a callback handler to get called when a parameter is updated
+ * the template of the callback handler is described above
+ *
+ * param: the BotParam structure that should have updates
+ * callback_func: function to call when new params are recieved
+ * user: user data to be passed to the function
+ */
+void bot_param_add_update_subscriber(BotParam *param,
+    bot_param_update_handler_t * callback_func, void * user);
+
+
 /**
  * bot_param_new_from_file:
  * @param filename The name of the file.

@@ -99,7 +99,15 @@ struct _BotParam {
   GMutex * lock;
   int64_t server_id;
   int64_t sequence_number;
+
+  GList * update_callbacks;
+
 };
+
+typedef struct {
+  bot_param_update_handler_t * callback_func;
+  void * user;
+} update_handler_t;
 
 /* Prints an error message, preceeded by useful context information from the
  * parser (i.e. line number). */
@@ -670,14 +678,49 @@ static BotParam * _bot_param_new(void)
   param->server_id = 0;
   param->sequence_number = 0;
 
+  //create the callback lists
+  param->update_callbacks = NULL;
+
   return param;
+}
+
+static void _update_handler_t_destroy(void * data, void * user)
+{
+  g_slice_free(update_handler_t, data);
 }
 
 void bot_param_destroy(BotParam * param)
 {
   free_element(param->root);
   g_mutex_free(param->lock);
+
+  if (param->update_callbacks != NULL) {
+    g_list_foreach(param->update_callbacks, _update_handler_t_destroy, NULL);
+    g_list_free(param->update_callbacks);
+  }
+
   free(param);
+}
+
+void bot_param_add_update_subscriber(BotParam *param,
+    bot_param_update_handler_t * callback_func, void * user)
+{
+  update_handler_t * uh = g_slice_new0(update_handler_t);
+  uh->callback_func = callback_func;
+  uh->user = user;
+  g_mutex_lock(param->lock);
+  param->update_callbacks = g_list_append(param->update_callbacks, uh);
+  g_mutex_unlock(param->lock);
+
+}
+
+static void _dispatch_update_callbacks(BotParam * old_param, BotParam * new_param, int64_t utime)
+{
+  GList * p = old_param->update_callbacks;
+  for ( ; p != NULL; p = g_list_next(p)) {
+    update_handler_t * uh = (update_handler_t *) p->data;
+    uh->callback_func(old_param, new_param, utime, uh->user);
+  }
 }
 
 static void _on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, const bot_param_update_t * msg,
@@ -699,19 +742,24 @@ static void _on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, c
     return;
   }
 
-  BotParam * tmp = bot_param_new_from_string(msg->params, strlen(msg->params));
-  if (tmp == NULL) {
+  BotParam * new_params = bot_param_new_from_string(msg->params, strlen(msg->params));
+  if (new_params == NULL) {
     fprintf(stderr, "WARNING: Could not parse params from the server!\n");
     return;
   }
+
+  _dispatch_update_callbacks(param,new_params, rbuf->recv_utime);
+
   //swap the root;
   g_mutex_lock(param->lock);
   param->sequence_number = msg->sequence_number;
-  BotParamElement * root = tmp->root;
-  tmp->root = param->root;
+  BotParamElement * root = new_params->root;
+  new_params->root = param->root;
   param->root = root;
-  bot_param_destroy(tmp);
+  bot_param_destroy(new_params);
   g_mutex_unlock(param->lock);
+
+
 }
 
 BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
