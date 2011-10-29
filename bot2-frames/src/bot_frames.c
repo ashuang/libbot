@@ -69,7 +69,7 @@ static void _dispatch_update_callbacks(BotFrames * bot_frames,const char * frame
     int64_t utime)
 {
   GList * p = bot_frames->update_callbacks;
-  for (p; p != NULL; p = g_list_next(p)) {
+  for ( ; p != NULL; p = g_list_next(p)) {
     update_handler_t * uh = (update_handler_t *) p->data;
     uh->callback_func(bot_frames, frame_name, relative_to,utime, uh->user);
   }
@@ -313,7 +313,7 @@ void bot_frames_destroy(BotFrames * bot_frames)
   g_mutex_lock(bot_frames->mutex);
 
   bot_ctrans_destroy(bot_frames->ctrans);
-  if(bot_frames->update_subscription!=NULL);
+  if(bot_frames->update_subscription!=NULL)
     bot_frames_update_t_unsubscribe(bot_frames->lcm,bot_frames->update_subscription);
 
   GHashTableIter iter;

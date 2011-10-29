@@ -119,7 +119,6 @@ void bot_frames_update_frame(BotFrames * bot_frames, const char * frame_name,
  * bot_frames_link_update_handler_t
  *
  * LCM handler function template for a BotFrames callback
- * this function should be used to read values from a parameter
  *
  * bot_frames: BotFrames structure that will be updated
  * frame: name of the frame that is updated
