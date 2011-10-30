@@ -227,11 +227,7 @@ class SheriffCommandTreeView(gtk.TreeView):
             if pathinfo is None:
                 self.get_selection ().unselect_all ()
 
-    def _on_cmds_tv_row_activated (self, treeview, path, column):
-        cmd = self.cmds_ts.path_to_command(path)
-        if not cmd:
-            return
-
+    def _do_edit_command_dialog(self, cmd):
         old_deputy = self.sheriff.get_command_deputy (cmd)
         dlg = sd.AddModifyCommandDialog (self.get_toplevel(),
                 self.sheriff.get_deputies (),
@@ -260,6 +256,12 @@ class SheriffCommandTreeView(gtk.TreeView):
             if newgroup != cmd.group:
                 self.sheriff.set_command_group (cmd, newgroup)
         dlg.destroy ()
+
+    def _on_cmds_tv_row_activated (self, treeview, path, column):
+        cmd = self.cmds_ts.path_to_command(path)
+        if not cmd:
+            return
+        self._do_edit_command_dialog(self, cmd)
 
     def _status_cell_data_func (self, column, cell, model, model_iter):
         color_map = {

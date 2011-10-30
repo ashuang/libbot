@@ -337,6 +337,8 @@ class Sheriff (gobject.GObject):
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
             'script-started' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,)),
+            'script-action-executing' : (gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT,)),
             'script-finished' : (gobject.SIGNAL_RUN_LAST,
                 gobject.TYPE_NONE, (gobject.TYPE_PYOBJECT,))
             }
@@ -693,9 +695,10 @@ class Sheriff (gobject.GObject):
             self._finish_script_execution()
             return False
 
-#        print "next action: %s" % str(action)
-
         assert action.action_type != "run_script"
+
+        self.emit("script-action-executing", self.active_script_context.script,
+                action)
 
         # fixed time wait -- just set a GObject timer to call this function
         # again

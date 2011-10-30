@@ -18,14 +18,15 @@ class StartStopRestartAction(object):
                 self.ident_type, self.ident, self.wait_status)
 
     def __str__(self):
-        if self.wait_status is not None:
-            return "%s %s \"%s\" wait \"%s\";" % (self.action_type,
-                    self.ident_type, escape_str(self.ident), self.wait_status)
-        elif self.ident_type == "everything":
-            return "%s %s;" % (self.action_type, self.ident_type)
+        if self.ident_type == "everything":
+            ident_str = self.ident_type
         else:
-            return "%s %s \"%s\";" % \
-                    (self.action_type, self.ident_type, escape_str(self.ident))
+            ident_str = "%s \"%s\"" % (self.ident_type, escape_str(self.ident))
+        if self.wait_status is not None:
+            return "%s %s wait \"%s\";" % (self.action_type,
+                    ident_str, self.wait_status)
+        else:
+            return "%s %s;" % (self.action_type, ident_str)
 
 class WaitMsAction(object):
     def __init__(self, delay_ms):

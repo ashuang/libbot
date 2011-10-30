@@ -69,7 +69,9 @@ class SheriffCommandModel(gtk.TreeStore):
             if not children:
                 to_remove.append (gtk.TreeRowReference (model, path))
                 return
-            statuses = [ cmd.status () for cmd in children ]
+
+            # aggregate command status
+            statuses = [ child.status () for child in children ]
             stopped_statuses = [sheriff.STOPPED_OK, sheriff.STOPPED_ERROR]
             if all ([s == statuses[0] for s in statuses]):
                 status_str = statuses[0]
@@ -77,6 +79,16 @@ class SheriffCommandModel(gtk.TreeStore):
                 status_str = "Stopped (Mixed)"
             else:
                 status_str = "Mixed"
+
+            # aggregate host information
+            child_deps = set([ cmd_deps[child] for child in children \
+                    if child in cmd_deps ])
+            if len(child_deps) == 1:
+                dep_str = child_deps.pop().name
+            else:
+                dep_str = "Mixed"
+
+            # aggregate CPU and memory usage
             cpu_total = sum ([cmd.cpu_usage for cmd in children])
             mem_total = sum ([cmd.mem_vsize_bytes / 1024 \
                     for cmd in children])
@@ -84,6 +96,7 @@ class SheriffCommandModel(gtk.TreeStore):
 
             model.set (model_iter,
                     COL_CMDS_TV_STATUS_ACTUAL, status_str,
+                    COL_CMDS_TV_HOST, dep_str,
                     COL_CMDS_TV_CPU_USAGE, cpu_str,
                     COL_CMDS_TV_MEM_VSIZE, mem_total)
 

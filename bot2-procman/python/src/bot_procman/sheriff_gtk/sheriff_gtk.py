@@ -89,6 +89,7 @@ class SheriffGtk(object):
         self.sheriff.connect ("command-status-changed", self._schedule_cmds_update)
         self.sheriff.connect ("command-group-changed", self._schedule_cmds_update)
         self.sheriff.connect("script-started", self._on_script_started)
+        self.sheriff.connect("script-action-executing", self._on_script_action_executing)
         self.sheriff.connect("script-finished", self._on_script_finished)
         self.sheriff.connect("script-added", self._on_script_added)
         self.sheriff.connect("script-removed", self._on_script_removed)
@@ -317,6 +318,9 @@ class SheriffGtk(object):
         # status bar
         self.statusbar = gtk.Statusbar ()
         vbox.pack_start (self.statusbar, False, False, 0)
+        self.statusbar_context_script = self.statusbar.get_context_id("script")
+        self.statusbar_context_main = self.statusbar.get_context_id("main")
+        self.statusbar_context_script_msg = None
 
         vbox.show_all ()
         self.window.show ()
@@ -367,9 +371,27 @@ class SheriffGtk(object):
 
     def _on_script_started(self, sheriff, script):
         self._update_menu_item_sensitivities()
+        cid = self.statusbar_context_script
+        if self.statusbar_context_script_msg is not None:
+            self.statusbar.pop(cid)
+            self.statusbar_context_script_msg = self.statusbar.push(cid, \
+                    "Script %s: start" % script.name)
+
+    def _on_script_action_executing(self, sheriff, script, action):
+        cid = self.statusbar_context_script
+        self.statusbar.pop(cid)
+        msg = "Action: %s" % str(action)
+        self.statusbar_context_script_msg = self.statusbar.push(cid, msg)
 
     def _on_script_finished(self, sheriff, script):
         self._update_menu_item_sensitivities()
+        cid = self.statusbar_context_script
+        self.statusbar.pop(cid)
+        self.statusbar_context_script_msg = self.statusbar.push(cid, \
+                "Script %s: finished" % script.name)
+        def _remove_msg_func(msg_id):
+            return lambda *s: msg_id == self.statusbar_context_script_msg and self.statusbar.pop(cid)
+        gobject.timeout_add(6000, _remove_msg_func(self.statusbar_context_script_msg))
 
     def _on_abort_script_activate(self, menuitem):
         self.sheriff.abort_script()

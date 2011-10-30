@@ -207,14 +207,15 @@ class StartStopRestartActionNode(object):
             assert self.ident is not None
 
     def __str__(self):
-        if self.wait_status is not None:
-            return "%s %s \"%s\" wait \"%s\";" % (self.action_type,
-                    self.ident_type, escape_str(self.ident), self.wait_status)
-        elif self.ident_type == "everything":
-            return "%s %s;" % (self.action_type, self.ident_type)
+        if self.ident_type == "everything":
+            ident_str = self.ident_type
         else:
-            return "%s %s \"%s\";" % \
-                    (self.action_type, self.ident_type, escape_str(self.ident))
+            ident_str = "%s \"%s\"" % (self.ident_type, escape_str(self.ident))
+        if self.wait_status is not None:
+            return "%s %s wait \"%s\";" % (self.action_type,
+                    ident_str, self.wait_status)
+        else:
+            return "%s %s;" % (self.action_type, ident_str)
 
 class WaitMsActionNode(object):
     def __init__(self, delay_ms):
@@ -250,6 +251,9 @@ class ScriptNode(object):
         self.actions = []
 
     def add_action(self, action):
+        assert action is not None
+        assert hasattr(action, "action_type")
+        print "add action %s" % str(action)
         self.actions.append(action)
 
     def __str__(self):
