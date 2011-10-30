@@ -46,9 +46,9 @@ class SheriffCommandTreeView(gtk.TreeView):
 
         self.add_events (gtk.gdk.KEY_PRESS_MASK | \
                 gtk.gdk.BUTTON_PRESS | gtk.gdk._2BUTTON_PRESS)
-        self.connect ("key-press-event", 
+        self.connect ("key-press-event",
                 self._on_cmds_tv_key_press_event)
-        self.connect ("button-press-event", 
+        self.connect ("button-press-event",
                 self._on_cmds_tv_button_press_event)
         self.connect ("row-activated",
                 self._on_cmds_tv_row_activated)
@@ -58,7 +58,7 @@ class SheriffCommandTreeView(gtk.TreeView):
 
         self.start_cmd_ctxt_mi = gtk.MenuItem ("_Start")
         self.cmd_ctxt_menu.append (self.start_cmd_ctxt_mi)
-        self.start_cmd_ctxt_mi.connect ("activate", 
+        self.start_cmd_ctxt_mi.connect ("activate",
                 self._start_selected_commands)
 
         self.stop_cmd_ctxt_mi = gtk.MenuItem ("_Stop")
@@ -67,12 +67,12 @@ class SheriffCommandTreeView(gtk.TreeView):
 
         self.restart_cmd_ctxt_mi = gtk.MenuItem ("R_estart")
         self.cmd_ctxt_menu.append (self.restart_cmd_ctxt_mi)
-        self.restart_cmd_ctxt_mi.connect ("activate", 
+        self.restart_cmd_ctxt_mi.connect ("activate",
                 self._restart_selected_commands)
 
         self.remove_cmd_ctxt_mi = gtk.MenuItem ("_Remove")
         self.cmd_ctxt_menu.append (self.remove_cmd_ctxt_mi)
-        self.remove_cmd_ctxt_mi.connect ("activate", 
+        self.remove_cmd_ctxt_mi.connect ("activate",
                 self._remove_selected_commands)
 
         self.change_deputy_ctxt_mi = gtk.MenuItem ("_Change Host")
@@ -83,17 +83,17 @@ class SheriffCommandTreeView(gtk.TreeView):
 
         self.new_cmd_ctxt_mi = gtk.MenuItem ("_New Command")
         self.cmd_ctxt_menu.append (self.new_cmd_ctxt_mi)
-        self.new_cmd_ctxt_mi.connect ("activate", 
+        self.new_cmd_ctxt_mi.connect ("activate",
                 lambda *s: sd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.get_toplevel()))
 
         self.cmd_ctxt_menu.show_all ()
 
 #        # drag and drop command rows for grouping
-#        dnd_targets = [ ('PROCMAN_CMD_ROW', 
+#        dnd_targets = [ ('PROCMAN_CMD_ROW',
 #            gtk.TARGET_SAME_APP | gtk.TARGET_SAME_WIDGET, 0) ]
-#        self.enable_model_drag_source (gtk.gdk.BUTTON1_MASK, 
+#        self.enable_model_drag_source (gtk.gdk.BUTTON1_MASK,
 #                dnd_targets, gtk.gdk.ACTION_MOVE)
-#        self.enable_model_drag_dest (dnd_targets, 
+#        self.enable_model_drag_dest (dnd_targets,
 #                gtk.gdk.ACTION_MOVE)
 
     def get_columns(self):
@@ -226,17 +226,17 @@ class SheriffCommandTreeView(gtk.TreeView):
             pathinfo = treeview.get_path_at_pos (x, y)
             if pathinfo is None:
                 self.get_selection ().unselect_all ()
-                
+
     def _on_cmds_tv_row_activated (self, treeview, path, column):
         cmd = self.cmds_ts.path_to_command(path)
         if not cmd:
             return
 
         old_deputy = self.sheriff.get_command_deputy (cmd)
-        dlg = sd.AddModifyCommandDialog (self.get_toplevel(), 
+        dlg = sd.AddModifyCommandDialog (self.get_toplevel(),
                 self.sheriff.get_deputies (),
                 self.cmds_ts.get_known_group_names (),
-                cmd.name, cmd.nickname, old_deputy, 
+                cmd.name, cmd.nickname, old_deputy,
                 cmd.group, cmd.auto_respawn)
         if dlg.run () == gtk.RESPONSE_ACCEPT:
             newname = dlg.get_command ()
@@ -289,11 +289,11 @@ class SheriffCommandTreeView(gtk.TreeView):
                 cell.set_property ("cell-background-set", True)
 
                 statuses = [ cmd.status () for cmd in children ]
-                
+
                 if all ([s == statuses[0] for s in statuses]):
                     # if all the commands in a group have the same status, then
                     # color them by that status
-                    cell.set_property ("cell-background", 
+                    cell.set_property ("cell-background",
                             color_map[statuses[0]])
                 else:
                     # otherwise, color them yellow

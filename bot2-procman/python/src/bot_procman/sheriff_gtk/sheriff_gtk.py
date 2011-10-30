@@ -49,7 +49,7 @@ class SheriffGtkConfig(object):
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
         self.config_fname = os.path.join(config_dir, "config")
-    
+
     def save(self):
         d = {}
         for i, val in enumerate(self.show_columns):
@@ -131,10 +131,10 @@ class SheriffGtk(object):
         self.accel_group.connect_group (ord("o"), gtk.gdk.CONTROL_MASK,
                 gtk.ACCEL_VISIBLE, lambda *a: None)
         self.accel_group.connect_group (ord("a"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, 
+                gtk.ACCEL_VISIBLE,
                 lambda *a: self.cmds_tv.get_selection ().select_all ())
         self.accel_group.connect_group (ord("d"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, 
+                gtk.ACCEL_VISIBLE,
                 lambda *a: self.cmds_tv.get_selection ().unselect_all ())
 #        self.accel_group.connect_group (ord("a"), gtk.gdk.CONTROL_MASK,
 #                gtk.ACCEL_VISIBLE, self._do_save_config_dialog)
@@ -157,7 +157,7 @@ class SheriffGtk(object):
         file_mi.set_submenu (file_menu)
 
         self.load_cfg_mi = gtk.ImageMenuItem (gtk.STOCK_OPEN)
-        self.load_cfg_mi.add_accelerator ("activate", self.accel_group, 
+        self.load_cfg_mi.add_accelerator ("activate", self.accel_group,
                 ord("o"), gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
         self.save_cfg_mi = gtk.ImageMenuItem (gtk.STOCK_SAVE_AS)
         quit_mi = gtk.ImageMenuItem (gtk.STOCK_QUIT)
@@ -181,7 +181,7 @@ class SheriffGtk(object):
         commands_menu = gtk.Menu ()
         commands_mi.set_submenu (commands_menu)
         self.start_cmd_mi = gtk.MenuItem ("_Start")
-        self.start_cmd_mi.add_accelerator ("activate", 
+        self.start_cmd_mi.add_accelerator ("activate",
                 self.accel_group, ord("s"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
         self.start_cmd_mi.connect ("activate", self.cmds_tv._start_selected_commands)
@@ -189,7 +189,7 @@ class SheriffGtk(object):
         commands_menu.append (self.start_cmd_mi)
 
         self.stop_cmd_mi = gtk.MenuItem ("S_top")
-        self.stop_cmd_mi.add_accelerator ("activate", 
+        self.stop_cmd_mi.add_accelerator ("activate",
                 self.accel_group, ord("t"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
         self.stop_cmd_mi.connect ("activate", self.cmds_tv._stop_selected_commands)
@@ -200,13 +200,13 @@ class SheriffGtk(object):
         self.restart_cmd_mi.add_accelerator ("activate",
                 self.accel_group, ord ("e"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.restart_cmd_mi.connect ("activate", 
+        self.restart_cmd_mi.connect ("activate",
                 self.cmds_tv._restart_selected_commands)
         self.restart_cmd_mi.set_sensitive (False)
         commands_menu.append (self.restart_cmd_mi)
 
         self.remove_cmd_mi = gtk.MenuItem ("_Remove")
-        self.remove_cmd_mi.add_accelerator ("activate", self.accel_group, 
+        self.remove_cmd_mi.add_accelerator ("activate", self.accel_group,
                 gtk.gdk.keyval_from_name ("Delete"), 0, gtk.ACCEL_VISIBLE)
         self.remove_cmd_mi.connect ("activate", self.cmds_tv._remove_selected_commands)
         self.remove_cmd_mi.set_sensitive (False)
@@ -217,7 +217,7 @@ class SheriffGtk(object):
         self.new_cmd_mi = gtk.MenuItem ("_New command")
         self.new_cmd_mi.add_accelerator ("activate", self.accel_group, ord("n"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.new_cmd_mi.connect ("activate", 
+        self.new_cmd_mi.connect ("activate",
                 lambda *s: sd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.window))
         commands_menu.append (self.new_cmd_mi)
 
@@ -438,7 +438,7 @@ class SheriffGtk(object):
             except Exception:
                 msgdlg = gtk.MessageDialog (self.window,
                         gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
-                        gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, 
+                        gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE,
                         traceback.format_exc ())
                 msgdlg.run ()
                 msgdlg.destroy ()
@@ -533,7 +533,7 @@ class SheriffGtk(object):
 
             self.statusbar.push (self.statusbar.get_context_id ("main"),
                     "WARNING: multiple sheriffs detected!  Switching to observer mode");
-            gobject.timeout_add (6000, 
+            gobject.timeout_add (6000,
                     lambda *s: self.statusbar.pop (self.statusbar.get_context_id ("main")))
 
 def usage():

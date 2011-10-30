@@ -35,10 +35,10 @@ class SheriffHostModel(gtk.ListStore):
         def _update_host_row (model, path, model_iter, user_data):
             deputy = model.get_value (model_iter, SheriffHostModel.COL_OBJ)
             if deputy in to_update:
-                model.set (model_iter, 
-                        SheriffHostModel.COL_LAST_UPDATE, 
+                model.set (model_iter,
+                        SheriffHostModel.COL_LAST_UPDATE,
                         _deputy_last_update_str (deputy),
-                        SheriffHostModel.COL_LOAD, 
+                        SheriffHostModel.COL_LOAD,
                         "%f" % deputy.cpu_load,
                         )
                 to_update.remove (deputy)
@@ -89,7 +89,7 @@ class SheriffHostTreeView(gtk.TreeView):
 
         self.cleanup_hosts_ctxt_mi = gtk.MenuItem ("_Cleanup")
         self.hosts_ctxt_menu.append (self.cleanup_hosts_ctxt_mi)
-        self.cleanup_hosts_ctxt_mi.connect ("activate", 
+        self.cleanup_hosts_ctxt_mi.connect ("activate",
                 self._cleanup_hosts)
         self.hosts_ctxt_menu.show_all()
 

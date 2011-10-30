@@ -9,7 +9,7 @@ from bot_procman.sheriff_script import SheriffScript
 
 class AddModifyCommandDialog (gtk.Dialog):
     def __init__ (self, parent, deputies, groups,
-            initial_cmd="", initial_nickname="", initial_deputy=None, 
+            initial_cmd="", initial_nickname="", initial_deputy=None,
             initial_group="", initial_auto_respawn=False):
         # add command dialog
         gtk.Dialog.__init__ (self, "Add/Modify Command", parent,
@@ -20,7 +20,7 @@ class AddModifyCommandDialog (gtk.Dialog):
 
         # deputy
         table.attach (gtk.Label ("Host"), 0, 1, 0, 1, 0, 0)
-        self.deputy_ls = gtk.ListStore (gobject.TYPE_PYOBJECT, 
+        self.deputy_ls = gtk.ListStore (gobject.TYPE_PYOBJECT,
                 gobject.TYPE_STRING)
         self.host_cb = gtk.ComboBox (self.deputy_ls)
 
@@ -29,7 +29,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         pairs.sort ()
         for name, deputy in pairs:
             self.deputy_ls.append ((deputy, deputy.name))
-            if deputy == initial_deputy: 
+            if deputy == initial_deputy:
                 self.host_cb.set_active (dep_ind)
             dep_ind += 1
         if self.host_cb.get_active () < 0 and len(deputies) > 0:
@@ -47,7 +47,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         self.name_te.set_text (initial_cmd)
         self.name_te.set_width_chars (60)
         table.attach (self.name_te, 1, 2, 1, 2)
-        self.name_te.connect ("activate", 
+        self.name_te.connect ("activate",
                 lambda e: self.response (gtk.RESPONSE_ACCEPT))
         self.name_te.grab_focus ()
 
@@ -57,7 +57,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         self.nickname_te.set_text (initial_nickname)
         self.nickname_te.set_width_chars (60)
         table.attach (self.nickname_te, 1, 2, 2, 3)
-        self.nickname_te.connect ("activate", 
+        self.nickname_te.connect ("activate",
                 lambda e: self.response (gtk.RESPONSE_ACCEPT))
 
         # group
@@ -85,7 +85,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         host_iter = self.host_cb.get_active_iter ()
         if host_iter is None: return None
         return self.deputy_ls.get_value (host_iter, 0)
-    
+
     def get_command (self): return self.name_te.get_text ()
     def get_nickname (self): return self.nickname_te.get_text ()
     def get_group (self): return self.group_cbe.child.get_text ()
@@ -94,7 +94,7 @@ class AddModifyCommandDialog (gtk.Dialog):
 def do_add_command_dialog(sheriff, cmds_ts, window):
     deputies = sheriff.get_deputies ()
     if not deputies:
-        msgdlg = gtk.MessageDialog (window, 
+        msgdlg = gtk.MessageDialog (window,
                 gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
                 gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE,
                 "Can't add a command without an active deputy")
@@ -110,13 +110,13 @@ def do_add_command_dialog(sheriff, cmds_ts, window):
         group = dlg.get_group ().strip ()
         auto_respawn = dlg.get_auto_respawn ()
         if not cmd.strip ():
-            msgdlg = gtk.MessageDialog (window, 
+            msgdlg = gtk.MessageDialog (window,
                     gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
                     gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, "Invalid command")
             msgdlg.run ()
             msgdlg.destroy ()
         elif not deputy:
-            msgdlg = gtk.MessageDialog (window, 
+            msgdlg = gtk.MessageDialog (window,
                     gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT,
                     gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, "Invalid deputy")
             msgdlg.run ()

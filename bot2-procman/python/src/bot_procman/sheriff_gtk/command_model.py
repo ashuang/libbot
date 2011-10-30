@@ -37,10 +37,10 @@ class SheriffCommandModel(gtk.TreeStore):
         else:
             # add the group name to the command name column if visible
             # otherwise, add it to the nickname column
-            ts_iter = self.append (None, 
+            ts_iter = self.append (None,
                       ((None, group_name, "", "", "", "", 0, False)))
 
-            trr = gtk.TreeRowReference (self, 
+            trr = gtk.TreeRowReference (self,
                     self.get_path (ts_iter))
             self.group_row_references[group_name] = trr
             return trr
@@ -56,9 +56,9 @@ class SheriffCommandModel(gtk.TreeStore):
 
         obj_col = COL_CMDS_TV_OBJ
         cmd = model.get_value (model_iter, obj_col)
-        if not cmd: 
+        if not cmd:
             # row represents a procman group
-            
+
             # get a list of all the row's children
             child_iter = model.iter_children (model_iter)
             children = []
@@ -66,7 +66,7 @@ class SheriffCommandModel(gtk.TreeStore):
                 children.append (model.get_value (child_iter, obj_col))
                 child_iter = model.iter_next (child_iter)
 
-            if not children: 
+            if not children:
                 to_remove.append (gtk.TreeRowReference (model, path))
                 return
             statuses = [ cmd.status () for cmd in children ]
@@ -81,8 +81,8 @@ class SheriffCommandModel(gtk.TreeStore):
             mem_total = sum ([cmd.mem_vsize_bytes / 1024 \
                     for cmd in children])
             cpu_str = "%.2f" % (cpu_total * 100)
-            
-            model.set (model_iter, 
+
+            model.set (model_iter,
                     COL_CMDS_TV_STATUS_ACTUAL, status_str,
                     COL_CMDS_TV_CPU_USAGE, cpu_str,
                     COL_CMDS_TV_MEM_VSIZE, mem_total)
@@ -92,7 +92,7 @@ class SheriffCommandModel(gtk.TreeStore):
 
             if not cur_grpname:
                 # add the group name to the command name column
-                model.set (model_iter, 
+                model.set (model_iter,
                            COL_CMDS_TV_CMD, cmd.group)
             return
         if cmd in cmds:
@@ -104,7 +104,7 @@ class SheriffCommandModel(gtk.TreeStore):
             if cmd.nickname.strip():
                 name = cmd.nickname
 
-            model.set (model_iter, 
+            model.set (model_iter,
                     COL_CMDS_TV_CMD, name,
                     COL_CMDS_TV_NICKNAME, cmd.nickname,
                     COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
@@ -149,7 +149,7 @@ class SheriffCommandModel(gtk.TreeStore):
         to_remove = []
         to_reparent = []
 
-        self.foreach(self._update_cmd_row, 
+        self.foreach(self._update_cmd_row,
                 (cmds, cmd_deps, to_remove, to_reparent))
 
         # reparent rows that are in the wrong group
@@ -166,7 +166,7 @@ class SheriffCommandModel(gtk.TreeStore):
         # remove rows that have been marked for deletion
         for trr in to_remove:
             cmds_iter = self.get_iter (trr.get_path())
-            if not self.get_value (cmds_iter, 
+            if not self.get_value (cmds_iter,
                     COL_CMDS_TV_OBJ):
                 self._delete_group_row_reference (self.get_value (cmds_iter,
                     COL_CMDS_TV_CMD))
@@ -176,7 +176,7 @@ class SheriffCommandModel(gtk.TreeStore):
         groups_to_remove = []
         def _check_for_lonely_groups (model, path, model_iter, user_data):
             isgroup = not model.get_value(model_iter, COL_CMDS_TV_OBJ)
-            if isgroup and not model.iter_has_child (model_iter): 
+            if isgroup and not model.iter_has_child (model_iter):
                 groups_to_remove.append (gtk.TreeRowReference (model, path))
         self.foreach (_check_for_lonely_groups, None)
         for trr in groups_to_remove:

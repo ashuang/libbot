@@ -51,12 +51,12 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         self.stdout_textview.set_property ("editable", False)
         self.sheriff_tb = self.stdout_textview.get_buffer ()
         self.add (self.stdout_textview)
-        
+
         stdout_adj = self.get_vadjustment ()
         stdout_adj.set_data ("scrolled-to-end", 1)
         stdout_adj.connect ("changed", self.on_adj_changed)
         stdout_adj.connect ("value-changed", self.on_adj_value_changed)
-        
+
         # add callback so we can add a clear option to the default right click popup
         self.stdout_textview.connect ("populate-popup", self.on_tb_populate_menu)
 
@@ -82,10 +82,10 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
             if not extradata: continue
             if extradata.printf_drop_count:
                 deputy = self.sheriff.get_command_deputy (cmd)
-                self._add_text_to_buffer (extradata.tb, now_str() + 
+                self._add_text_to_buffer (extradata.tb, now_str() +
                         "\nSHERIFF RATE LIMIT: Ignored %d bytes of output\n" %
                         (extradata.printf_drop_count))
-                self._add_text_to_buffer (self.sheriff_tb, now_str() + 
+                self._add_text_to_buffer (self.sheriff_tb, now_str() +
                         "Ignored %d bytes of output from [%s] [%s]\n" % \
                         (extradata.printf_drop_count, deputy.name, cmd.name))
 
@@ -136,22 +136,22 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
             start_iter = tb.get_start_iter ()
             chop_iter = tb.get_iter_at_line (num_lines - self.stdout_maxlines)
             tb.delete (start_iter, chop_iter)
-            
+
     # Sheriff event handlers
     def _on_sheriff_command_added (self, sheriff, deputy, command):
         extradata = CommandExtraData (self.sheriff_tb.get_tag_table())
         command.set_data ("extradata", extradata)
-        self._add_text_to_buffer (self.sheriff_tb, now_str() + 
+        self._add_text_to_buffer (self.sheriff_tb, now_str() +
                 "Added [%s] [%s]\n" % (deputy.name, command.name))
 
     def _on_sheriff_command_removed (self, sheriff, deputy, command):
-        self._add_text_to_buffer (self.sheriff_tb, now_str() + 
+        self._add_text_to_buffer (self.sheriff_tb, now_str() +
                 "[%d] removed (%s:%s)\n" % (command.sheriff_id,
                 deputy.name, command.name))
 
     def _on_sheriff_command_status_changed (self, sheriff, cmd,
             old_status, new_status):
-        self._add_text_to_buffer (self.sheriff_tb, now_str() + 
+        self._add_text_to_buffer (self.sheriff_tb, now_str() +
                 "[%s] new status: %s\n" % (cmd.name, new_status))
 
     def on_tb_populate_menu(self,textview, menu):
