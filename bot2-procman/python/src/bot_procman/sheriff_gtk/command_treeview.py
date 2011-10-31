@@ -261,7 +261,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         cmd = self.cmds_ts.path_to_command(path)
         if not cmd:
             return
-        self._do_edit_command_dialog(self, cmd)
+        self._do_edit_command_dialog(cmd)
 
     def _status_cell_data_func (self, column, cell, model, model_iter):
         color_map = {
