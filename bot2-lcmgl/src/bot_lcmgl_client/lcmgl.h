@@ -150,6 +150,24 @@ static inline void bot_lcmgl_color4fv(bot_lcmgl_t * lcmgl, const double v[4]){bo
 #define lcmglMateriald lcmglMaterialf
 #define lcmglMaterialdv lcmglMaterialfv
 
+
+//Defines of a few basic opengl constants
+/* Primitives */
+#define LCMGL_POINTS                               0x0000
+#define LCMGL_LINES                                0x0001
+#define LCMGL_LINE_LOOP                            0x0002
+#define LCMGL_LINE_STRIP                           0x0003
+#define LCMGL_TRIANGLES                            0x0004
+#define LCMGL_TRIANGLE_STRIP                       0x0005
+#define LCMGL_TRIANGLE_FAN                         0x0006
+#define LCMGL_QUADS                                0x0007
+#define LCMGL_QUAD_STRIP                           0x0008
+#define LCMGL_POLYGON                              0x0009
+
+
+
+
+
 /* ================ drawing routines not part of OpenGL ===============
  * 
  * These routines do not have a direct correspondence to the OpenGL API, but
