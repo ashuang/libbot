@@ -26,7 +26,7 @@
 #
 # ----
 # File: pods.cmake
-# Distributed with pods version: 11.03.11
+# Distributed with pods version: 11.11.01
 
 # pods_install_headers(<header1.h> ... DESTINATION <subdir_name>)
 # 
@@ -139,18 +139,6 @@ function(pods_install_pkg_config_file)
 
     # mark the .pc file for installation to the lib/pkgconfig directory
     install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
-    
-    # find targets that this pkg-config file depends on
-    if (pc_libs)
-        string(REPLACE " " ";" split_lib ${pc_libs})
-        foreach(lib ${split_lib})
-            string(REGEX REPLACE "^-l" "" libname ${lib})
-            get_target_property(IS_TARGET ${libname} LOCATION)
-            if (NOT IS_TARGET STREQUAL "IS_TARGET-NOTFOUND")
-                set_property(GLOBAL APPEND PROPERTY "PODS_PKG_CONFIG_TARGETS-${pc_name}" ${libname})
-            endif() 
-        endforeach()
-    endif()
     
 endfunction(pods_install_pkg_config_file)
 
@@ -265,19 +253,21 @@ macro(pods_use_pkg_config_packages target)
     #    message("ldflags: ${_pods_pkg_ldflags}")
     include_directories(${_pods_pkg_include_flags})
     target_link_libraries(${target} ${_pods_pkg_ldflags})
-   
-    # make the target depend on libraries being installed by this source build
-    foreach(_pkg ${ARGN})
-        get_property(_has_dependencies GLOBAL PROPERTY "PODS_PKG_CONFIG_TARGETS-${_pkg}" SET)
-        if(_has_dependencies)
-            get_property(_dependencies GLOBAL PROPERTY "PODS_PKG_CONFIG_TARGETS-${_pkg}")
-            add_dependencies(${target} ${_dependencies})
-            #            message("Found dependencies for ${_pkg}: ${dependencies}")
-        endif()
-        unset(_has_dependencies)
-        unset(_dependencies)
-    endforeach()
+    
+    # make the target depend on libraries that are cmake targets
+    if (_pods_pkg_ldflags)
+        string(REPLACE " " ";" _split_ldflags ${_pods_pkg_ldflags})
+        foreach(lib ${_split_ldflags})
+                string(REGEX REPLACE "^-l" "" libname ${lib})
+                get_target_property(IS_TARGET ${libname} LOCATION)
+                if (NOT IS_TARGET STREQUAL "IS_TARGET-NOTFOUND")
+                    #message("---- ${target} depends on  ${libname}")
+                    add_dependencies(${target} ${libname})
+                endif() 
+        endforeach()
+    endif()
 
+    unset(_split_ldflags)
     unset(_pods_pkg_include_flags)
     unset(_pods_pkg_ldflags)
 endmacro()
