@@ -61,7 +61,7 @@
 # This directory can be changed by setting the PY_DEST_DIR option.
 #
 # Additionally, the .py files will be installed to 
-#   ${CMAKE_INSTALL_PREFIX}/lib/python{X.Y}/site-packages
+#   ${CMAKE_INSTALL_PREFIX}/lib/python{X.Y}/dist-packages
 #   
 # where {X.Y} refers to the python version used to build the .py files.
 #
@@ -370,24 +370,8 @@ function(lcmtypes_build_python)
     if(NOT auto_manage_files)
         return()
     endif()
-
-    # get a list of all generated .py files
-    file(GLOB_RECURSE _lcmtypes_python_files RELATIVE ${_lcmtypes_python_dir} ${_lcmtypes_python_dir}/*.py )
-
-    # add rules for byte-compiling .py --> .pyc
-    foreach(py_file ${_lcmtypes_python_files})
-        set(full_py_fname ${_lcmtypes_python_dir}/${py_file})
-        add_custom_command(OUTPUT "${full_py_fname}c" COMMAND 
-            ${PYTHON_EXECUTABLE} -m py_compile ${full_py_fname} DEPENDS ${full_py_fname} VERBATIM)
-        list(APPEND pyc_files "${full_py_fname}c")
-    endforeach()
-    add_custom_target(pyc_files ALL DEPENDS ${pyc_files})
-
-    # install python files
-    execute_process(COMMAND 
-        ${PYTHON_EXECUTABLE} -c "import sys; sys.stdout.write(sys.version[:3])"
-        OUTPUT_VARIABLE pyversion)
-    install(DIRECTORY ${_lcmtypes_python_dir}/ DESTINATION lib/python${pyversion}/site-packages)
+    
+    pods_install_python_packages(${_lcmtypes_python_dir})
 
     lcmtypes_add_clean_dir(${_lcmtypes_python_dir})
 endfunction()
