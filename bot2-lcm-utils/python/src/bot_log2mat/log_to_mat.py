@@ -179,10 +179,11 @@ if len(args) != 1:
 #default options
 fname = args[0]
 lcm_packages = [ "botlcm"]
-outFname = fname
+
+outDir, outFname = os.path.split(os.path.abspath(fname))
 outFname = outFname.replace(".", "_")
 outFname = outFname.replace("-", "_")
-outFname = outFname + ".mat"
+outFname = outDir + "/" + outFname + ".mat"
 printFname = "stdout"
 printFile = sys.stdout
 verbose = False
@@ -218,7 +219,7 @@ for o, a in opts:
 
 fullPathName = os.path.abspath(outFname)
 dirname = os.path.dirname(fullPathName)
-outBaseName = os.path.basename(outFname).split(".")[0]
+outBaseName = ".".join(os.path.basename(outFname).split(".")[0:-1])
 fullBaseName = dirname + "/" + outBaseName
 
 type_db = make_lcmtype_dictionary()
@@ -335,7 +336,7 @@ if not printOutput:
     if sys.version_info < (2, 6):
         scipy.io.mio.savemat(outFname, data)
     else:
-        scipy.io.matlab.mio.savemat(outFname, data)
+        scipy.io.matlab.mio.savemat(outFname, data, oned_as='row')
 
     
     mfile = open(dirname + "/" + outBaseName + ".m", "w")
