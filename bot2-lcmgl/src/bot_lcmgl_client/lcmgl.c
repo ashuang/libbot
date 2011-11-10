@@ -556,6 +556,7 @@ int
 bot_lcmgl_texture2d(bot_lcmgl_t *lcmgl, const void *data, 
         int width, int height, int row_stride,
         bot_lcmgl_texture_format_t format,
+        bot_lcmgl_texture_type_t type,
         bot_lcmgl_compress_mode_t compression)
 {
     bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_TEX_2D);
@@ -565,26 +566,44 @@ bot_lcmgl_texture2d(bot_lcmgl_t *lcmgl, const void *data,
 
     bot_lcmgl_encode_u32(lcmgl, tex_id);
 
-    int bytes_per_pixel = 1;
+    int subpix_per_pixel = 1;
     switch(format) {
         case BOT_LCMGL_LUMINANCE:
-            bytes_per_pixel = 1;
+            subpix_per_pixel = 1;
             break;
         case BOT_LCMGL_RGB:
-            bytes_per_pixel = 3;
+            subpix_per_pixel = 3;
             break;
         case BOT_LCMGL_RGBA:
-            bytes_per_pixel = 4;
+            subpix_per_pixel = 4;
             break;
     }
-    int bytes_per_row = width * bytes_per_pixel;
+
+    int bytes_per_subpixel = 1;
+    switch (type) {
+        case BOT_LCMGL_UNSIGNED_BYTE:
+        case BOT_LCMGL_BYTE:
+            bytes_per_subpixel = 1;
+            break;
+        case BOT_LCMGL_UNSIGNED_SHORT:
+        case BOT_LCMGL_SHORT:
+            bytes_per_subpixel = 1;
+            break;
+        case BOT_LCMGL_UNSIGNED_INT:
+        case BOT_LCMGL_INT:
+        case BOT_LCMGL_FLOAT:
+            bytes_per_subpixel = 4;
+            break;
+    }
+
+    int bytes_per_row = width * subpix_per_pixel * bytes_per_subpixel;
     int datalen = bytes_per_row * height;
 
     bot_lcmgl_encode_u32(lcmgl, width);
     bot_lcmgl_encode_u32(lcmgl, height);
     bot_lcmgl_encode_u32(lcmgl, format);
+    bot_lcmgl_encode_u32(lcmgl, type);
     bot_lcmgl_encode_u32(lcmgl, compression);
-    //TODO: would be good to support other types such as GL_FLOAT etc...
 
     switch(compression) {
         case BOT_LCMGL_COMPRESS_NONE:

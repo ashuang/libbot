@@ -247,10 +247,21 @@ void bot_lcmgl_scale_to_viewer_ar(bot_lcmgl_t *lcmgl);
 
 // texture API
 typedef enum {
-    BOT_LCMGL_LUMINANCE = 0,
-    BOT_LCMGL_RGB,
-    BOT_LCMGL_RGBA
+    BOT_LCMGL_LUMINANCE = 0x1909, //values pulled from gl.h
+    BOT_LCMGL_RGB = 0x1907,
+    BOT_LCMGL_RGBA = 0x1908
 } bot_lcmgl_texture_format_t;
+
+typedef enum {
+    BOT_LCMGL_UNSIGNED_BYTE = 0x1401, //values pulled from gl.h
+    BOT_LCMGL_BYTE =0x1400,
+    BOT_LCMGL_UNSIGNED_SHORT =0x1403,
+    BOT_LCMGL_SHORT = 0x1402,
+    BOT_LCMGL_UNSIGNED_INT = 0x1405,
+    BOT_LCMGL_INT = 0x1404,
+    BOT_LCMGL_FLOAT = 0x1406
+} bot_lcmgl_texture_type_t;
+
 
 typedef enum {
     BOT_LCMGL_COMPRESS_NONE = 0,
@@ -268,6 +279,7 @@ typedef enum {
 int bot_lcmgl_texture2d(bot_lcmgl_t *lcmgl, const void *data, 
         int width, int height, int row_stride,
         bot_lcmgl_texture_format_t format,
+        bot_lcmgl_texture_type_t type,
         bot_lcmgl_compress_mode_t compression);
 
 /**

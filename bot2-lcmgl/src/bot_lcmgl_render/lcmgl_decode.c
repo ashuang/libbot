@@ -535,24 +535,42 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             uint32_t width = lcmgl_decode_u32(&ldec);
             uint32_t height = lcmgl_decode_u32(&ldec);
             uint32_t format = lcmgl_decode_u32(&ldec);
+            uint32_t type = lcmgl_decode_u32(&ldec);
 
-            int bytes_per_pixel = 1;
-            GLenum gl_format = GL_LUMINANCE;
+            int subpix_per_pixel = 1;
+            GLenum gl_format = format;
             switch(format) {
                 case BOT_LCMGL_LUMINANCE:
-                    bytes_per_pixel = 1;
-                    gl_format = GL_LUMINANCE;
+                    subpix_per_pixel = 1;
                     break;
                 case BOT_LCMGL_RGB:
-                    bytes_per_pixel = 3;
-                    gl_format = GL_RGB;
+                    subpix_per_pixel = 3;
                     break;
                 case BOT_LCMGL_RGBA:
-                    bytes_per_pixel = 4;
-                    gl_format = GL_RGBA;
+                    subpix_per_pixel = 4;
                     break;
             }
-            int bytes_per_row = width * bytes_per_pixel;
+
+            GLenum gl_type = type;
+            int bytes_per_subpixel = 1;
+            switch (type) {
+                  case BOT_LCMGL_UNSIGNED_BYTE:
+                  case BOT_LCMGL_BYTE:
+                      bytes_per_subpixel = 1;
+                      break;
+                  case BOT_LCMGL_UNSIGNED_SHORT:
+                  case BOT_LCMGL_SHORT:
+                      bytes_per_subpixel = 1;
+                      break;
+                  case BOT_LCMGL_UNSIGNED_INT:
+                  case BOT_LCMGL_INT:
+                  case BOT_LCMGL_FLOAT:
+                      bytes_per_subpixel = 4;
+                      break;
+            }
+
+
+            int bytes_per_row = width * subpix_per_pixel * bytes_per_subpixel;
             int max_data_size = height * bytes_per_row;
 
 
@@ -589,7 +607,6 @@ void bot_lcmgl_decode(uint8_t *data, int datalen)
             _lcmgl_texture_t *tex = (_lcmgl_texture_t*)malloc(sizeof(_lcmgl_texture_t));
 
             tex->tex = bot_gl_texture_new(width, height, max_data_size);
-            GLenum gl_type = GL_UNSIGNED_BYTE; //TODO: would be good to support other types
             bot_gl_texture_upload(tex->tex, gl_format, gl_type,
                     bytes_per_row, data_uncompressed);
 
