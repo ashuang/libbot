@@ -582,17 +582,20 @@ named script once the config file is loaded.
 
 def run ():
     try:
-        opts, args = getopt.getopt( sys.argv[1:], 'hl',
-                ['help','lone-ranger'] )
+        opts, args = getopt.getopt( sys.argv[1:], 'hln',
+                ['help','lone-ranger', 'no-gui'] )
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
     spawn_deputy = False
+    use_gui = True
 
     for optval, argval in opts:
         if optval in [ '-l', '--lone-ranger' ]:
             spawn_deputy = True
+        elif optval in [ '-n', '--no-gui' ]:
+            use_gui = False
         elif optval in [ '-h', '--help' ]:
             usage()
 
@@ -616,12 +619,14 @@ def run ():
             traceback.print_exc ()
         return True
     gobject.io_add_watch (lc, gobject.IO_IN, handle)
-    gui = SheriffGtk(lc)
-    if spawn_deputy:
-        gui.on_spawn_deputy_activate()
-    if cfg is not None:
-        gui.load_config(cfg)
-        gui.load_save_dir = os.path.dirname(args[0])
+
+    if use_gui:
+        gui = SheriffGtk(lc)
+        if spawn_deputy:
+            gui.on_spawn_deputy_activate()
+        if cfg is not None:
+            gui.load_config(cfg)
+            gui.load_save_dir = os.path.dirname(args[0])
 
         if script_name:
             script = gui.sheriff.get_script(script_name)
@@ -636,11 +641,59 @@ def run ():
                 gui._terminate_spawned_deputy()
                 sys.exit(1)
             gobject.timeout_add(200, lambda *s: gui.run_script(None, script))
-    try:
-        gtk.main ()
-    except KeyboardInterrupt:
-        print("Exiting")
-    gui.cleanup()
+        try:
+            gtk.main ()
+        except KeyboardInterrupt:
+            print("Exiting")
+        gui.cleanup()
+    else:
+        pm_sheriff = sheriff.Sheriff(lc)
+        bot_procman_deputy_cmd = find_bot_procman_deputy_cmd()
+        if not bot_procman_deputy_cmd:
+            sys.stderr.write("Can't find bot-procman-deputy.")
+            sys.exit(1)
+
+        args = [ bot_procman_deputy_cmd, "-n", "localhost" ]
+        spawned_deputy = subprocess.Popen(args)
+
+        def _terminate_spawned_deputy():
+            if spawned_deputy:
+                try:
+                    spawned_deputy.terminate()
+                except AttributeError: # python 2.4, 2.5 don't have Popen.terminate()
+                    os.kill(spawned_deputy.pid, signal.SIGTERM)
+                    spawned_deputy.wait()
+
+        if cfg is not None:
+            pm_sheriff.load_config(cfg)
+
+        if script_name:
+            script = pm_sheriff.get_script(script_name)
+            if not script:
+                print "No such script: %s" % script_name
+                _terminate_spawned_deputy()
+                sys.exit(1)
+            errors = pm_sheriff.check_script_for_errors(script)
+            if errors:
+                print "Unable to run script.  Errors were detected:\n\n"
+                print "\n    ".join(errors)
+                _terminate_spawned_deputy()
+                sys.exit(1)
+
+            def run_script():
+                errors = pm_sheriff.execute_script(script)
+                if errors:
+                    print "Script failed to run.  Errors detected:\n" + \
+                            "\n".join(errors)
+                    _terminate_spawned_deputy()
+                    sys.exit(1)
+
+            gobject.timeout_add(200, lambda *s: run_script())
+        try:
+            glib.MainLoop().run()
+        except KeyboardInterrupt:
+            print("Exiting")
+        _terminate_spawned_deputy()
 
 if __name__ == "__main__":
     run ()
