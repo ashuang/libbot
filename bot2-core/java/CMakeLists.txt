@@ -1,6 +1,5 @@
 find_package(Java)
-if(JAVA_COMPILE STREQUAL JAVA_COMPILE-NOTFOUND OR
-   JAVA_ARCHIVE STREQUAL JAVA_ARCHIVE-NOTFOUND)
+if(NOT Java_FOUND)
     message(STATUS "Not building Java LCM-SPY plugins (Can't find Java)")
     return()
 endif()
