@@ -4,8 +4,8 @@ import gtk
 import bot_procman.sheriff as sheriff
 
 COL_CMDS_TV_OBJ, \
-COL_CMDS_TV_CMD, \
-COL_CMDS_TV_NICKNAME, \
+COL_CMDS_TV_EXEC_OR_FULL_GROUP, \
+COL_CMDS_TV_DISPLAY_NAME, \
 COL_CMDS_TV_HOST, \
 COL_CMDS_TV_STATUS_ACTUAL, \
 COL_CMDS_TV_CPU_USAGE, \
@@ -35,21 +35,32 @@ class SheriffCommandModel(gtk.TreeStore):
         if group_name in self.group_row_references:
             return self.group_row_references[group_name]
         else:
+            name_parts = group_name.split("/")
+            if len(name_parts) > 1:
+                parent_name = "/".join(name_parts[:-1])
+                parent_row_ref = self._find_or_make_group_row_reference(parent_name)
+                parent = self.get_iter(parent_row_ref.get_path())
+            else:
+                parent = None
+
             # add the group name to the command name column if visible
             # otherwise, add it to the nickname column
-            ts_iter = self.append (None,
-                      ((None, group_name, "", "", "", "", 0, False)))
+            ts_iter = self.append (parent,
+                    ((None, group_name, name_parts[-1], "", "", "", 0, False)))
 
-            trr = gtk.TreeRowReference (self,
-                    self.get_path (ts_iter))
+            trr = gtk.TreeRowReference (self, self.get_path (ts_iter))
             self.group_row_references[group_name] = trr
             return trr
 
     def get_known_group_names (self):
         return self.group_row_references.keys ()
 
-    def _delete_group_row_reference (self, group_name):
+    def _delete_group_row_reference(self, group_iter):
+        group_name = self.get_value(group_iter, COL_CMDS_TV_EXEC_OR_FULL_GROUP)
         del self.group_row_references[group_name]
+
+    def _is_group_row(self, model_iter):
+        return self.get_value(model_iter, COL_CMDS_TV_OBJ) is None
 
     def _update_cmd_row (self, model, path, model_iter, user_data):
         cmds, cmd_deps, to_remove, to_reparent = user_data
@@ -60,14 +71,10 @@ class SheriffCommandModel(gtk.TreeStore):
             # row represents a procman group
 
             # get a list of all the row's children
-            child_iter = model.iter_children (model_iter)
-            children = []
-            while child_iter:
-                children.append (model.get_value (child_iter, obj_col))
-                child_iter = model.iter_next (child_iter)
+            children = self.get_group_row_child_commands_recursive(model_iter)
 
             if not children:
-                to_remove.append (gtk.TreeRowReference (model, path))
+                to_remove.append(gtk.TreeRowReference (model, path))
                 return
 
             # aggregate command status
@@ -101,25 +108,27 @@ class SheriffCommandModel(gtk.TreeStore):
                     COL_CMDS_TV_MEM_VSIZE, mem_total)
 
             cur_grpname = \
-                    model.get_value(model_iter, COL_CMDS_TV_CMD)
+                    model.get_value(model_iter, COL_CMDS_TV_DISPLAY_NAME)
 
             if not cur_grpname:
                 # add the group name to the command name column
                 model.set (model_iter,
-                           COL_CMDS_TV_CMD, cmd.group)
+                           COL_CMDS_TV_EXEC_OR_FULL_GROUP, cmd.group,
+                           COL_CMDS_TV_DISPLAY_NAME, cmd.group.split("/")[-1])
             return
         if cmd in cmds:
 #                extradata = cmd.get_data ("extradata")
             cpu_str = "%.2f" % (cmd.cpu_usage * 100)
             mem_usage = int (cmd.mem_vsize_bytes / 1024)
 
-            name = cmd.name
             if cmd.nickname.strip():
-                name = cmd.nickname
+                display_name = cmd.nickname
+            else:
+                display_name = "<unnamed>"
 
             model.set (model_iter,
-                    COL_CMDS_TV_CMD, name,
-                    COL_CMDS_TV_NICKNAME, cmd.nickname,
+                    COL_CMDS_TV_EXEC_OR_FULL_GROUP, cmd.name,
+                    COL_CMDS_TV_DISPLAY_NAME, display_name,
                     COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
                     COL_CMDS_TV_HOST, cmd_deps[cmd].name,
                     COL_CMDS_TV_CPU_USAGE, cpu_str,
@@ -142,11 +151,10 @@ class SheriffCommandModel(gtk.TreeStore):
                 actual_parent_path = model.get_path(actual_parent_iter)
 
             if correct_parent_path != actual_parent_path:
-                print "moving %s (%s) (%s)" % (cmd.name,
-                        correct_parent_path, actual_parent_path)
+#                print "moving %s (%s) (%s)" % (cmd.name,
+#                        correct_parent_path, actual_parent_path)
                 # schedule the command to be moved
-                to_reparent.append ((gtk.TreeRowReference (model, path),
-                    correct_grr))
+                to_reparent.append ((gtk.TreeRowReference (model, path), correct_grr))
 
             cmds.remove (cmd)
         else:
@@ -179,23 +187,20 @@ class SheriffCommandModel(gtk.TreeStore):
         # remove rows that have been marked for deletion
         for trr in to_remove:
             cmds_iter = self.get_iter (trr.get_path())
-            if not self.get_value (cmds_iter,
-                    COL_CMDS_TV_OBJ):
-                self._delete_group_row_reference (self.get_value (cmds_iter,
-                    COL_CMDS_TV_CMD))
+            if self._is_group_row(cmds_iter):
+                self._delete_group_row_reference(cmds_iter)
             self.remove (cmds_iter)
 
         # remove group rows with no children
         groups_to_remove = []
         def _check_for_lonely_groups (model, path, model_iter, user_data):
-            isgroup = not model.get_value(model_iter, COL_CMDS_TV_OBJ)
-            if isgroup and not model.iter_has_child (model_iter):
+            is_group = self._is_group_row(model_iter)
+            if is_group and not model.iter_has_child (model_iter):
                 groups_to_remove.append (gtk.TreeRowReference (model, path))
         self.foreach (_check_for_lonely_groups, None)
         for trr in groups_to_remove:
             model_iter = self.get_iter (trr.get_path())
-            self._delete_group_row_reference (self.get_value (model_iter,
-                COL_CMDS_TV_CMD))
+            self._delete_group_row_reference(model_iter)
             self.remove (model_iter)
 
         # create new rows for new commands
@@ -204,8 +209,8 @@ class SheriffCommandModel(gtk.TreeStore):
             parent = self._find_or_make_group_row_reference (cmd.group)
 
             new_row = (cmd,        # COL_CMDS_TV_OBJ
-                cmd.name,          # COL_CMDS_TV_CMD
-                cmd.nickname,      # COL_CMDS_TV_NICKNAME
+                cmd.name,          # COL_CMDS_TV_EXEC_OR_FULL_GROUP
+                cmd.nickname,      # COL_CMDS_TV_DISPLAY_NAME
                 deputy.name,       # COL_CMDS_TV_HOST
                 cmd.status (),     # COL_CMDS_TV_STATUS_ACTUAL
                 "0",               # COL_CMDS_TV_CPU_USAGE
@@ -220,17 +225,15 @@ class SheriffCommandModel(gtk.TreeStore):
 
     def rows_to_commands(self, rows):
         col = COL_CMDS_TV_OBJ
-        selected = []
+        selected = set()
         for path in rows:
             cmds_iter = self.get_iter (path)
-            cmd = self.get_value (cmds_iter, col)
-            if not cmd:
-                child_iter = self.iter_children (cmds_iter)
-                while child_iter:
-                    selected.append (self.get_value (child_iter, col))
-                    child_iter = self.iter_next (child_iter)
+            cmd = self.get_value(cmds_iter, col)
+            if cmd:
+                selected.add(cmd)
             else:
-                selected.append (cmd)
+                for child in self.get_group_row_child_commands_recursive(cmds_iter):
+                    selected.add(child)
         return selected
 
     def iter_to_command(self, model_iter):
@@ -238,3 +241,15 @@ class SheriffCommandModel(gtk.TreeStore):
 
     def path_to_command(self, path):
         return self.iter_to_command(self.get_iter(path))
+
+    def get_group_row_child_commands_recursive(self, group_iter):
+        child_iter = self.iter_children(group_iter)
+        children = []
+        while child_iter:
+            child_cmd = self.get_value(child_iter, COL_CMDS_TV_OBJ)
+            if child_cmd:
+                children.append (child_cmd)
+            else:
+                children += self.get_group_row_child_commands_recursive(child_iter)
+            child_iter = self.iter_next(child_iter)
+        return children

@@ -17,7 +17,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         status_tr = gtk.CellRendererText ()
 
         cols_to_make = [ \
-            ("Name",     cmds_tr,   cm.COL_CMDS_TV_CMD,  None),
+            ("Name",     cmds_tr,   cm.COL_CMDS_TV_DISPLAY_NAME,  None),
             ("Host",     plain_tr,  cm.COL_CMDS_TV_HOST, None),
             ("Status",   status_tr, cm.COL_CMDS_TV_STATUS_ACTUAL, self._status_cell_data_func),
             ("CPU %",    plain_tr,  cm.COL_CMDS_TV_CPU_USAGE, None),
@@ -279,11 +279,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         cmd = self.cmds_ts.iter_to_command(model_iter)
         if not cmd:
             # group node
-            child_iter = model.iter_children (model_iter)
-            children = []
-            while child_iter:
-                children.append (self.cmds_ts.iter_to_command(child_iter))
-                child_iter = model.iter_next (child_iter)
+            children = self.cmds_ts.get_group_row_child_commands_recursive(model_iter)
 
             if not children:
                 cell.set_property ("cell-background-set", False)

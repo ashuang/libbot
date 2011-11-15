@@ -152,7 +152,7 @@ class CommandNode(object):
                 "nickname" : "",
                 }
 
-    def _get_str (self, indent = 0):
+    def to_config_string(self, indent = 0):
         s = "    " * indent
         lines = []
         nickname = self.attributes["nickname"]
@@ -172,25 +172,46 @@ class CommandNode(object):
         return ("\n".join (lines))
 
     def __str__ (self):
-        return self._get_str ()
+        return self.to_config_string()
 
 class GroupNode(object):
     def __init__ (self, name):
         self.name = name
         self.commands = []
+        self.subgroups = {}
 
     def add_command (self, command):
         command.attributes["group"] = self.name
         self.commands.append (command)
 
-    def __str__ (self):
-        if self.name == "":
-            val = "\n".join([cmd._get_str(0) for cmd in self.commands])
+    def get_subgroup(self, name_parts, create=False):
+        if not name_parts:
+            return self
+        next_name = name_parts[0]
+        if next_name in self.subgroups:
+            return self.subgroups[next_name].get_subgroup(name_parts[1:], create)
+        elif create:
+            subgroup = GroupNode(next_name)
+            self.subgroups[next_name] = subgroup
+            return subgroup.get_subgroup(name_parts[1:], create)
         else:
-            val = "group \"%s\" {\n" % self.name
-            val += "\n".join([cmd._get_str(1) for cmd in self.commands])
-            val = val + "\n}\n"
+            raise KeyError()
+
+    def to_config_string(self, indent=0):
+        s = "    " * indent
+        if self.name == "":
+            assert indent == 0
+            val = "\n".join([group.to_config_string(0) for group in self.subgroups.values()])
+            val = val + "\n".join([cmd.to_config_string(0) for cmd in self.commands]) + "\n"
+        else:
+            val = "%sgroup \"%s\" {\n" % (s, self.name)
+            val = val + "\n".join([group.to_config_string(indent+1) for group in self.subgroups.values()])
+            val = val + "\n".join([cmd.to_config_string(indent+1) for cmd in self.commands])
+            val = val + "\n%s}\n" % s
         return val
+
+    def __str__ (self):
+        return self.to_config_string(0)
 
 class StartStopRestartActionNode(object):
     def __init__(self, action_type, ident_type, ident, wait_status):
@@ -253,7 +274,6 @@ class ScriptNode(object):
     def add_action(self, action):
         assert action is not None
         assert hasattr(action, "action_type")
-        print "add action %s" % str(action)
         self.actions.append(action)
 
     def __str__(self):
@@ -265,36 +285,42 @@ class ScriptNode(object):
 
 class ConfigNode(object):
     def __init__ (self):
-        self.groups = {}
         self.scripts = {}
-        self.add_group (GroupNode (""))
+        self.root_group = GroupNode("")
 
-    def has_group (self, group_name):
-        return group_name in self.groups
+    def _normalize_group_name(self, name):
+        if not name.startswith("/"):
+            name = "/" + name
+        while name.find("//") >= 0:
+            name = name.replace("//", "/")
+        return name.rstrip("/")
 
-    def get_group (self, group_name):
-        return self.groups[group_name]
+    def has_group(self, group_name):
+        name = self._normalize_group_name(group_name)
+        parts = group_name.split("/")
+        group = self.root_group
+        assert group.name == parts[0]
+        for part in parts:
+            if part in group.subgroups:
+                group = group.subgroups[part]
+            else:
+                return False
+        return True
 
-    def add_group (self, group):
-        assert group.name not in self.groups
-        self.groups[group.name] = group
+    def get_group (self, group_name, create=False):
+        name = self._normalize_group_name(group_name)
+        parts = name.split("/")
+        group = self.root_group
+        return group.get_subgroup(parts[1:], create)
 
     def add_script (self, script):
         assert script.name not in self.scripts
         self.scripts[script.name] = script
 
-    def add_command (self, command):
-        none_group = self.groups[""]
-        none_group.add_command (command)
-
     def __str__ (self):
-        val = ""
-        groups = sorted(self.groups.values(), key=lambda g: g.name.lower())
-        val += "\n".join ([str (group) for group in groups ])
-        val += "\n"
-
+        val = self.root_group.to_config_string()
         scripts = sorted(self.scripts.values(), key=lambda s: s.name.lower())
-        val += "\n".join ([str (script) for script in scripts])
+        val += "\n" + "\n".join([str(script) for script in scripts])
         return val
 
 class Parser:
@@ -370,9 +396,11 @@ class Parser:
         self._eat_token_or_fail(TokAssign, "Expected '='")
         attrib_val = self._parse_string_or_fail()
         self._eat_token_or_fail(TokEndStatement, "Expected ';'")
-        if attrib_name == "nickname" and len(cmd.attributes["nickname"]):
-            self._fail("Command already has a nickname %s" % \
-                cmd.attributes["nickname"])
+        if attrib_name == "nickname":
+            if len(cmd.attributes["nickname"]):
+                self._fail("Command already has a nickname %s" % cmd.attributes["nickname"])
+            if "/" in attrib_val:
+                self._fail("'/' character not allowed in command name")
         cmd.attributes[attrib_name] = attrib_val
 
         return self._parse_command_param_list (cmd)
@@ -381,6 +409,8 @@ class Parser:
         cmd = CommandNode ()
         if self._eat_token(TokString):
             cmd.attributes["nickname"] = self._cur_tok.val
+            if "/" in self._cur_tok.val:
+                self._fail("'/' character not allowed in command name")
         self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
         self._parse_command_param_list (cmd)
         self._eat_token_or_fail (TokCloseStruct, "Expected '}'")
@@ -388,21 +418,23 @@ class Parser:
             self._fail ("Invalid command defined -- no executable specified")
         return cmd
 
-    def _parse_command_list (self):
-        cmds = []
-        while self._eat_token (TokIdentifier) and self._cur_tok.val == "cmd":
-            cmds.append (self._parse_command ())
-        return cmds
-
-    def _parse_group (self):
+    def _parse_group(self, parent_group):
         self._eat_token_or_fail (TokString, "Expected group name string")
+        if "/" in self._cur_tok.val:
+            self._fail("'/' character is not allowed in group name")
+        elif not self._cur_tok.val.strip():
+            self._fail("Empty group name is not allowed")
         name = self._cur_tok.val
-        group = GroupNode (name)
+        group = parent_group.get_subgroup([name], True)
         self._eat_token_or_fail (TokOpenStruct, "Expected '{'")
-        for cmd in self._parse_command_list ():
-            group.add_command (cmd)
+        while self._eat_token(TokIdentifier):
+            if self._cur_tok.val == "cmd":
+                group.add_command(self._parse_command())
+            elif self._cur_tok.val == "group":
+                self._parse_group(group)
+            else:
+                self._fail("Expected one of [group, cmd]")
         self._eat_token_or_fail(TokCloseStruct, "Expected '}'")
-        return group
 
     def _parse_start_stop_restart_action(self, action_type):
         valid_ident_types = [ "everything", "cmd", "group" ]
@@ -457,37 +489,31 @@ class Parser:
 
     def _parse_script(self):
         name = self._eat_token_or_fail(TokString, "expected script name")
-        node = ScriptNode(name)
+        script_node = ScriptNode(name)
         for action in self._parse_script_action_list():
-            node.add_action(action)
-        return node
+            script_node.add_action(action)
+        self._node.add_script(script_node)
 
-    def _parse_listdecl (self, node):
-        if self._eat_token (TokEOF):
-            return node
-
-        if not self._eat_token (TokIdentifier):
-            self._fail_next_token("Expected 'cmd', 'group', or 'script'")
-        if self._cur_tok.val not in [ "cmd", "group", "script" ]:
-            self._fail ("Expected 'cmd', 'group', or 'script'")
-
-        if self._cur_tok.val == "cmd":
-            node.add_command (self._parse_command ())
-
-        if self._cur_tok.val == "group":
-            node.add_group (self._parse_group ())
-
-        if self._cur_tok.val == "script":
-            node.add_script(self._parse_script())
-
-        return self._parse_listdecl (node)
+    def _parse_listdecl(self):
+        while True:
+            if self._eat_token(TokEOF):
+                return
+            ident_type = self._parse_identifier_one_of(["cmd", "group", "script"])
+            if ident_type == "cmd":
+                self._node.root_group.add_command(self._parse_command())
+            if ident_type == "group":
+                self._parse_group(self._node.root_group)
+            if ident_type == "script":
+                self._parse_script()
 
     def parse (self, f):
         self.tokenizer = Tokenizer (f)
         self._cur_tok = None
         self._next_tok = None
         self._get_token ()
-        return self._parse_listdecl (ConfigNode ())
+        self._node = ConfigNode()
+        self._parse_listdecl()
+        return self._node
 
 def config_from_filename (fname):
     return Parser ().parse (file (fname))

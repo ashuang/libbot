@@ -495,6 +495,9 @@ class Sheriff (gobject.GObject):
         cmd.nickname = newnickname
 
     def set_command_group (self, cmd, group_name):
+        group_name = group_name.strip("/")
+        while group_name.find("//") >= 0:
+            group_name = group_name.replace("//", "/")
         if self._is_observer:
             raise ValueError ("Can't modify commands in Observer mode")
 #        deputy = self._get_command_deputy (cmd)
@@ -562,9 +565,15 @@ class Sheriff (gobject.GObject):
 
     def get_commands_by_group(self, group_name):
         result = []
+        group_name = group_name.strip("/")
+        while group_name.find("//") >= 0:
+            group_name = group_name.replace("//", "/")
+        group_parts = group_name.split("/")
         for deputy in self.deputies.values():
             for cmd in deputy.commands.values():
-                if cmd.group == group_name:
+                cmd_group_parts = cmd.group.split("/")
+                if len(group_parts) <= len(cmd_group_parts) and \
+                        all([ cgp == gp for cgp, gp in zip(group_parts, cmd_group_parts)]):
                     result.append(cmd)
         return result
 
@@ -763,16 +772,26 @@ class Sheriff (gobject.GObject):
         for script in self.scripts[:]:
             self.remove_script(script)
 
-        for group in config_node.groups.values ():
+        # TODO
+
+        def add_group_commands(group, name_prefix):
             for cmd in group.commands:
                 auto_respawn = cmd.attributes.get("auto_respawn", "").lower() in [ "true", "yes" ]
+                assert group.name == cmd.attributes["group"]
                 newcmd = self.add_command(cmd.attributes["host"],
                         cmd.attributes["exec"],
                         cmd.attributes["nickname"],
-                        cmd.attributes["group"],
+                        name_prefix + group.name,
                         auto_respawn
                         )
                 dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, cmd.attributes["host"]))
+            for subgroup in group.subgroups.values():
+                if group.name:
+                    add_group_commands(subgroup, name_prefix + group.name + "/")
+                else:
+                    add_group_commands(subgroup, "")
+
+        add_group_commands(config_node.root_group, "")
 
         for script_node in config_node.scripts.values():
             self.add_script(SheriffScript.from_script_node(script_node))
@@ -784,16 +803,11 @@ class Sheriff (gobject.GObject):
                 cmd_node = sheriff_config.CommandNode ()
                 cmd_node.attributes["exec"] = cmd.name
                 cmd_node.attributes["nickname"] = cmd.nickname
-                cmd_node.attributes["group"] = cmd.group
                 cmd_node.attributes["host"] = deputy.name
                 if cmd.auto_respawn:
                     cmd_node.attributes["auto_respawn"] = "true"
 
-                if config_node.has_group (cmd.group):
-                    group = config_node.get_group (cmd.group)
-                else:
-                    group = sheriff_config.GroupNode (cmd.group)
-                    config_node.add_group (group)
+                group = config_node.get_group(cmd.group, True)
                 group.add_command (cmd_node)
         for script in self.scripts:
             config_node.add_script(script.toScriptNode())

@@ -534,7 +534,7 @@ class SheriffGtk(object):
     def _on_cmds_selection_changed (self, selection):
         selected_cmds = self.cmds_tv.get_selected_commands ()
         if len (selected_cmds) == 1:
-            self.cmd_console.show_command_buffer(selected_cmds[0])
+            self.cmd_console.show_command_buffer(list(selected_cmds)[0])
         elif len (selected_cmds) == 0:
             self.cmd_console.show_sheriff_buffer()
         self._update_menu_item_sensitivities ()
