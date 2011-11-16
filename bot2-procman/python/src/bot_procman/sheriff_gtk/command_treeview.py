@@ -75,11 +75,15 @@ class SheriffCommandTreeView(gtk.TreeView):
         self.remove_cmd_ctxt_mi.connect ("activate",
                 self._remove_selected_commands)
 
+        self.cmd_ctxt_menu.append (gtk.SeparatorMenuItem ())
+
+        self.edit_cmd_ctxt_mi = gtk.MenuItem ("_Edit")
+        self.cmd_ctxt_menu.append (self.edit_cmd_ctxt_mi)
+        self.edit_cmd_ctxt_mi.connect ("activate",
+                self._edit_cmd_ctxt_mi_activated)
+
         self.change_deputy_ctxt_mi = gtk.MenuItem ("_Change Host")
         self.cmd_ctxt_menu.append (self.change_deputy_ctxt_mi)
-        self.change_deputy_ctxt_mi.show ()
-
-        self.cmd_ctxt_menu.append (gtk.SeparatorMenuItem ())
 
         self.new_cmd_ctxt_mi = gtk.MenuItem ("_New Command")
         self.cmd_ctxt_menu.append (self.new_cmd_ctxt_mi)
@@ -122,6 +126,12 @@ class SheriffCommandTreeView(gtk.TreeView):
         for cmd in self.get_selected_commands ():
             self.sheriff.schedule_command_for_removal (cmd)
 
+    def _edit_cmd_ctxt_mi_activated(self, *args):
+        cmds = self.get_selected_commands()
+        if len(cmds) != 1:
+            return
+        self._do_edit_command_dialog(list(cmds)[0])
+
     def _on_cmds_tv_key_press_event (self, widget, event):
         if event.keyval == gtk.gdk.keyval_from_name ("Right"):
             # expand a group row when user presses right arrow key
@@ -153,6 +163,7 @@ class SheriffCommandTreeView(gtk.TreeView):
             sel = self.get_selection ()
             model, rows = sel.get_selected_rows ()
             pathinfo = treeview.get_path_at_pos (int (event.x), int (event.y))
+            selected_cmds = []
 
             if pathinfo is not None:
                 if pathinfo[0] not in rows:
@@ -164,7 +175,7 @@ class SheriffCommandTreeView(gtk.TreeView):
                     treeview.set_cursor (path, col, 0)
 
                 # build a submenu of all deputies
-#                selected_cmds = self.get_selected_commands ()
+                selected_cmds = self.get_selected_commands ()
 #                can_start_stop_remove = len(selected_cmds) > 0 and \
 #                        not self.sheriff.is_observer ()
 
@@ -203,6 +214,7 @@ class SheriffCommandTreeView(gtk.TreeView):
             self.restart_cmd_ctxt_mi.set_sensitive (can_modify)
             self.remove_cmd_ctxt_mi.set_sensitive (can_modify)
             self.change_deputy_ctxt_mi.set_sensitive (can_modify)
+            self.edit_cmd_ctxt_mi.set_sensitive (can_modify and len(selected_cmds) == 1)
             self.new_cmd_ctxt_mi.set_sensitive (can_add_load)
 
             self.cmd_ctxt_menu.popup (None, None, None, event.button, time)

@@ -164,18 +164,21 @@ class AddModifyScriptDialog (gtk.Dialog):
         help_tv = gtk.TextView()
         help_tv.set_editable(False)
         help_tv.set_sensitive(False)
-        help_tv.get_buffer().set_text("""Valid actions are:
-
-    start|stop|restart everything;
-    start|stop|restart cmd|group "nickname" [wait "running"|"stopped"];
-    wait ms ###;
-    run_script "other-script-name";
-
-    Examples:
+        help_tv.get_buffer().set_text("""
+    Example actions:
         start cmd "server" wait "running";
         wait ms 500;
         stop cmd "some command" wait "stopped";
         restart group "other commands";
+        wait group "other commands" status "running";
+
+    Refer to commands and groups by what appears in the Name column.
+    Valid actions are:
+        start|stop|restart everything;
+        start|stop|restart cmd|group "nickname" [wait "running"|"stopped"];
+        wait ms ###;
+        run_script "other-script-name";
+
 """)
         table.attach (help_tv, 0, 2, 1, 2, 0, 0)
 

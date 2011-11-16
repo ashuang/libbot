@@ -569,6 +569,8 @@ Options:
                       This deputy terminates with the sheriff, along with
                       all the commands it hosts.
 
+  -n, --no-gui        Runs in headless mode (no GUI).
+
   -h, --help          Shows this help text
 
 If <procman_config_file> is specified, then the sheriff tries to load
