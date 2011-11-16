@@ -690,6 +690,7 @@ def run ():
                     _terminate_spawned_deputy()
                     sys.exit(1)
 
+            gobject.timeout_add(1000, lambda *s: pm_sheriff.send_orders() or True)
             gobject.timeout_add(200, lambda *s: run_script())
         try:
             glib.MainLoop().run()
