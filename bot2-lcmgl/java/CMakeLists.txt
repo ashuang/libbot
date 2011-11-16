@@ -1,4 +1,8 @@
-find_package(Java REQUIRED)
+find_package(Java)
+if (NOT Java_FOUND)
+   message(STATUS "Java not found... not building lcmgl java bindings")
+   return()
+endif()
 
 set(java_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(class_dir ${CMAKE_CURRENT_BINARY_DIR}/java-build)
