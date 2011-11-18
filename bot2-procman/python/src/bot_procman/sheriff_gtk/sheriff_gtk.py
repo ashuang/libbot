@@ -558,6 +558,111 @@ class SheriffGtk(object):
             gobject.timeout_add (6000,
                     lambda *s: self.statusbar.pop (self.statusbar.get_context_id ("main")))
 
+class SheriffHeadless(object):
+    def __init__(self, lc, config, spawn_deputy, script_name):
+        self.sheriff = sheriff.Sheriff(lc)
+        self.spawn_deputy = spawn_deputy
+        self.spawned_deputy = None
+        self.config = config
+        self.script_name = script_name
+        self.script = None
+        self.mainloop = None
+        self.lc = lc
+        self.lc.subscribe ("PMD_ORDERS", self._on_procman_orders)
+
+    def _terminate_spawned_deputy(self):
+        if not self.spawned_deputy:
+            return
+
+        print("Terminating local deputy..")
+        try:
+            self.spawned_deputy.terminate()
+        except AttributeError: # python 2.4, 2.5 don't have Popen.terminate()
+            os.kill(self.spawned_deputy.pid, signal.SIGTERM)
+            self.spawned_deputy.wait()
+        self.spawned_deputy = None
+
+    def _start_script(self):
+        if not self.script:
+            return False
+        print("Running script %s" % self.script_name)
+        errors = self.sheriff.execute_script(self.script)
+        if errors:
+            print("Script failed to run.  Errors detected:\n" + "\n".join(errors))
+            self._terminate_spawned_deputy()
+            sys.exit(1)
+        return False
+
+    def _on_script_finished(self, *args):
+        print("Script \"%s\" finished.  Self-demoting to observer" % self.script_name)
+        self.sheriff.set_observer(True)
+
+    def _maybe_send_orders(self):
+        if not self.sheriff.is_observer():
+            self.sheriff.send_orders()
+        return True
+
+    def _on_procman_orders(self, channel, data):
+        if self.sheriff.is_observer():
+            return
+
+        msg = orders_t.decode(data)
+        if self.sheriff.name != msg.sheriff_name:
+            # detected the presence of another sheriff that is not this one.
+            # self-demote to prevent command thrashing
+            self.sheriff.set_observer(True)
+
+    def run(self):
+        self.mainloop = glib.MainLoop()
+
+        # parse the config file
+        if self.config is not None:
+            self.sheriff.load_config(self.config)
+
+        # start a local deputy?
+        if self.spawn_deputy:
+            bot_procman_deputy_cmd = find_bot_procman_deputy_cmd()
+            args = [ bot_procman_deputy_cmd, "-n", "localhost" ]
+            if not bot_procman_deputy_cmd:
+                sys.stderr.write("Can't find bot-procman-deputy.")
+                sys.exit(1)
+            self.spawned_deputy = subprocess.Popen(args)
+        else:
+            self.spawned_deputy = None
+
+        # run a script
+        if self.script_name:
+            self.script = self.sheriff.get_script(self.script_name)
+            if not self.script:
+                print "No such script: %s" % self.script_name
+                self._terminate_spawned_deputy()
+                sys.exit(1)
+            errors = self.sheriff.check_script_for_errors(self.script)
+            if errors:
+                print "Unable to run script.  Errors were detected:\n\n"
+                print "\n    ".join(errors)
+                self._terminate_spawned_deputy()
+                sys.exit(1)
+
+            # self-demote to observer status when the script is finished.
+            self.sheriff.connect("script-finished", self._on_script_finished)
+
+            # delay script execution by 200 ms.
+            gobject.timeout_add(200, self._start_script)
+
+        signal.signal(signal.SIGINT, lambda *s: mainloop.quit())
+        signal.signal(signal.SIGTERM, lambda *s: mainloop.quit())
+        signal.signal(signal.SIGHUP, lambda *s: mainloop.quit())
+        gobject.timeout_add(1000, self._maybe_send_orders)
+
+        try:
+            self.mainloop.run()
+        except KeyboardInterrupt:
+            pass
+        print("Sheriff terminating..")
+        self._terminate_spawned_deputy()
+        return 0
+
 def usage():
     sys.stdout.write(
 """usage: %s [options] [<procman_config_file> [<script_name>]]
@@ -582,7 +687,7 @@ named script once the config file is loaded.
 """ % os.path.basename(sys.argv[0]))
     sys.exit(1)
 
-def run ():
+def main():
     try:
         opts, args = getopt.getopt( sys.argv[1:], 'hln',
                 ['help','lone-ranger', 'no-gui'] )
@@ -613,14 +718,14 @@ def run ():
     if len(args) > 1:
         script_name = args[1]
 
-    lc = LCM ()
-    def handle (*a):
+    lc = LCM()
+    def handle(*a):
         try:
-            lc.handle ()
+            lc.handle()
         except Exception:
-            traceback.print_exc ()
+            traceback.print_exc()
         return True
-    gobject.io_add_watch (lc, gobject.IO_IN, handle)
+    gobject.io_add_watch(lc, gobject.IO_IN, handle)
 
     if use_gui:
         gui = SheriffGtk(lc)
@@ -643,60 +748,17 @@ def run ():
                 gui._terminate_spawned_deputy()
                 sys.exit(1)
             gobject.timeout_add(200, lambda *s: gui.run_script(None, script))
+
+        signal.signal(signal.SIGINT, lambda *s: gtk.main_quit())
+        signal.signal(signal.SIGTERM, lambda *s: gtk.main_quit())
+        signal.signal(signal.SIGHUP, lambda *s: gtk.main_quit())
         try:
             gtk.main ()
         except KeyboardInterrupt:
             print("Exiting")
         gui.cleanup()
     else:
-        pm_sheriff = sheriff.Sheriff(lc)
-        bot_procman_deputy_cmd = find_bot_procman_deputy_cmd()
-        if not bot_procman_deputy_cmd:
-            sys.stderr.write("Can't find bot-procman-deputy.")
-            sys.exit(1)
-
-        args = [ bot_procman_deputy_cmd, "-n", "localhost" ]
-        spawned_deputy = subprocess.Popen(args)
-
-        def _terminate_spawned_deputy():
-            if spawned_deputy:
-                try:
-                    spawned_deputy.terminate()
-                except AttributeError: # python 2.4, 2.5 don't have Popen.terminate()
-                    os.kill(spawned_deputy.pid, signal.SIGTERM)
-                    spawned_deputy.wait()
-
-        if cfg is not None:
-            pm_sheriff.load_config(cfg)
-
-        if script_name:
-            script = pm_sheriff.get_script(script_name)
-            if not script:
-                print "No such script: %s" % script_name
-                _terminate_spawned_deputy()
-                sys.exit(1)
-            errors = pm_sheriff.check_script_for_errors(script)
-            if errors:
-                print "Unable to run script.  Errors were detected:\n\n"
-                print "\n    ".join(errors)
-                _terminate_spawned_deputy()
-                sys.exit(1)
-
-            def run_script():
-                errors = pm_sheriff.execute_script(script)
-                if errors:
-                    print "Script failed to run.  Errors detected:\n" + \
-                            "\n".join(errors)
-                    _terminate_spawned_deputy()
-                    sys.exit(1)
-
-            gobject.timeout_add(1000, lambda *s: pm_sheriff.send_orders() or True)
-            gobject.timeout_add(200, lambda *s: run_script())
-        try:
-            glib.MainLoop().run()
-        except KeyboardInterrupt:
-            print("Exiting")
-        _terminate_spawned_deputy()
+        SheriffHeadless(lc, cfg, spawn_deputy, script_name).run()
 
 if __name__ == "__main__":
-    run ()
+    main()

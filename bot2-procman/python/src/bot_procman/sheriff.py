@@ -813,7 +813,7 @@ class Sheriff (gobject.GObject):
             config_node.add_script(script.toScriptNode())
         file_obj.write (str (config_node))
 
-if __name__ == "__main__":
+def main():
     import getopt
 
     def usage():
@@ -859,3 +859,6 @@ if __name__ == "__main__":
     gobject.io_add_watch (lc, gobject.IO_IN, lambda *s: lc.handle () or True)
     gobject.timeout_add (1000, lambda *s: sheriff.send_orders () or True)
     mainloop.run ()
+
+if __name__ == "__main__":
+    main()
