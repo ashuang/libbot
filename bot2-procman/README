@@ -8,7 +8,7 @@ templates.  The policies and templates can be found at:
 Name:         bot2-procman
 Maintainers:  Albert Huang <albert@csail.mit.edu>
 Summary:      Tools to manage many processes distributed over several workstations
-Description:  
+Description:
   Procman is a tool for managing many processes distributed over one or more
   computers.  There are two ways to use procman:
 

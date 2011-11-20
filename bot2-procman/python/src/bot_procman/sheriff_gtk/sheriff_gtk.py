@@ -42,42 +42,11 @@ def find_bot_procman_deputy_cmd():
             return fname
     return None
 
-class SheriffGtkConfig(object):
-    def __init__(self):
-        self.show_columns = [ True ] * cm.NUM_CMDS_ROWS
-        config_dir = os.path.join(glib.get_user_config_dir(), "procman-sheriff")
-        if not os.path.exists(config_dir):
-            os.makedirs(config_dir)
-        self.config_fname = os.path.join(config_dir, "config")
-
-    def save(self):
-        d = {}
-        for i, val in enumerate(self.show_columns):
-            d["show_column_%d" % i] = val
-
-        try:
-            pickle.dump(d, open(self.config_fname, "w"))
-        except Exception, err:
-            print err
-
-    def load(self):
-        if not os.path.exists(self.config_fname):
-            return
-        try:
-            d = pickle.load(open(self.config_fname, "r"))
-            for i in range(len(self.show_columns)):
-                self.show_columns[i] = d["show_column_%d" % i]
-        except Exception, err:
-            print err
-            return
-
 class SheriffGtk(object):
     def __init__ (self, lc):
         self.lc = lc
         self.cmds_update_scheduled = False
         self.config_filename = None
-        self.gui_config = SheriffGtkConfig()
-        self.gui_config.load()
 
         # deputy spawned by the sheriff
         self.spawned_deputy = None
@@ -115,7 +84,7 @@ class SheriffGtk(object):
         self.window.add (vbox)
 
         self.cmds_ts = cm.SheriffCommandModel(self.sheriff)
-        self.cmds_tv = ctv.SheriffCommandTreeView(self.sheriff, self.cmds_ts, self.gui_config)
+        self.cmds_tv = ctv.SheriffCommandTreeView(self.sheriff, self.cmds_ts)
 
         # keyboard accelerators.  This probably isn't the right way to do it...
         self.accel_group = gtk.AccelGroup ()
@@ -304,13 +273,19 @@ class SheriffGtk(object):
             name = col.get_title ()
             if name == "Name":
                 continue
-            col_cmi = gtk.CheckMenuItem (name)
-            col_cmi.set_active (col.get_visible())
+            col_cmi = gtk.CheckMenuItem(name)
+            col_cmi.set_active(col.get_visible())
             def on_activate(cmi, col_):
-                col_.set_visible(cmi.get_active())
-                self.gui_config.show_columns[col_.get_sort_column_id()] = cmi.get_active()
-            col_cmi.connect ("activate", on_activate, col)
-            view_menu.append (col_cmi)
+                should_be_visible = cmi.get_active()
+                if col_.get_visible() != should_be_visible:
+                    col_.set_visible(should_be_visible)
+            def on_visibility_changed(col_, param, cmi_):
+                is_visible = col_.get_visible()
+                if is_visible != cmi_.get_active():
+                    cmi_.set_active(is_visible)
+            col_cmi.connect("activate", on_activate, col)
+            col.connect("notify::visible", on_visibility_changed, col_cmi)
+            view_menu.append(col_cmi)
 
         # setup the hosts treeview
         self.hosts_ts = ht.SheriffHostModel(self.sheriff)
@@ -336,12 +311,43 @@ class SheriffGtk(object):
         self.statusbar_context_main = self.statusbar.get_context_id("main")
         self.statusbar_context_script_msg = None
 
+        config_dir = os.path.join(glib.get_user_config_dir(), "procman-sheriff")
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+        self.config_fname = os.path.join(config_dir, "config")
+        self.load_settings()
+
         vbox.show_all ()
         self.window.show ()
 
     def cleanup(self):
         self._terminate_spawned_deputy()
-        self.gui_config.save()
+        self.save_settings()
+
+    def load_settings(self):
+        if not os.path.exists(self.config_fname):
+            return
+        try:
+            d = pickle.load(open(self.config_fname, "r"))
+        except Exception, err:
+            print err
+            return
+
+        self.cmds_tv.load_settings(d)
+
+    def save_settings(self):
+        config_dir = os.path.join(glib.get_user_config_dir(), "procman-sheriff")
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+        self.config_fname = os.path.join(config_dir, "config")
+        d = {}
+
+        self.cmds_tv.save_settings(d)
+
+        try:
+            pickle.dump(d, open(self.config_fname, "w"))
+        except Exception, err:
+            print err
 
     def _do_repopulate(self):
         self.cmds_ts.repopulate()

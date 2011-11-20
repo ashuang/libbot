@@ -6,7 +6,7 @@ import bot_procman.sheriff_gtk.command_model as cm
 import bot_procman.sheriff_gtk.sheriff_dialogs as sd
 
 class SheriffCommandTreeView(gtk.TreeView):
-    def __init__(self, _sheriff, cmds_ts, gui_config):
+    def __init__(self, _sheriff, cmds_ts):
         super(SheriffCommandTreeView, self).__init__(cmds_ts)
         self.cmds_ts = cmds_ts
         self.sheriff = _sheriff
@@ -28,7 +28,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         for name, renderer, col_id, cell_data_func in cols_to_make:
             col = gtk.TreeViewColumn(name, renderer, text=col_id)
             col.set_sort_column_id(col_id)
-            col.set_visible(gui_config.show_columns[col_id])
+            col.set_data("col-id", col_id)
             if cell_data_func:
                 col.set_cell_data_func(renderer, cell_data_func)
             self.columns.append(col)
@@ -109,6 +109,29 @@ class SheriffCommandTreeView(gtk.TreeView):
         model, rows = selection.get_selected_rows ()
         assert model is self.cmds_ts
         return self.cmds_ts.rows_to_commands(rows)
+
+    def save_settings(self, save_map):
+        for col in self.get_columns():
+            col_id = col.get_data("col-id")
+
+            visible_key = "cmd_treeview:visible:%s" % col_id
+            width_key = "cmd_treeview:width:%s" % col_id
+            save_map[visible_key] = col.get_visible()
+            save_map[width_key] = col.get_width()
+
+    def load_settings(self, save_map):
+        for col in self.get_columns():
+            col_id = col.get_data("col-id")
+
+            visible_key = "cmd_treeview:visible:%s" % col_id
+            width_key = "cmd_treeview:width:%s" % col_id
+            col.set_visible(save_map.get(visible_key, True))
+
+            if width_key in save_map:
+                width = save_map[width_key]
+                col.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+                col.set_fixed_width(width)
+                col.set_resizable(True)
 
     def _start_selected_commands (self, *args):
         for cmd in self.get_selected_commands ():
