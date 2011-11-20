@@ -602,8 +602,8 @@ class Sheriff (gobject.GObject):
             raise RuntimeError("Script removal is not allowed while a script is running.")
 
         if script in self.scripts:
-            self.emit("script-removed", script)
             self.scripts.remove(script)
+            self.emit("script-removed", script)
         else:
             raise ValueError("Unknown script [%s]", script.name)
 

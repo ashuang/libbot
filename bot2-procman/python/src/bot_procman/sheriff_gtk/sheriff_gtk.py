@@ -253,9 +253,21 @@ class SheriffGtk(object):
         scripts_mi.set_submenu(self.scripts_menu)
         self.scripts_menu.append (gtk.SeparatorMenuItem ())
 
-        add_script_mi = gtk.MenuItem("New script")
-        add_script_mi.connect("activate", self._on_add_script_activate)
-        self.scripts_menu.append(add_script_mi)
+        new_scripts_mi = gtk.MenuItem("New script")
+        new_scripts_mi.connect("activate", self._on_add_script_activate)
+        self.scripts_menu.append(new_scripts_mi)
+
+        self.edit_scripts_mi = gtk.MenuItem("Edit script")
+        self.scripts_menu.append(self.edit_scripts_mi)
+        self.edit_scripts_menu = gtk.Menu()
+        self.edit_scripts_mi.set_submenu(self.edit_scripts_menu)
+        self.edit_scripts_mi.set_sensitive(False)
+
+        self.remove_scripts_mi = gtk.MenuItem("Remove script")
+        self.scripts_menu.append(self.remove_scripts_mi)
+        self.remove_scripts_menu = gtk.Menu()
+        self.remove_scripts_mi.set_submenu(self.remove_scripts_menu)
+        self.remove_scripts_mi.set_sensitive(False)
 
         self.abort_script_mi = gtk.MenuItem("Abort script")
         self.abort_script_mi.connect("activate", self._on_abort_script_activate)
@@ -411,35 +423,41 @@ class SheriffGtk(object):
                 insert_point += 1
 
         # make a submenu for every script
-        smi = gtk.MenuItem(script.name)
-        smi.set_data("sheriff-script", script)
-        smi_menu = gtk.Menu()
-        run_mi = gtk.MenuItem("run")
+        run_mi = gtk.MenuItem(script.name)
+        run_mi.set_data("sheriff-script", script)
         run_mi.connect("activate", self.run_script, script)
+        self.scripts_menu.insert(run_mi, insert_point)
+        run_mi.show()
 
-        edit_mi = gtk.MenuItem("edit")
+        edit_mi = gtk.MenuItem(script.name)
         edit_mi.set_data("sheriff-script", script)
         edit_mi.connect("activate",
                 lambda mi: sd.do_edit_script_dialog(self.sheriff, self.window, script))
-        delete_mi = gtk.MenuItem("delete")
-        delete_mi.set_data("sheriff-script", script)
-        delete_mi.connect("activate",
+        self.edit_scripts_menu.insert(edit_mi, insert_point)
+        edit_mi.show()
+
+        remove_mi = gtk.MenuItem(script.name)
+        remove_mi.set_data("sheriff-script", script)
+        remove_mi.connect("activate",
                 lambda mi: self.sheriff.remove_script(mi.get_data("sheriff-script")))
-        smi_menu.append(run_mi)
-        smi_menu.append(edit_mi)
-        smi_menu.append(delete_mi)
-        smi.set_submenu(smi_menu)
-        self.scripts_menu.insert(smi, insert_point)
-        self.scripts_menu.show_all()
+        self.remove_scripts_menu.insert(remove_mi, insert_point)
+        remove_mi.show()
+
+        self.edit_scripts_mi.set_sensitive(True)
+        self.remove_scripts_mi.set_sensitive(True)
 
     def _on_script_added(self, sheriff, script):
         self._maybe_add_script_menu_item(script)
 
     def _on_script_removed(self, sheriff, script):
-        for smi in self.scripts_menu.children():
-            if smi.get_data("sheriff-script") is script:
-                self.scripts_menu.remove(smi)
-                break
+        for menu in [ self.scripts_menu, self.edit_scripts_menu, self.remove_scripts_menu ]:
+            for mi in menu.children():
+                if mi.get_data("sheriff-script") is script:
+                    menu.remove(mi)
+                    break
+        if not sheriff.get_scripts():
+            self.edit_scripts_mi.set_sensitive(False)
+            self.remove_scripts_mi.set_sensitive(False)
 
     def load_config(self, cfg):
         self.sheriff.load_config(cfg)
