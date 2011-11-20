@@ -269,6 +269,8 @@ class SheriffGtk(object):
         self.remove_scripts_mi.set_submenu(self.remove_scripts_menu)
         self.remove_scripts_mi.set_sensitive(False)
 
+        self.scripts_menu.append(gtk.SeparatorMenuItem())
+
         self.abort_script_mi = gtk.MenuItem("Abort script")
         self.abort_script_mi.connect("activate", self._on_abort_script_activate)
         self.abort_script_mi.set_sensitive(False)

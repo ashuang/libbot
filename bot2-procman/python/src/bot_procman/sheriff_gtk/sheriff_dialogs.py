@@ -137,15 +137,15 @@ class AddModifyScriptDialog (gtk.Dialog):
                 (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,
                  gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
 
-        self.set_default_size(600, 400)
-        table = gtk.Table(2, 2)
+        self.set_default_size(800, 400)
+
+        hbox = gtk.HBox()
 
         default_contents = 'script "script-name" {\n' \
                            '    # script commands here\n' \
-                           '}\n'
+                           '}'
 
         # script contents
-        table.attach(gtk.Label ("Script"), 0, 1, 0, 1, 0, 0)
         self.script_tv = gtk.TextView ()
         self.script_tv.set_editable(True)
         self.script_tv.set_accepts_tab(False)
@@ -155,35 +155,34 @@ class AddModifyScriptDialog (gtk.Dialog):
             self.script_tv.get_buffer().set_text(default_contents)
         sw = gtk.ScrolledWindow()
         sw.add(self.script_tv)
-        table.attach (sw, 1, 2, 0, 1)
+        hbox.pack_start(sw, True, True)
         if script is not None:
             self.script_tv.grab_focus()
 
 #        # Help text
-#        table.attach (gtk.Label ("Help"), 0, 1, 1, 2, 0, 0)
         help_tv = gtk.TextView()
         help_tv.set_editable(False)
         help_tv.set_sensitive(False)
         help_tv.get_buffer().set_text("""
-    Example actions:
+    Example commands:
         start cmd "server" wait "running";
+        start cmd "client";
+        stop cmd "server" wait "stopped";
+        restart group "mygroup";
+        wait group "mygroup" status "running";
         wait ms 500;
-        stop cmd "some command" wait "stopped";
-        restart group "other commands";
-        wait group "other commands" status "running";
-
-    Refer to commands and groups by what appears in the Name column.
-    Valid actions are:
-        start|stop|restart everything;
-        start|stop|restart cmd|group "nickname" [wait "running"|"stopped"];
-        wait ms ###;
         run_script "other-script-name";
-
 """)
-        table.attach (help_tv, 0, 2, 1, 2, 0, 0)
 
-        self.vbox.pack_start(table, True, True)
-        table.show_all()
+#    Refer to commands and groups by what appears in the Name column.
+#    Valid actions are:
+#        start|stop|restart cmd|group "nickname" [wait "running"|"stopped"];
+#        wait ms ###;
+#        run_script "other-script-name";
+
+        hbox.pack_start(help_tv, False, False)
+        self.vbox.pack_start(hbox, True, True)
+        hbox.show_all()
 
 #    def get_script_name (self): return self.name_te.get_text ()
     def get_script_contents (self):
