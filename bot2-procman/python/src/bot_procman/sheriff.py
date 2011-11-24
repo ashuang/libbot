@@ -446,6 +446,8 @@ class Sheriff (gobject.GObject):
         dep = self._get_or_make_deputy (deputy_name)
         newcmd = SheriffDeputyCommand()
         newcmd.name = cmd_name
+        if (cmd_nickname==""):
+            cmd_nickname = cmd_name
         newcmd.nickname = cmd_nickname
         newcmd.group = group
         newcmd.sheriff_id = self.__get_free_sheriff_id ()
