@@ -271,8 +271,6 @@ class SheriffGtk(object):
         # its visibility in the treeview
         for col in self.cmds_tv.get_columns():
             name = col.get_title ()
-            if name == "Name":
-                continue
             col_cmi = gtk.CheckMenuItem(name)
             col_cmi.set_active(col.get_visible())
             def on_activate(cmi, col_):

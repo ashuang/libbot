@@ -4,21 +4,23 @@ import gtk
 import bot_procman.sheriff as sheriff
 
 COL_CMDS_TV_OBJ, \
-COL_CMDS_TV_EXEC_OR_FULL_GROUP, \
+COL_CMDS_TV_EXEC, \
+COL_CMDS_TV_FULL_GROUP, \
 COL_CMDS_TV_DISPLAY_NAME, \
 COL_CMDS_TV_HOST, \
 COL_CMDS_TV_STATUS_ACTUAL, \
 COL_CMDS_TV_CPU_USAGE, \
 COL_CMDS_TV_MEM_VSIZE, \
 COL_CMDS_TV_AUTO_RESPAWN, \
-NUM_CMDS_ROWS = range(9)
+NUM_CMDS_ROWS = range(10)
 
 class SheriffCommandModel(gtk.TreeStore):
     def __init__(self, _sheriff):
         super(SheriffCommandModel, self).__init__( \
                 gobject.TYPE_PYOBJECT,
-                gobject.TYPE_STRING, # command name
-                gobject.TYPE_STRING, # command nickname
+                gobject.TYPE_STRING, # command executable
+                gobject.TYPE_STRING, # group name
+                gobject.TYPE_STRING, # command id/name
                 gobject.TYPE_STRING, # host name
                 gobject.TYPE_STRING, # status actual
                 gobject.TYPE_STRING, # CPU usage
@@ -56,7 +58,7 @@ class SheriffCommandModel(gtk.TreeStore):
         return self.group_row_references.keys ()
 
     def _delete_group_row_reference(self, group_iter):
-        group_name = self.get_value(group_iter, COL_CMDS_TV_EXEC_OR_FULL_GROUP)
+        group_name = self.get_value(group_iter, COL_CMDS_TV_FULL_GROUP)
         del self.group_row_references[group_name]
 
     def _is_group_row(self, model_iter):
@@ -111,9 +113,9 @@ class SheriffCommandModel(gtk.TreeStore):
                     model.get_value(model_iter, COL_CMDS_TV_DISPLAY_NAME)
 
             if not cur_grpname:
-                # add the group name to the command name column
+                # add the group name
                 model.set (model_iter,
-                           COL_CMDS_TV_EXEC_OR_FULL_GROUP, cmd.group,
+                           COL_CMDS_TV_FULL_GROUP, cmd.group,
                            COL_CMDS_TV_DISPLAY_NAME, cmd.group.split("/")[-1])
             return
         if cmd in cmds:
@@ -127,7 +129,7 @@ class SheriffCommandModel(gtk.TreeStore):
                 display_name = "<unnamed>"
 
             model.set (model_iter,
-                    COL_CMDS_TV_EXEC_OR_FULL_GROUP, cmd.name,
+                    COL_CMDS_TV_EXEC, cmd.name,
                     COL_CMDS_TV_DISPLAY_NAME, display_name,
                     COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
                     COL_CMDS_TV_HOST, cmd_deps[cmd].name,
@@ -187,6 +189,7 @@ class SheriffCommandModel(gtk.TreeStore):
         # remove rows that have been marked for deletion
         for trr in to_remove:
             cmds_iter = self.get_iter (trr.get_path())
+            print("removing row %s - %s" % (trr, cmds_iter))
             if self._is_group_row(cmds_iter):
                 self._delete_group_row_reference(cmds_iter)
             self.remove (cmds_iter)
@@ -209,7 +212,8 @@ class SheriffCommandModel(gtk.TreeStore):
             parent = self._find_or_make_group_row_reference (cmd.group)
 
             new_row = (cmd,        # COL_CMDS_TV_OBJ
-                cmd.name,          # COL_CMDS_TV_EXEC_OR_FULL_GROUP
+                cmd.name,          # COL_CMDS_TV_EXEC
+                "",                # COL_CMDS_TV_FULL_GROUP
                 cmd.nickname,      # COL_CMDS_TV_DISPLAY_NAME
                 deputy.name,       # COL_CMDS_TV_HOST
                 cmd.status (),     # COL_CMDS_TV_STATUS_ACTUAL
