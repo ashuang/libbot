@@ -81,7 +81,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         self.edit_cmd_ctxt_mi = gtk.MenuItem ("_Edit")
         self.cmd_ctxt_menu.append (self.edit_cmd_ctxt_mi)
         self.edit_cmd_ctxt_mi.connect ("activate",
-                self._edit_cmd_ctxt_mi_activated)
+                self._edit_selected_command)
 
         self.change_deputy_ctxt_mi = gtk.MenuItem ("_Change Host")
         self.cmd_ctxt_menu.append (self.change_deputy_ctxt_mi)
@@ -150,7 +150,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         for cmd in self.get_selected_commands ():
             self.sheriff.schedule_command_for_removal (cmd)
 
-    def _edit_cmd_ctxt_mi_activated(self, *args):
+    def _edit_selected_command(self, *args):
         cmds = self.get_selected_commands()
         if len(cmds) != 1:
             return

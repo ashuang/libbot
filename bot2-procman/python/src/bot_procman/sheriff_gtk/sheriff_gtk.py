@@ -184,6 +184,11 @@ class SheriffGtk(object):
 
         commands_menu.append (gtk.SeparatorMenuItem ())
 
+        self.edit_cmd_mi = gtk.MenuItem("_Edit command")
+        self.edit_cmd_mi.connect("activate", self.cmds_tv._edit_selected_command)
+        self.edit_cmd_mi.set_sensitive(False)
+        commands_menu.append(self.edit_cmd_mi)
+
         self.new_cmd_mi = gtk.MenuItem ("_New command")
         self.new_cmd_mi.add_accelerator ("activate", self.accel_group, ord("n"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
@@ -549,6 +554,7 @@ class SheriffGtk(object):
         self.stop_cmd_mi.set_sensitive (can_modify)
         self.restart_cmd_mi.set_sensitive (can_modify)
         self.remove_cmd_mi.set_sensitive (can_modify)
+        self.edit_cmd_mi.set_sensitive (can_modify and len(selected_cmds) == 1)
 
         self.new_cmd_mi.set_sensitive (can_add_load)
         self.load_cfg_mi.set_sensitive (can_add_load)
