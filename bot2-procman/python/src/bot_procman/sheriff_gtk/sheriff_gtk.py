@@ -126,10 +126,14 @@ class SheriffGtk(object):
         file_menu = gtk.Menu ()
         file_mi.set_submenu (file_menu)
 
-        self.load_cfg_mi = gtk.ImageMenuItem (gtk.STOCK_OPEN)
+        self.load_cfg_mi = gtk.ImageMenuItem("L_oad config")
+        self.load_cfg_mi.set_image(gtk.image_new_from_stock(gtk.STOCK_OPEN, gtk.ICON_SIZE_MENU))
         self.load_cfg_mi.add_accelerator ("activate", self.accel_group,
                 ord("o"), gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.save_cfg_mi = gtk.ImageMenuItem (gtk.STOCK_SAVE_AS)
+        self.save_cfg_mi = gtk.ImageMenuItem ("S_ave config as")
+        self.save_cfg_mi.set_image(gtk.image_new_from_stock(gtk.STOCK_SAVE_AS, gtk.ICON_SIZE_MENU))
+        self.save_cfg_mi.add_accelerator ("activate", self.accel_group,
+                ord("s"), gtk.gdk.CONTROL_MASK | gtk.gdk.SHIFT_MASK, gtk.ACCEL_VISIBLE)
         quit_mi = gtk.ImageMenuItem (gtk.STOCK_QUIT)
         quit_mi.add_accelerator ("activate", self.accel_group, ord("q"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)

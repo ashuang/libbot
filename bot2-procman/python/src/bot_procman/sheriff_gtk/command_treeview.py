@@ -131,8 +131,8 @@ class SheriffCommandTreeView(gtk.TreeView):
             if int(col_id) == cm.COL_CMDS_TV_DISPLAY_NAME:
                 self.cmds_ts.set_populate_exec_with_group_name(not should_be_visible)
 
-            if width_key in save_map:
-                width = save_map[width_key]
+            width = save_map.get(width_key, 0)
+            if width > 0:
                 col.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
                 col.set_fixed_width(width)
                 col.set_resizable(True)
