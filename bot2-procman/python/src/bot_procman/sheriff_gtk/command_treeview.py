@@ -126,7 +126,10 @@ class SheriffCommandTreeView(gtk.TreeView):
 
             visible_key = "cmd_treeview:visible:%s" % col_id
             width_key = "cmd_treeview:width:%s" % col_id
-            col.set_visible(save_map.get(visible_key, True))
+            should_be_visible = save_map.get(visible_key, True)
+            col.set_visible(should_be_visible)
+            if int(col_id) == cm.COL_CMDS_TV_DISPLAY_NAME:
+                self.cmds_ts.set_populate_exec_with_group_name(not should_be_visible)
 
             if width_key in save_map:
                 width = save_map[width_key]

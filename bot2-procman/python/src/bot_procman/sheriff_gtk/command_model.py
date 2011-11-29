@@ -30,6 +30,7 @@ class SheriffCommandModel(gtk.TreeStore):
 
         self.sheriff = _sheriff
         self.group_row_references = {}
+        self.populate_exec_with_group_name = False
 
     def _find_or_make_group_row_reference(self, group_name):
         if not group_name:
@@ -45,10 +46,15 @@ class SheriffCommandModel(gtk.TreeStore):
             else:
                 parent = None
 
+            if self.populate_exec_with_group_name:
+                exec_val = name_parts[-1]
+            else:
+                exec_val = ""
+
             # add the group name to the command name column if visible
             # otherwise, add it to the nickname column
             new_row = (None,                    # COL_CMDS_TV_OBJ
-                      "",                       # COL_CMDS_TV_EXEC
+                      exec_val,                 # COL_CMDS_TV_EXEC
                       group_name,               # COL_CMDS_TV_FULL_GROUP
                       name_parts[-1],           # COL_CMDS_TV_DISPLAY_NAME
                       "",                       # COL_CMDS_TV_HOST
@@ -64,6 +70,9 @@ class SheriffCommandModel(gtk.TreeStore):
 
     def get_known_group_names (self):
         return self.group_row_references.keys()
+
+    def set_populate_exec_with_group_name(self, val):
+        self.populate_exec_with_group_name = val
 
     def _delete_group_row_reference(self, trr):
         model_iter = self.get_iter(trr.get_path())
@@ -143,8 +152,15 @@ class SheriffCommandModel(gtk.TreeStore):
                 for cmd in children])
         cpu_str = "%.2f" % (cpu_total * 100)
 
+        # display group name in command column?
+        if self.populate_exec_with_group_name:
+            exec_val = self.get_value(model_iter, COL_CMDS_TV_DISPLAY_NAME)
+        else:
+            exec_val = ""
+
         model.set (model_iter,
                 COL_CMDS_TV_STATUS_ACTUAL, status_str,
+                COL_CMDS_TV_EXEC, exec_val,
                 COL_CMDS_TV_HOST, dep_str,
                 COL_CMDS_TV_CPU_USAGE, cpu_str,
                 COL_CMDS_TV_MEM_VSIZE, mem_total)

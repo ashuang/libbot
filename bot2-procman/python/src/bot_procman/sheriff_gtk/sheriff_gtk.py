@@ -284,6 +284,9 @@ class SheriffGtk(object):
                 should_be_visible = cmi.get_active()
                 if col_.get_visible() != should_be_visible:
                     col_.set_visible(should_be_visible)
+                    if col_ == self.cmds_tv.columns[0]:
+                        self.cmds_ts.set_populate_exec_with_group_name(not should_be_visible)
+                        self.cmds_ts.repopulate()
             def on_visibility_changed(col_, param, cmi_):
                 is_visible = col_.get_visible()
                 if is_visible != cmi_.get_active():
