@@ -439,20 +439,20 @@ class SheriffGtk(object):
                 insert_point += 1
 
         # make a submenu for every script
-        run_mi = gtk.MenuItem(script.name)
+        run_mi = gtk.MenuItem(script.name, use_underline=False)
         run_mi.set_data("sheriff-script", script)
         run_mi.connect("activate", self.run_script, script)
         self.scripts_menu.insert(run_mi, insert_point)
         run_mi.show()
 
-        edit_mi = gtk.MenuItem(script.name)
+        edit_mi = gtk.MenuItem(script.name, use_underline=False)
         edit_mi.set_data("sheriff-script", script)
         edit_mi.connect("activate",
                 lambda mi: sd.do_edit_script_dialog(self.sheriff, self.window, script))
         self.edit_scripts_menu.insert(edit_mi, insert_point)
         edit_mi.show()
 
-        remove_mi = gtk.MenuItem(script.name)
+        remove_mi = gtk.MenuItem(script.name, use_underline=False)
         remove_mi.set_data("sheriff-script", script)
         remove_mi.connect("activate",
                 lambda mi: self.sheriff.remove_script(mi.get_data("sheriff-script")))
