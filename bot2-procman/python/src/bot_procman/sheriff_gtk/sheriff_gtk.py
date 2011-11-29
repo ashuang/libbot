@@ -166,16 +166,15 @@ class SheriffGtk(object):
         self.stop_cmd_mi.set_sensitive (False)
         commands_menu.append (self.stop_cmd_mi)
 
-        self.restart_cmd_mi = gtk.MenuItem ("R_estart")
+        self.restart_cmd_mi = gtk.MenuItem ("_Restart")
         self.restart_cmd_mi.add_accelerator ("activate",
-                self.accel_group, ord ("e"),
+                self.accel_group, ord ("r"),
                 gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.restart_cmd_mi.connect ("activate",
-                self.cmds_tv._restart_selected_commands)
+        self.restart_cmd_mi.connect ("activate", self.cmds_tv._restart_selected_commands)
         self.restart_cmd_mi.set_sensitive (False)
         commands_menu.append (self.restart_cmd_mi)
 
-        self.remove_cmd_mi = gtk.MenuItem ("_Remove")
+        self.remove_cmd_mi = gtk.MenuItem ("Remo_ve")
         self.remove_cmd_mi.add_accelerator ("activate", self.accel_group,
                 gtk.gdk.keyval_from_name ("Delete"), 0, gtk.ACCEL_VISIBLE)
         self.remove_cmd_mi.connect ("activate", self.cmds_tv._remove_selected_commands)
@@ -185,6 +184,9 @@ class SheriffGtk(object):
         commands_menu.append (gtk.SeparatorMenuItem ())
 
         self.edit_cmd_mi = gtk.MenuItem("_Edit command")
+        self.edit_cmd_mi.add_accelerator ("activate",
+                self.accel_group, ord ("e"),
+                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
         self.edit_cmd_mi.connect("activate", self.cmds_tv._edit_selected_command)
         self.edit_cmd_mi.set_sensitive(False)
         commands_menu.append(self.edit_cmd_mi)
