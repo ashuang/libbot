@@ -56,6 +56,14 @@ void bot_gl_draw_cube_frame (void);
 void bot_gl_draw_circle (double r);
 
 /**
+ * bot_gl_draw_ortho_circles_3d:
+ *
+ * renders a circle in the xy, xz, yz plane of unit radius at the origin with lines along the axes
+ */
+void
+bot_gl_draw_ortho_circles_3d();
+
+/**
  * bot_gl_draw_disk:
  *
  * renders a solid disk of radius r on the plane Z = 0 centered on the origin

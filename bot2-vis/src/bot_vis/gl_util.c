@@ -265,6 +265,37 @@ bot_gl_draw_ellipse (double a, double b, double angle, int steps)
     glEnd ();
 }
 
+void bot_gl_line(double x_start, double y_start, double x_end, double y_end)
+{
+  glBegin(GL_LINES);
+  glVertex2d(x_start, y_start);
+  glVertex2d(x_end, y_end);
+  glEnd();
+}
+
+void
+bot_gl_draw_ortho_circles_3d()
+{
+  bot_gl_draw_circle(1);
+  bot_gl_line(-1, 0, 1, 0);
+  bot_gl_line(0, -1, 0, 1);
+
+  glPushMatrix();
+  glRotated(90,1,0,0);
+  bot_gl_draw_circle(1);
+  bot_gl_line(-1, 0, 1, 0);
+  bot_gl_line(0, -1, 0, 1);
+  glPopMatrix();
+
+
+  glPushMatrix();
+  glRotated(90,0,1,0);
+  bot_gl_draw_circle(1);
+  bot_gl_line(-1, 0, 1, 0);
+  bot_gl_line(0, -1, 0, 1);
+  glPopMatrix();
+}
+
 //void
 //bot_gl_draw_text (double x, double y, const char *text)
 //{
