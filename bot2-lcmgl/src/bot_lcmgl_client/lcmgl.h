@@ -221,6 +221,13 @@ void bot_lcmgl_text(bot_lcmgl_t *lcmgl, const double xyz[3], const char *text);
 void bot_lcmgl_text_ex(bot_lcmgl_t *lcmgl,
         const double xyz[3], const char *text, uint32_t font, uint32_t flags);
 
+/**
+ * bot_lcmgl_draw_axes():
+ *
+ * draw rgb xyz axes of unit length
+ */
+void bot_lcmgl_draw_axes(bot_lcmgl_t * lcmgl);
+
 
 #define lcmglBox(xyz, dim) bot_lcmgl_box(lcmgl, xyz, dim)
 #define lcmglCircle(xyz, radius) bot_lcmgl_circle(lcmgl, xyz, radius)

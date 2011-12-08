@@ -484,6 +484,31 @@ void bot_lcmgl_text(bot_lcmgl_t *lcmgl, const double xyz[3], const char *text)
                  BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
 }
 
+
+void bot_lcmgl_draw_axes(bot_lcmgl_t * lcmgl)
+{
+  //x-axis
+  lcmglBegin(LCMGL_LINES);
+  lcmglColor3f(1, 0, 0);
+  lcmglVertex3f(1, 0, 0);
+  lcmglVertex3f(0, 0, 0);
+  lcmglEnd();
+
+  //y-axis
+  lcmglBegin(LCMGL_LINES);
+  lcmglColor3f(0, 1, 0);
+  lcmglVertex3f(0, 1, 0);
+  lcmglVertex3f(0, 0, 0);
+  lcmglEnd();
+
+  //z-axis
+  lcmglBegin(LCMGL_LINES);
+  lcmglColor3f(0, 0, 1);
+  lcmglVertex3f(0, 0, 1);
+  lcmglVertex3f(0, 0, 0);
+  lcmglEnd();
+}
+
 ////////// vertex buffer
 //bot_lcmgl_vertex_buffer_t *bot_lcmgl_vertex_buffer_create(int capacity,
 //        bot_lcmgl_vertex_buffer_full_callback_t full_callback, void *user)
