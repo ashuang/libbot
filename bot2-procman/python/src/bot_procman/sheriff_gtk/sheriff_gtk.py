@@ -433,7 +433,7 @@ class SheriffGtk(object):
 
     def _maybe_add_script_menu_item(self, script):
         insert_point = 0
-        for i, smi in enumerate(self.scripts_menu.children()):
+        for i, smi in enumerate(self.scripts_menu.get_children()):
             other_script = smi.get_data("sheriff-script")
             if other_script is script:
                 return
