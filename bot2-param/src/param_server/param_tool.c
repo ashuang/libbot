@@ -5,7 +5,6 @@
  *      Author: abachrac
  */
 // reading a complete binary file
-
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -33,8 +32,11 @@ int main(int argc, char ** argv)
   msg.utime = _timestamp_now();
   msg.sequence_number = bot_param_get_seqno(param);
   msg.server_id = bot_param_get_server_id(param);
-  msg.key = argv[1];
-  msg.value = argv[2];
+  bot_param_entry_t entry;
+  entry.key = argv[1];
+  entry.value = argv[2];
+  msg.numEntries = 1;
+  msg.entries = &entry;
   bot_param_set_t_publish(lcm, BOT_PARAM_SET_CHANNEL, &msg);
 
   return 0;

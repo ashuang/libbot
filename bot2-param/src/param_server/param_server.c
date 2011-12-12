@@ -61,15 +61,21 @@ void on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, const bot
 
 void on_param_set(const lcm_recv_buf_t *rbuf, const char * channel, const bot_param_set_t * msg, void * user)
 {
-  fprintf(stderr, "\ngot param set message: %s = %s\n", msg->key, msg->value);
   param_server_t * self = (param_server_t*) user;
-  if (bot_param_set_str(self->params, msg->key, msg->value) > 0) {
-    self->seqNo++;
-    publish_params(self);
+
+  fprintf(stderr, "\ngot param set message whith the following keys:\n");
+  for (int i=0;i<msg->numEntries;i++){
+    fprintf(stderr,"%s = %s\n", msg->entries[i].key, msg->entries[i].value);
+
+    if (bot_param_set_str(self->params, msg->entries[i].key, msg->entries[i].value) > 0) {
+      self->seqNo++;
+      publish_params(self);
+    }
+    else {
+      fprintf(stderr, "error: could not set param (%s,%s)!\n", msg->entries[i].key, msg->entries[i].value);
+    }
   }
-  else {
-    fprintf(stderr,"error: could not set param!\n");
-  }
+
 }
 
 static gboolean on_timer(gpointer user)
