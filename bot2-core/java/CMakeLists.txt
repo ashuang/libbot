@@ -1,9 +1,16 @@
 find_package(Java)
 if(JAVA_COMPILE STREQUAL JAVA_COMPILE-NOTFOUND OR
-       JAVA_ARCHIVE STREQUAL JAVA_ARCHIVE-NOTFOUND)
+       JAVA_ARCHIVE STREQUAL JAVA_ARCHIVE-NOTFOUND OR
+ JAVA_COMPILE STREQUAL Java_JAVAC_EXECUTABLE-NOTFOUND OR
+ JAVA_ARCHIVE STREQUAL Java_JAR_EXECUTABLE-NOTFOUND)
     message(STATUS "Not building Java LCM-SPY plugins (Can't find Java)")
     return()
 endif()
+
+message(STATUS "Found java, building Java LCM-SPY plugins")
+message(STATUS "JAVA_COMPILE: ${JAVA_COMPILE}")
+message(STATUS "JAVA_ARCHIVE: ${JAVA_ARCHIVE}")
+message(STATUS "Found java, building Java LCM-SPY plugins")
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(jar_fname lcmspy_plugins_bot2.jar)
