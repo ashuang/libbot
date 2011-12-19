@@ -20,6 +20,9 @@ target_link_libraries(bot2-vis
     ${BOT2_CORE_LDFLAGS}
     z)
 
+pods_use_pkg_config_packages(bot2-vis
+    libpng)
+
 # set the library API version.  Increment this every time the public API
 # changes.
 set_target_properties(bot2-vis PROPERTIES SOVERSION 1)
