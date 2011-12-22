@@ -1,0 +1,8 @@
+package bot_core;
+
+struct sensor_status_t
+{
+    int64_t  utime;
+    string   sensor_name;
+    double   rate;  
+}
