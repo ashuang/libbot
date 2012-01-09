@@ -124,7 +124,7 @@ typedef struct _pmd_cmd_moreinfo {
     int respawn_backoff;
 
     int num_kills_sent;
-    int64_t last_kill_time;
+    int64_t first_kill_time;
     int remove_requested;
 } pmd_cmd_moreinfo_t;
 
@@ -293,7 +293,7 @@ start_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd, int desired_runid)
 
     mi->actual_runid = desired_runid;
     mi->num_kills_sent = 0;
-    mi->last_kill_time = 0;
+    mi->first_kill_time = 0;
     return 0;
 }
 
@@ -302,29 +302,27 @@ stop_cmd (procman_deputy_t *pmd, procman_cmd_t *cmd)
 {
     if (!cmd->pid) return 0;
 
-    pmd_cmd_moreinfo_t *gh = (pmd_cmd_moreinfo_t*)cmd->user;
-    gh->should_be_stopped = 1;
+    pmd_cmd_moreinfo_t *mi = (pmd_cmd_moreinfo_t*)cmd->user;
+    mi->should_be_stopped = 1;
 
-    if(gh->respawn_timeout_id)
-        g_source_remove(gh->respawn_timeout_id);
+    if(mi->respawn_timeout_id)
+        g_source_remove(mi->respawn_timeout_id);
 
-    /* Try killing no faster than 1 Hz */
-    int64_t now = timestamp_now ();
-    if (gh->last_kill_time && now < gh->last_kill_time + 900000)
-        return 0;
-
+    int64_t now = timestamp_now();
     int status;
-    if (gh->num_kills_sent > 5) {
-        status = procman_kill_cmd (pmd->pm, cmd, SIGKILL);
-    } else {
+    if(!mi->first_kill_time) {
         status = procman_kill_cmd (pmd->pm, cmd, SIGTERM);
         status = procman_kill_cmd (pmd->pm, cmd, SIGINT);
+        mi->first_kill_time = now;
+        mi->num_kills_sent++;
+    } else if(now > mi->first_kill_time + 5000000) {
+        status = procman_kill_cmd (pmd->pm, cmd, SIGKILL);
+    } else {
+        return 0;
     }
-    gh->num_kills_sent ++;
-    gh->last_kill_time = now;
 
     if (0 != status) {
-        printf_and_transmit (pmd, gh->sheriff_id, 
+        printf_and_transmit (pmd, mi->sheriff_id,
                 "kill: %s\n", strerror (-status));
     }
     return status;
