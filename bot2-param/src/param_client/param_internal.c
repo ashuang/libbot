@@ -771,7 +771,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
       (void *) param);
   int64_t utime_start = _timestamp_now();
   int64_t last_print_utime = -1;
-  while ((_timestamp_now() - utime_start) < 1E6) {
+  while ((_timestamp_now() - utime_start) < 3E6) {
     bot_param_request_t req;
     req.utime = _timestamp_now();
     bot_param_request_t_publish(lcm, BOT_PARAM_REQUEST_CHANNEL, &req);
