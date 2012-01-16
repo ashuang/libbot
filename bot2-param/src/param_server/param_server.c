@@ -99,6 +99,11 @@ static void usage(int argc, char ** argv)
 int main(int argc, char ** argv)
 {
 
+  if (argc != 2) {
+      usage (argc, argv);
+      exit(1);
+  }
+
   param_server_t * self = calloc(1, sizeof(param_server_t));
   GMainLoop * mainloop = g_main_loop_new(NULL, FALSE);
   if (!mainloop) {
@@ -110,12 +115,11 @@ int main(int argc, char ** argv)
   lcmu_glib_mainloop_attach_lcm(self->lcm);
 
   char *optstring = "h";
-  char c;
   struct option long_opts[] = {
       { "help", no_argument, NULL, 'h' },
       { 0, 0, 0, 0 }
   };
-
+  int c=-1;
   while ((c = getopt_long (argc, argv, optstring, long_opts, 0)) >= 0)
   {
       switch (c) {
@@ -126,10 +130,7 @@ int main(int argc, char ** argv)
       }
   }
 
-  if (argc != 2) {
-      usage (argc, argv);
-      exit(1);
-  }
+
 
   self->seqNo = 0;
   self->id = _timestamp_now();
