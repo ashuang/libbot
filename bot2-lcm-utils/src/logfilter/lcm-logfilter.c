@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     int invert_regex = 0;
 
     char *optstring = "hc:vs:e:i";
-    char c;
+    int c;
 
     while ((c = getopt_long (argc, argv, optstring, NULL, 0)) >= 0)
     {
