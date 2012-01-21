@@ -509,6 +509,38 @@ void bot_lcmgl_draw_axes(bot_lcmgl_t * lcmgl)
   lcmglEnd();
 }
 
+void
+bot_lcmgl_line(bot_lcmgl_t * lcmgl, double x_start, double y_start, double x_end, double y_end)
+{
+  lcmglBegin(LCMGL_LINES);
+  lcmglVertex2d(x_start, y_start);
+  lcmglVertex2d(x_end, y_end);
+  lcmglEnd();
+}
+
+void
+bot_lcmgl_draw_ortho_circles_3d(bot_lcmgl_t * lcmgl)
+{
+  double xyz_zero[3] = { 0 };
+  bot_lcmgl_circle(lcmgl, xyz_zero, 1);
+  bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
+  bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
+
+  lcmglPushMatrix();
+  lcmglRotated(90, 1, 0, 0);
+  bot_lcmgl_circle(lcmgl, xyz_zero, 1);
+  bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
+  bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
+  lcmglPopMatrix();
+
+  lcmglPushMatrix();
+  lcmglRotated(90, 0, 1, 0);
+  bot_lcmgl_circle(lcmgl, xyz_zero, 1);
+  bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
+  bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
+  lcmglPopMatrix();
+}
+
 ////////// vertex buffer
 //bot_lcmgl_vertex_buffer_t *bot_lcmgl_vertex_buffer_create(int capacity,
 //        bot_lcmgl_vertex_buffer_full_callback_t full_callback, void *user)

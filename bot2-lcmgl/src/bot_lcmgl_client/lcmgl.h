@@ -228,6 +228,13 @@ void bot_lcmgl_text_ex(bot_lcmgl_t *lcmgl,
  */
 void bot_lcmgl_draw_axes(bot_lcmgl_t * lcmgl);
 
+/**
+ * bot_gl_draw_ortho_circles_3d:
+ *
+ * renders a circle in the xy, xz, yz plane of unit radius at the origin with lines along the axes
+ */
+void bot_lcmgl_draw_ortho_circles_3d(bot_lcmgl_t * lcmgl);
+
 
 #define lcmglBox(xyz, dim) bot_lcmgl_box(lcmgl, xyz, dim)
 #define lcmglCircle(xyz, radius) bot_lcmgl_circle(lcmgl, xyz, radius)
