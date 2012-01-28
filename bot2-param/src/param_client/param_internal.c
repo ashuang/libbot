@@ -675,7 +675,7 @@ static BotParam * _bot_param_new(void)
   param = calloc(1, sizeof(BotParam));
   param->root = root;
   param->lock = g_mutex_new();
-  param->server_id = 0;
+  param->server_id = -1;
   param->sequence_number = 0;
 
   //create the callback lists
@@ -801,6 +801,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
 
   if (!keep_updated) {
     bot_param_update_t_unsubscribe(lcm, sub);
+    param->server_id = -1;
   }
   return param;
 
@@ -1390,7 +1391,7 @@ int bot_param_set_double(BotParam * param, const char * key, double val)
   return set_value(param, key, str);
 }
 
-int bot_param_set_str(BotParam * param, const char * key, char * val)
+int bot_param_set_str(BotParam * param, const char * key, const char * val)
 {
   return set_value(param, key, val);
 }
@@ -1479,7 +1480,7 @@ int bot_param_set_double_array(BotParam * param, const char * key, double * vals
   return ret_val;
 }
 
-int bot_param_set_str_array(BotParam * param, const char * key, char ** vals, int len)
+int bot_param_set_str_array(BotParam * param, const char * key, const char ** vals, int len)
 {
   char* str;
   char single_val[256];
@@ -1549,4 +1550,68 @@ bot_param_get_global(lcm_t * lcm, int keep_updated)
   fail: g_static_mutex_unlock(&bot_param_global_mutex);
   fprintf(stderr, "ERROR: Could not get global BotParam!\n");
   return NULL;
+}
+
+
+int bot_param_local_override_str(BotParam * param, const char * key, const char * val)
+{
+  g_mutex_lock(param->lock);
+  if (param->server_id > 0) {
+    fprintf(stderr,
+        "ERROR: bot_param_local_override() with key: %s and val %s called on server that is subscribed to updates!\n",
+        key, val);
+    g_mutex_unlock(param->lock);
+    return -1;
+  }
+  g_mutex_unlock(param->lock);
+  fprintf(stderr, "BotParam overriding key:%s with value %s\n", key, val);
+  return bot_param_set_str(param, key, val);
+}
+
+
+int bot_param_override_local_params(BotParam * param, const char * override_params)
+{
+  int ret = 0;
+  char * tmp_orig = (char *) calloc(strlen(override_params) + 1, sizeof(char));
+  sprintf(tmp_orig, "%s|", override_params);
+
+  char * tmpP = tmp_orig;
+  while (strlen(tmpP) != 0) {
+    size_t bar_pos = strcspn(tmpP, "|:");
+    if (bar_pos == strlen(tmpP)) {
+      fprintf(stderr, "Error overriding params: tmpstr %s does not have an '|' sign\n", tmpP);
+      ret = -1;
+    }
+    char * chunk = tmpP;
+    tmpP[bar_pos] = '\0';
+    if (strlen(chunk) > 0) {
+      size_t eq_pos = strcspn(chunk, "=");
+      if (eq_pos == strlen(chunk)) {
+        fprintf(stderr, "Error overriding params: chunk %s does not have an '=' sign\n", chunk);
+        ret = -1;
+        goto cleanup;
+      }
+      chunk[eq_pos] = '\0';
+      char * key = chunk;
+      char * val = chunk + eq_pos + 1;
+      if (strlen(key) == 0 || strlen(val) == 0) {
+        fprintf(stderr, "ERROR ovveriding params: chunk %s does not have a valid key=value pair", chunk);
+        ret = -1;
+        goto cleanup;
+      }
+      ret = bot_param_local_override_str(param, key, val);
+      if (ret <= 0) {
+        fprintf(stderr, "ERROR bot_param_local_override_str with key: %s and val %s return %d",
+            key, val, ret);
+        ret = -1;
+        goto cleanup;
+      }
+    }
+
+    tmpP = tmpP + bar_pos + 1;
+  }
+
+  cleanup:
+  free(tmp_orig);
+  return ret;
 }

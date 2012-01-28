@@ -445,9 +445,33 @@ BotParam*
 bot_param_get_global(lcm_t * lcm,int keep_updated);
 
 
+
+/**
+ * bot_param_local_override:
+ * @param param The param object to modify
+ * @param key   The param key to set
+ * @param val   The value to set it to
+ *
+ * Note: This method is ONLY valid if the param object is not subscribing to updates!
+ */
+int bot_param_local_override_str(BotParam * param, const char * key, const char * val); //TODO: add others?
+
+/**
+ * bot_param_override_local_params:
+ * @param param The param object to modify
+ * @param override_params   a list of key=value pairs separated by '|'
+ *
+ * This function should make it easier to script programs that
+ * depend on botParam to get most of their settings
+ *
+ * Note: This method is ONLY valid if the param object is not subscribing to updates!
+ */
+int bot_param_override_local_params(BotParam * param, const char * override_params);
+
 int64_t bot_param_get_server_id(BotParam * param);
 
 int bot_param_get_seqno(BotParam * param);
+
 
 
 #ifdef __cplusplus

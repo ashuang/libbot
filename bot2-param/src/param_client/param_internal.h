@@ -67,7 +67,7 @@ bot_param_set_double (BotParam * param,
 int
 bot_param_set_str (BotParam * param,
                 const char * key,
-                char * val);
+                const char * val);
 
 /**
  * bot_param_set_int_array:
@@ -138,6 +138,6 @@ bot_param_set_double_array (BotParam * param,
 int
 bot_param_set_str_array (BotParam * param,
                       const char * key,
-                      char ** vals,
+                      const char ** vals,
                       int len);
 
