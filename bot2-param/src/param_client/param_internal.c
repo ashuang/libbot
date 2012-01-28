@@ -1572,7 +1572,7 @@ int bot_param_override_local_param(BotParam * param, const char * key, const cha
 int bot_param_override_local_params(BotParam * param, const char * override_params)
 {
   int ret = 0;
-  char * tmp_orig = (char *) calloc(strlen(override_params) + 1, sizeof(char));
+  char * tmp_orig = (char *) calloc(strlen(override_params) + 2, sizeof(char));
   sprintf(tmp_orig, "%s|", override_params);
 
   char * tmpP = tmp_orig;
