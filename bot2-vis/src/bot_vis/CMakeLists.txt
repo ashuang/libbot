@@ -1,9 +1,3 @@
-include_directories(${PROJECT_SOURCE_DIR}
-    ${GLIB2_INCLUDE_DIRS} 
-    ${GTK2_INCLUDE_DIRS}
-    ${LCM_INCLUDE_DIRS}
-    ${BOT2_CORE_INCLUDE_DIRS})
-
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)
 
@@ -12,16 +6,11 @@ list(REMOVE_ITEM h_files glm.h)
 
 add_library(bot2-vis SHARED ${c_files})
 
-target_link_libraries(bot2-vis
-    ${GTK2_LDFLAGS}
-    ${GLUT_LIBRARIES}
-    ${OPENGL_LIBRARIES}
-    ${LIBJPEG_LIBRARIES}
-    ${BOT2_CORE_LDFLAGS}
-    z)
+set(REQUIRED_LIBS ${GLUT_LIBRARIES} ${LIBJPEG_LIBRARIES} ${ZLIB_LIBRARIES})    
+target_link_libraries(bot2-vis  ${OPENGL_LIBRARIES} ${REQUIRED_LIBS})
 
-pods_use_pkg_config_packages(bot2-vis
-    libpng)
+set(REQUIRED_PACAKGES glib-2.0 gtk+-2.0 gdk-pixbuf-2.0 lcm bot2-core libpng)
+pods_use_pkg_config_packages(bot2-vis ${REQUIRED_PACAKGES})
 
 # set the library API version.  Increment this every time the public API
 # changes.
@@ -32,6 +21,6 @@ pods_install_libraries(bot2-vis)
 pods_install_headers(${h_files} DESTINATION bot_vis)
 
 pods_install_pkg_config_file(${PROJECT_NAME}
-    LIBS -lbot2-vis -lz -ljpeg ${GLUT_LIBRARIES}
-    REQUIRES gtk+-2.0 lcm bot2-core
+    LIBS -lbot2-vis ${REQUIRED_LIBS}
+    REQUIRES ${REQUIRED_PACAKGES}
     VERSION 0.0.1)

@@ -1,9 +1,5 @@
 add_definitions(-std=gnu99)
 
-include_directories(
-    ${GLIB2_INCLUDE_DIRS} 
-    ${LCM_INCLUDE_DIRS})
-
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)
 
@@ -12,10 +8,12 @@ set(libname bot2-lcmgl-client)
 add_library(${libname} SHARED ${c_files})
 
 target_link_libraries(${libname}
-    ${GLIB2_LDFLAGS}
-    ${LCM_LDFLAGS}
     ${ZLIB_LIBRARIES}
-    ${LCMTYPES_LIBS})
+    )
+    
+set(REQUIRED_PACKAGES glib-2.0 lcm)    
+pods_use_pkg_config_packages(${libname} ${REQUIRED_PACKAGES})
+    
 
 # set the library API version.  Increment this every time the public API
 # changes.
@@ -27,6 +25,6 @@ pods_install_libraries(${libname})
 pods_install_headers(${h_files} DESTINATION bot_lcmgl_client)
 
 pods_install_pkg_config_file(bot2-lcmgl-client
-    LIBS -l${libname} -lz
-    REQUIRES glib-2.0 lcm
+    LIBS -l${libname} ${ZLIB_LIBRARIES}
+    REQUIRES ${REQUIRED_PACKAGES}
     VERSION 0.0.1)

@@ -16,10 +16,6 @@ set(GLUT_CFLAGS "")
 set(GLUT_LIBRARIES -lglut)
 set(ZLIB_LIBRARIES -lz)
 
-pkg_check_modules(LCM REQUIRED lcm)
-pkg_check_modules(GTK2 REQUIRED gtk+-2.0)
-pkg_check_modules(BOT2_VIS REQUIRED bot2-vis)
-
 add_definitions(-std=gnu99)
 
 add_subdirectory(src/bot_lcmgl_client)

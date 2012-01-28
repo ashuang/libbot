@@ -16,10 +16,7 @@ set(GLUT_LIBRARIES -lglut)
 set(LIBJPEG_CFLAGS "")
 set(LIBJPEG_LIBRARIES -ljpeg)
 
-pkg_check_modules(GLIB2 REQUIRED glib-2.0)
-pkg_check_modules(GTK2 REQUIRED gtk+-2.0 gdk-pixbuf-2.0)
-pkg_check_modules(LCM REQUIRED lcm)
-pkg_check_modules(BOT2_CORE REQUIRED bot2-core)
+set(ZLIB_LIBRARIES -lz)
 
 add_definitions(-std=gnu99)
 
