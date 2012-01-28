@@ -454,7 +454,7 @@ bot_param_get_global(lcm_t * lcm,int keep_updated);
  *
  * Note: This method is ONLY valid if the param object is not subscribing to updates!
  */
-int bot_param_local_override_str(BotParam * param, const char * key, const char * val); //TODO: add others?
+int bot_param_override_local_param(BotParam * param, const char * key, const char * val); //TODO: add typed versions?
 
 /**
  * bot_param_override_local_params:

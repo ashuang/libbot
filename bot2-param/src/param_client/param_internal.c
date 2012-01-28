@@ -771,7 +771,7 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
       (void *) param);
   int64_t utime_start = _timestamp_now();
   int64_t last_print_utime = -1;
-  while ((_timestamp_now() - utime_start) < 3E6) {
+  while ((_timestamp_now() - utime_start) < 1.5e6) {
     bot_param_request_t req;
     req.utime = _timestamp_now();
     bot_param_request_t_publish(lcm, BOT_PARAM_REQUEST_CHANNEL, &req);
@@ -1553,7 +1553,7 @@ bot_param_get_global(lcm_t * lcm, int keep_updated)
 }
 
 
-int bot_param_local_override_str(BotParam * param, const char * key, const char * val)
+int bot_param_override_local_param(BotParam * param, const char * key, const char * val)
 {
   g_mutex_lock(param->lock);
   if (param->server_id > 0) {
@@ -1599,7 +1599,7 @@ int bot_param_override_local_params(BotParam * param, const char * override_para
         ret = -1;
         goto cleanup;
       }
-      ret = bot_param_local_override_str(param, key, val);
+      ret = bot_param_override_local_param(param, key, val);
       if (ret <= 0) {
         fprintf(stderr, "ERROR bot_param_local_override_str with key: %s and val %s return %d",
             key, val, ret);
