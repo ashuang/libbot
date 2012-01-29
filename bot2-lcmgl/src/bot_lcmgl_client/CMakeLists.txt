@@ -11,7 +11,7 @@ target_link_libraries(${libname}
     ${ZLIB_LIBRARIES}
     )
     
-set(REQUIRED_PACKAGES glib-2.0 lcm)    
+set(REQUIRED_PACKAGES glib-2.0 lcm lcmtypes_bot2-lcmgl)    
 pods_use_pkg_config_packages(${libname} ${REQUIRED_PACKAGES})
     
 
