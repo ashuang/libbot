@@ -47,16 +47,17 @@ class SheriffGtk(object):
         self.lc = lc
         self.cmds_update_scheduled = False
         self.config_filename = None
+        self.script_done_action = None
 
         # deputy spawned by the sheriff
         self.spawned_deputy = None
 
         # create sheriff and subscribe to events
         self.sheriff = sheriff.Sheriff (self.lc)
-        self.sheriff.connect ("command-added", self._schedule_cmds_update)
-        self.sheriff.connect ("command-removed", self._schedule_cmds_update)
-        self.sheriff.connect ("command-status-changed", self._schedule_cmds_update)
-        self.sheriff.connect ("command-group-changed", self._schedule_cmds_update)
+        self.sheriff.connect("command-added", self._schedule_cmds_update)
+        self.sheriff.connect("command-removed", self._schedule_cmds_update)
+        self.sheriff.connect("command-status-changed", self._schedule_cmds_update)
+        self.sheriff.connect("command-group-changed", self._schedule_cmds_update)
         self.sheriff.connect("script-started", self._on_script_started)
         self.sheriff.connect("script-action-executing", self._on_script_action_executing)
         self.sheriff.connect("script-finished", self._on_script_finished)
@@ -390,7 +391,8 @@ class SheriffGtk(object):
         if self.is_observer_cmi != is_observer:
             self.is_observer_cmi.set_active (is_observer)
 
-    def run_script(self, menuitem, script):
+    def run_script(self, menuitem, script, script_done_action = None):
+        self.script_done_action = script_done_action
         errors = self.sheriff.execute_script(script)
         if errors:
             msgdlg = gtk.MessageDialog (self.window,
@@ -424,6 +426,10 @@ class SheriffGtk(object):
         def _remove_msg_func(msg_id):
             return lambda *s: msg_id == self.statusbar_context_script_msg and self.statusbar.pop(cid)
         gobject.timeout_add(6000, _remove_msg_func(self.statusbar_context_script_msg))
+        if self.script_done_action == "exit":
+            gtk.main_quit()
+        elif self.script_done_action == "observe":
+            self._set_observer(True)
 
     def _on_abort_script_activate(self, menuitem):
         self.sheriff.abort_script()
@@ -480,7 +486,7 @@ class SheriffGtk(object):
             self.remove_scripts_mi.set_sensitive(False)
 
     def load_config(self, cfg):
-        self.sheriff.load_config(cfg)
+        self.sheriff.load_config(cfg, False)
 
     # GTK signal handlers
     def _do_load_config_dialog (self, *args):
@@ -598,7 +604,7 @@ class SheriffGtk(object):
                     lambda *s: self.statusbar.pop (self.statusbar.get_context_id ("main")))
 
 class SheriffHeadless(object):
-    def __init__(self, lc, config, spawn_deputy, script_name):
+    def __init__(self, lc, config, spawn_deputy, script_name, script_done_action):
         self.sheriff = sheriff.Sheriff(lc)
         self.spawn_deputy = spawn_deputy
         self.spawned_deputy = None
@@ -608,6 +614,10 @@ class SheriffHeadless(object):
         self.mainloop = None
         self.lc = lc
         self.lc.subscribe ("PMD_ORDERS", self._on_procman_orders)
+        if script_done_action is None:
+            self.script_done_action = "exit"
+        else:
+            self.script_done_action = script_done_action
 
     def _terminate_spawned_deputy(self):
         if not self.spawned_deputy:
@@ -633,8 +643,12 @@ class SheriffHeadless(object):
         return False
 
     def _on_script_finished(self, *args):
-        print("Script \"%s\" finished.  Self-demoting to observer" % self.script_name)
-        self.sheriff.set_observer(True)
+        if self.script_done_action == "exit":
+            print("Script \"%s\" finished.  Exiting" % self.script_name)
+            self.mainloop.quit()
+        elif self.script_done_action == "observe":
+            print("Script \"%s\" finished.  Self-demoting to observer" % self.script_name)
+            self.sheriff.set_observer(True)
 
     def _maybe_send_orders(self):
         if not self.sheriff.is_observer():
@@ -656,7 +670,7 @@ class SheriffHeadless(object):
 
         # parse the config file
         if self.config is not None:
-            self.sheriff.load_config(self.config)
+            self.sheriff.load_config(self.config, False)
 
         # start a local deputy?
         if self.spawn_deputy:
@@ -683,7 +697,6 @@ class SheriffHeadless(object):
                 self._terminate_spawned_deputy()
                 sys.exit(1)
 
-            # self-demote to observer status when the script is finished.
             self.sheriff.connect("script-finished", self._on_script_finished)
 
             # delay script execution by 200 ms.
@@ -715,6 +728,12 @@ Options:
 
   -n, --no-gui        Runs in headless mode (no GUI).
 
+  --on-script-complete <exit|observe>
+                      Only valid if a script is specified.  If set to "exit",
+                      then the sheriff exits when the script is done executing.
+                      If set to "observe", then the sheriff self-demotes to
+                      observer mode.
+
   -h, --help          Shows this help text
 
 If <procman_config_file> is specified, then the sheriff tries to load
@@ -729,19 +748,24 @@ named script once the config file is loaded.
 def main():
     try:
         opts, args = getopt.getopt( sys.argv[1:], 'hln',
-                ['help','lone-ranger', 'no-gui'] )
+                ['help','lone-ranger', 'on-script-complete=', 'no-gui'] )
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
     spawn_deputy = False
     use_gui = True
+    script_done_action = None
 
     for optval, argval in opts:
         if optval in [ '-l', '--lone-ranger' ]:
             spawn_deputy = True
         elif optval in [ '-n', '--no-gui' ]:
             use_gui = False
+        elif optval in [ '--on-script-complete' ]:
+            script_done_action = argval
+            if argval not in [ "exit", "observe" ]:
+                usage()
         elif optval in [ '-h', '--help' ]:
             usage()
 
@@ -786,7 +810,7 @@ def main():
                 print "\n    ".join(errors)
                 gui._terminate_spawned_deputy()
                 sys.exit(1)
-            gobject.timeout_add(200, lambda *s: gui.run_script(None, script))
+            gobject.timeout_add(200, lambda *s: gui.run_script(None, script, script_done_action))
 
         signal.signal(signal.SIGINT, lambda *s: gtk.main_quit())
         signal.signal(signal.SIGTERM, lambda *s: gtk.main_quit())
@@ -797,7 +821,10 @@ def main():
             print("Exiting")
         gui.cleanup()
     else:
-        SheriffHeadless(lc, cfg, spawn_deputy, script_name).run()
+        if not script_name:
+            print("No script specified and running in headless mode.  Exiting")
+            sys.exit(1)
+        SheriffHeadless(lc, cfg, spawn_deputy, script_name, script_done_action).run()
 
 if __name__ == "__main__":
     main()

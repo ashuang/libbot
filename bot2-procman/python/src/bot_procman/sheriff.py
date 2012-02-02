@@ -759,32 +759,56 @@ class Sheriff (gobject.GObject):
     def abort_script(self):
         self._finish_script_execution()
 
-    def load_config (self, config_node):
+    def load_config(self, config_node, merge_with_existing):
         """
         config_node should be an instance of sheriff_config.ConfigNode
         """
         if self._is_observer:
             raise ValueError ("Can't load config in Observer mode")
 
-        for dep in self.deputies.values ():
-            for cmd in dep.commands.values ():
-                self.schedule_command_for_removal (cmd)
+        # always replace scripts.
         for script in self.scripts[:]:
             self.remove_script(script)
 
-        # TODO
+        current_command_strs = set()
+        if merge_with_existing:
+            # if merging new config with existing commands, then build an index
+            # of the existing commands.
+            for dep in self.deputies.values():
+                for cmd in dep.commands.values():
+                    cmdstr = "%s!%s!%s!%s!%s" % (dep.name, cmd.name, cmd.nickname, cmd.group, cmd.auto_respawn)
+                    current_command_strs.add(cmdstr)
+        else:
+            # remove all current commands if we're not merging.
+            for dep in self.deputies.values ():
+                for cmd in dep.commands.values ():
+                    self.schedule_command_for_removal (cmd)
+
+        commands_to_add = []
 
         def add_group_commands(group, name_prefix):
             for cmd in group.commands:
                 auto_respawn = cmd.attributes.get("auto_respawn", "").lower() in [ "true", "yes" ]
                 assert group.name == cmd.attributes["group"]
-                newcmd = self.add_command(cmd.attributes["host"],
+
+                add_command = True
+
+                # if merging is enabled, then only add this command if we don't
+                # have an entry for it already.
+                if merge_with_existing:
+                    cmdstr = "%s!%s!%s!%s!%s" % (cmd.attributes["host"], cmd.attributes["exec"],
+                            cmd.attributes["nickname"], name_prefix + group.name, str(auto_respawn))
+                    if cmdstr in current_command_strs:
+                        add_command = False
+
+                if add_command:
+                    commands_to_add.append((cmd.attributes["host"],
                         cmd.attributes["exec"],
                         cmd.attributes["nickname"],
                         name_prefix + group.name,
                         auto_respawn
-                        )
-                dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, cmd.attributes["host"]))
+                        ))
+
             for subgroup in group.subgroups.values():
                 if group.name:
                     add_group_commands(subgroup, name_prefix + group.name + "/")
@@ -792,6 +816,10 @@ class Sheriff (gobject.GObject):
                     add_group_commands(subgroup, "")
 
         add_group_commands(config_node.root_group, "")
+
+        for specs in commands_to_add:
+            newcmd = self.add_command(*specs)
+#            dbg ("[%s] %s (%s) -> %s" % (newcmd.group, newcmd.name, newcmd.nickname, cmd.attributes["host"]))
 
         for script_node in config_node.scripts.values():
             self.add_script(SheriffScript.from_script_node(script_node))
@@ -839,7 +867,7 @@ def main():
     lc = lcm.LCM ()
     sheriff = Sheriff (lc)
     if cfg is not None:
-        sheriff.load_config (cfg)
+        sheriff.load_config (cfg, False)
 
     if script_name is not None:
         script = sheriff.get_script(script_name)
