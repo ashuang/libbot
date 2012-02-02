@@ -8,6 +8,8 @@ include(cmake/pods.cmake)
 
 find_package(PkgConfig REQUIRED)
 
+set(GLUT_LIBRARIES -lglut)
+
 set(LIBJPEG_CFLAGS "")
 set(LIBJPEG_LIBRARIES -ljpeg)
 
