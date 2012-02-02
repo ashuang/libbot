@@ -233,7 +233,7 @@ procman_kill_cmd (procman_t *pm, procman_cmd_t *p, int signum)
     // send the same signal to all of the process's descendants
     for(int i=0; i<descendants->len; i++) {
         int child_pid = g_array_index(descendants, int, i);
-        dbgt("Sending %d to descendant %d (%p)\n", signum, child_pid, p);
+        dbgt("sending signal %d to descendant %d (%p)\n", signum, child_pid, p);
         kill(child_pid, signum);
 
         int new_descendant = 1;
@@ -251,7 +251,7 @@ procman_kill_cmd (procman_t *pm, procman_cmd_t *p, int signum)
 
 int procman_stop_cmd (procman_t *pm, procman_cmd_t *p)
 {
-    return procman_kill_cmd (pm, p, SIGTERM);
+    return procman_kill_cmd (pm, p, SIGINT);
 }
 
 int procman_stop_all_cmds (procman_t *pm)
