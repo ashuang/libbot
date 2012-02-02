@@ -1,10 +1,5 @@
 add_definitions(-std=gnu99)
 
-include_directories(
-    ${OPENGL_INCLUDE_DIR}
-    ${GLUT_INCLUDE_DIR}
-    )
-
 set(testers 
     gl_drawing_area_tester
     gl_image_area_tester

@@ -1,16 +1,11 @@
 add_definitions(-std=gnu99)
 
-include_directories(${OPENGL_INCLUDE_DIR})
-
 file(GLOB c_files *.c)
 file(GLOB h_files *.h)
 
 add_library(bot2-lcmgl-renderer SHARED ${c_files})
 
-target_link_libraries(bot2-lcmgl-renderer
-    ${OPENGL_LIBRARIES}
-    )
-set(REQUIRED_LIBS bot2-vis lcmtypes_bot2-lcmgl)
+set(REQUIRED_LIBS bot2-vis lcmtypes_bot2-lcmgl gl)
 pods_use_pkg_config_packages(bot2-lcmgl-renderer ${REQUIRED_LIBS})
     
 

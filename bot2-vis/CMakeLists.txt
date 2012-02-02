@@ -7,16 +7,9 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 include(cmake/pods.cmake)
 
 find_package(PkgConfig REQUIRED)
-find_package(OpenGL REQUIRED)
-
-list(APPEND OPENGL_LIBRARIES GL )
-set(GLUT_CFLAGS "")
-set(GLUT_LIBRARIES -lglut)
 
 set(LIBJPEG_CFLAGS "")
 set(LIBJPEG_LIBRARIES -ljpeg)
-
-set(ZLIB_LIBRARIES -lz)
 
 add_definitions(-std=gnu99)
 
