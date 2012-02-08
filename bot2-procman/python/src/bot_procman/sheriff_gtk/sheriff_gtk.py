@@ -237,6 +237,7 @@ class SheriffGtk(object):
 
         self.cmds_tv.load_settings(d)
         self.cmd_console.load_settings(d)
+        self.hosts_tv.load_settings(d)
 
     def save_settings(self):
         config_dir = os.path.join(glib.get_user_config_dir(), "procman-sheriff")
@@ -247,6 +248,7 @@ class SheriffGtk(object):
 
         self.cmds_tv.save_settings(d)
         self.cmd_console.save_settings(d)
+        self.hosts_tv.save_settings(d)
 
         try:
             pickle.dump(d, open(self.config_fname, "w"))
@@ -686,7 +688,7 @@ def main():
     if use_gui:
         gui = SheriffGtk(lc)
         if spawn_deputy:
-            gui.on_spawn_deputy_activate()
+            gui.on_spawn_deputy_mi_activate()
         if cfg is not None:
             gui.load_config(cfg)
             gui.load_save_dir = os.path.dirname(args[0])
