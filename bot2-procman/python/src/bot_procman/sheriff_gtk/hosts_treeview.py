@@ -93,11 +93,11 @@ class SheriffHostTreeView(gtk.TreeView):
                 self._cleanup_hosts)
         self.hosts_ctxt_menu.show_all()
 
-        # set some default appearance parameters
-        self.base_color = gtk.gdk.Color(65535, 65535, 65535)
-        self.text_color = gtk.gdk.Color(0, 0, 0)
-        self.set_background_color(self.base_color)
-        self.set_text_color(self.text_color)
+#        # set some default appearance parameters
+#        self.base_color = gtk.gdk.Color(65535, 65535, 65535)
+#        self.text_color = gtk.gdk.Color(0, 0, 0)
+#        self.set_background_color(self.base_color)
+#        self.set_text_color(self.text_color)
 
     def _on_hosts_tv_button_press_event (self, treeview, event):
         if event.type == gtk.gdk.BUTTON_PRESS and event.button == 3:
@@ -117,43 +117,45 @@ class SheriffHostTreeView(gtk.TreeView):
         if last_update is None or last_update > 5:
             cell.set_property("cell-background-set", True)
             cell.set_property("cell-background", "Red")
-            cell.set_property("foreground", "Black")
+#            cell.set_property("foreground", "Black")
         elif last_update > 2:
             cell.set_property("cell-background-set", True)
             cell.set_property("cell-background", "Yellow")
-            cell.set_property("foreground", "Black")
+#            cell.set_property("foreground", "Black")
         else:
             cell.set_property("cell-background-set", False)
-            cell.set_property("foreground-set", False)
+#            cell.set_property("foreground-set", False)
 
-    def get_background_color(self):
-        return self.base_color
-
-    def get_text_color(self):
-        return self.text_color
-
-    def set_background_color(self, color):
-        self.base_color = color
-        self.modify_base(gtk.STATE_NORMAL, color)
-        self.modify_base(gtk.STATE_ACTIVE, color)
-        self.modify_base(gtk.STATE_PRELIGHT, color)
-
-    def set_text_color(self, color):
-        self.text_color = color
-        self.modify_text(gtk.STATE_NORMAL, color)
-        self.modify_text(gtk.STATE_ACTIVE, color)
-        self.modify_text(gtk.STATE_PRELIGHT, color)
+#    def get_background_color(self):
+#        return self.base_color
+#
+#    def get_text_color(self):
+#        return self.text_color
+#
+#    def set_background_color(self, color):
+#        self.base_color = color
+#        self.modify_base(gtk.STATE_NORMAL, color)
+#        self.modify_base(gtk.STATE_ACTIVE, color)
+#        self.modify_base(gtk.STATE_PRELIGHT, color)
+#
+#    def set_text_color(self, color):
+#        self.text_color = color
+#        self.modify_text(gtk.STATE_NORMAL, color)
+#        self.modify_text(gtk.STATE_ACTIVE, color)
+#        self.modify_text(gtk.STATE_PRELIGHT, color)
 
     def save_settings(self, save_map):
-        save_map["hosts_treeview_background_color"] = self.base_color.to_string()
-        save_map["hosts_treeview_text_color"] = self.text_color.to_string()
+        pass
+#        save_map["hosts_treeview_background_color"] = self.base_color.to_string()
+#        save_map["hosts_treeview_text_color"] = self.text_color.to_string()
 
     def load_settings(self, save_map):
-        if "hosts_treeview_background_color" in save_map:
-            self.set_background_color(gtk.gdk.Color(save_map["hosts_treeview_background_color"]))
-
-        if "hosts_treeview_text_color" in save_map:
-            self.set_text_color(gtk.gdk.Color(save_map["hosts_treeview_text_color"]))
+        pass
+#        if "hosts_treeview_background_color" in save_map:
+#            self.set_background_color(gtk.gdk.Color(save_map["hosts_treeview_background_color"]))
+#
+#        if "hosts_treeview_text_color" in save_map:
+#            self.set_text_color(gtk.gdk.Color(save_map["hosts_treeview_text_color"]))
 
 #    def _get_selected_hosts (self):
 #        model, rows = self.hosts_tv.get_selection ().get_selected_rows ()

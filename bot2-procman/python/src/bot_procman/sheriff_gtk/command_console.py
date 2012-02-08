@@ -63,7 +63,7 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         self.stdout_textview.connect ("populate-popup", self.on_tb_populate_menu)
 
         # set some default appearance parameters
-        self.font_str = "Monospace"
+        self.font_str = "Monospace 10"
         self.set_font(self.font_str)
         self.base_color = gtk.gdk.Color(65535, 65535, 65535)
         self.text_color = gtk.gdk.Color(0, 0, 0)

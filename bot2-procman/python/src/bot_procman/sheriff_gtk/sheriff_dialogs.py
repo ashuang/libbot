@@ -111,12 +111,12 @@ class PreferencesDialog(gtk.Dialog):
         table.attach(self.rate_limit_sb, 1, 2, 0, 1)
 
         # background color
-        table.attach(gtk.Label("Background color"), 0, 1, 1, 2, 0, 0)
+        table.attach(gtk.Label("Console background color"), 0, 1, 1, 2, 0, 0)
         self.bg_color_bt = gtk.ColorButton(sheriff_gtk.cmd_console.get_background_color())
         table.attach(self.bg_color_bt, 1, 2, 1, 2)
 
         # foreground color
-        table.attach(gtk.Label("Text color"), 0, 1, 2, 3, 0, 0)
+        table.attach(gtk.Label("Console text color"), 0, 1, 2, 3, 0, 0)
         self.text_color_bt = gtk.ColorButton(sheriff_gtk.cmd_console.get_text_color())
         table.attach(self.text_color_bt, 1, 2, 2, 3)
 
@@ -320,10 +320,10 @@ def do_preferences_dialog(sheriff_gtk, window):
         sheriff_gtk.cmd_console.set_output_rate_limit(dlg.rate_limit_sb.get_value_as_int())
         sheriff_gtk.cmd_console.set_font(dlg.font_bt.get_font_name())
 
-        sheriff_gtk.cmds_tv.set_background_color(dlg.bg_color_bt.get_color())
-        sheriff_gtk.cmds_tv.set_text_color(dlg.text_color_bt.get_color())
-
-        sheriff_gtk.hosts_tv.set_background_color(dlg.bg_color_bt.get_color())
-        sheriff_gtk.hosts_tv.set_text_color(dlg.text_color_bt.get_color())
+#        sheriff_gtk.cmds_tv.set_background_color(dlg.bg_color_bt.get_color())
+#        sheriff_gtk.cmds_tv.set_text_color(dlg.text_color_bt.get_color())
+#
+#        sheriff_gtk.hosts_tv.set_background_color(dlg.bg_color_bt.get_color())
+#        sheriff_gtk.hosts_tv.set_text_color(dlg.text_color_bt.get_color())
 
     dlg.destroy()
