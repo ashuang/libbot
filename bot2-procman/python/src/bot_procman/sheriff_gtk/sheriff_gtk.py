@@ -46,8 +46,8 @@ def find_bot_procman_glade():
     search_path = []
     if BUILD_PREFIX:
         search_path.append(os.path.join(BUILD_PREFIX, "share", "bot_procman"))
-    search_path.append("/usr/lib/share/bot_procman")
-    search_path.append("/usr/local/lib/share/bot_procman")
+    search_path.append("/usr/share/bot_procman")
+    search_path.append("/usr/local/share/bot_procman")
     for spath in search_path:
         fname = os.path.join(spath, "procman-sheriff.glade")
         if os.path.isfile(fname):
