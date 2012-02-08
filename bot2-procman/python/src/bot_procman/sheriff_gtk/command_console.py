@@ -6,7 +6,7 @@ import pango
 
 from bot_procman.printf_t import printf_t
 
-PRINTF_RATE_LIMIT = 10000
+DEFAULT_MAX_CHARS_PER_SECOND = 4000
 
 ANSI_CODES_TO_TEXT_TAG_PROPERTIES = { \
         "1" : ("weight", pango.WEIGHT_BOLD),
@@ -75,6 +75,8 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         self.text_tags = { "normal" : gtk.TextTag("normal") }
         for tt in self.text_tags.values():
             self.sheriff_tb.get_tag_table().add(tt)
+
+        self.set_output_rate_limit(DEFAULT_MAX_CHARS_PER_SECOND)
 
     def _stdout_rate_limit_upkeep (self):
         for cmd in self.sheriff.get_all_commands ():
@@ -169,6 +171,17 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         end_iter = tb.get_end_iter ()
         tb.delete (start_iter, end_iter)
 
+    def set_output_rate_limit(self, max_chars_per_second):
+        self.max_chars_per_2500_ms = int(max_chars_per_second * 2.5)
+
+    def load_settings(self, save_map):
+        # TODO
+        pass
+
+    def save_settings(self, save_map):
+        # TODO
+        pass
+
     def on_adj_changed (self, adj):
         if adj.get_data ("scrolled-to-end"):
             adj.set_value (adj.upper - adj.page_size)
@@ -190,11 +203,11 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
 
             # rate limit
             msg_count = sum (extradata.printf_keep_count)
-            if msg_count >= PRINTF_RATE_LIMIT:
+            if msg_count >= self.max_chars_per_2500_ms:
                 extradata.printf_drop_count += len (msg.text)
                 return
 
-            tokeep = min (PRINTF_RATE_LIMIT - msg_count, len (msg.text))
+            tokeep = min (self.max_chars_per_2500_ms - msg_count, len (msg.text))
             extradata.printf_keep_count[-1] += tokeep
 
             if len (msg.text) > tokeep:

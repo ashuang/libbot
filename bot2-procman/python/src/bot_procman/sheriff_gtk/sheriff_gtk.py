@@ -42,6 +42,22 @@ def find_bot_procman_deputy_cmd():
             return fname
     return None
 
+def find_bot_procman_glade():
+    search_path = []
+    if BUILD_PREFIX:
+        search_path.append(os.path.join(BUILD_PREFIX, "share", "bot_procman"))
+    search_path.append(os.path.join("usr", "lib", "share", "bot_procman"))
+    search_path.append(os.path.join("usr", "local", "lib", "share", "bot_procman"))
+    for spath in search_path:
+        fname = os.path.join(spath, "procman-sheriff.glade")
+        if os.path.isfile(fname):
+            return fname
+    sys.stderr.write("ERROR!  Unable to find procman-sheriff.glade\n")
+    sys.stderr.write("Locations checked:\n")
+    for spath in search_path:
+        sys.stderr.write("    %s\n" % spath)
+    sys.exit(1)
+
 class SheriffGtk(object):
     def __init__ (self, lc):
         self.lc = lc
@@ -76,211 +92,65 @@ class SheriffGtk(object):
         self.lc.subscribe ("PMD_ORDERS", self.on_procman_orders)
 
         # setup GUI
-        self.window = gtk.Window (gtk.WINDOW_TOPLEVEL)
-        self.window.set_default_size (800, 600)
-        self.window.connect ("delete-event", gtk.main_quit)
-        self.window.connect ("destroy-event", gtk.main_quit)
 
-        vbox = gtk.VBox ()
-        self.window.add (vbox)
+        self.builder = gtk.Builder()
+        self.builder.add_from_file(find_bot_procman_glade())
+        self.builder.connect_signals(self)
+
+        self.window = self.builder.get_object("main_window")
 
         self.cmds_ts = cm.SheriffCommandModel(self.sheriff)
         self.cmds_tv = ctv.SheriffCommandTreeView(self.sheriff, self.cmds_ts)
 
-        # keyboard accelerators.  This probably isn't the right way to do it...
-        self.accel_group = gtk.AccelGroup ()
-        self.accel_group.connect_group (ord("n"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, lambda *a: None)
-        self.accel_group.connect_group (ord("s"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, lambda *a: None)
-        self.accel_group.connect_group (ord("t"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, lambda *a: None)
-        self.accel_group.connect_group (ord("e"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, lambda *a: None)
-        self.accel_group.connect_group (ord("q"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, gtk.main_quit)
-        self.accel_group.connect_group (ord("o"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE, lambda *a: None)
-        self.accel_group.connect_group (ord("a"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE,
-                lambda *a: self.cmds_tv.get_selection ().select_all ())
-        self.accel_group.connect_group (ord("d"), gtk.gdk.CONTROL_MASK,
-                gtk.ACCEL_VISIBLE,
-                lambda *a: self.cmds_tv.get_selection ().unselect_all ())
-#        self.accel_group.connect_group (ord("a"), gtk.gdk.CONTROL_MASK,
-#                gtk.ACCEL_VISIBLE, self._do_save_config_dialog)
-        self.accel_group.connect_group (gtk.gdk.keyval_from_name ("Delete"), 0,
-                gtk.ACCEL_VISIBLE, self.cmds_tv._remove_selected_commands)
-        self.window.add_accel_group (self.accel_group)
-
-        # setup the menu bar
-        menu_bar = gtk.MenuBar ()
-        vbox.pack_start (menu_bar, False, False, 0)
-
-        file_mi = gtk.MenuItem ("_File")
-        options_mi = gtk.MenuItem ("_Options")
-        commands_mi = gtk.MenuItem ("_Commands")
-        view_mi = gtk.MenuItem ("_View")
-        scripts_mi = gtk.MenuItem ("_Scripts")
-
-        # file menu
-        file_menu = gtk.Menu ()
-        file_mi.set_submenu (file_menu)
-
-        self.load_cfg_mi = gtk.ImageMenuItem("L_oad config")
-        self.load_cfg_mi.set_image(gtk.image_new_from_stock(gtk.STOCK_OPEN, gtk.ICON_SIZE_MENU))
-        self.load_cfg_mi.add_accelerator ("activate", self.accel_group,
-                ord("o"), gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.save_cfg_mi = gtk.ImageMenuItem ("S_ave config as")
-        self.save_cfg_mi.set_image(gtk.image_new_from_stock(gtk.STOCK_SAVE_AS, gtk.ICON_SIZE_MENU))
-        self.save_cfg_mi.add_accelerator ("activate", self.accel_group,
-                ord("s"), gtk.gdk.CONTROL_MASK | gtk.gdk.SHIFT_MASK, gtk.ACCEL_VISIBLE)
-        quit_mi = gtk.ImageMenuItem (gtk.STOCK_QUIT)
-        quit_mi.add_accelerator ("activate", self.accel_group, ord("q"),
-                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        file_menu.append (self.load_cfg_mi)
-        file_menu.append (self.save_cfg_mi)
-        file_menu.append (quit_mi)
-        self.load_cfg_mi.connect ("activate", self._do_load_config_dialog)
-        self.save_cfg_mi.connect ("activate", self._do_save_config_dialog)
-        quit_mi.connect ("activate", gtk.main_quit)
-
-        # load, save dialogs
+        # load save menu
+        self.load_cfg_mi = self.builder.get_object("load_cfg_mi")
+        self.save_cfg_mi = self.builder.get_object("save_cfg_mi")
         self.load_dlg = None
         self.save_dlg = None
         self.load_save_dir = None
         if BUILD_PREFIX and os.path.exists("%s/data/procman" % BUILD_PREFIX):
             self.load_save_dir = "%s/data/procman" % BUILD_PREFIX
 
-        # commands menu
-        commands_menu = gtk.Menu ()
-        commands_mi.set_submenu (commands_menu)
-        self.start_cmd_mi = gtk.MenuItem ("_Start")
-        self.start_cmd_mi.add_accelerator ("activate",
-                self.accel_group, ord("s"),
-                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.start_cmd_mi.connect ("activate", self.cmds_tv._start_selected_commands)
-        self.start_cmd_mi.set_sensitive (False)
-        commands_menu.append (self.start_cmd_mi)
-
-        self.stop_cmd_mi = gtk.MenuItem ("S_top")
-        self.stop_cmd_mi.add_accelerator ("activate",
-                self.accel_group, ord("t"),
-                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.stop_cmd_mi.connect ("activate", self.cmds_tv._stop_selected_commands)
-        self.stop_cmd_mi.set_sensitive (False)
-        commands_menu.append (self.stop_cmd_mi)
-
-        self.restart_cmd_mi = gtk.MenuItem ("_Restart")
-        self.restart_cmd_mi.add_accelerator ("activate",
-                self.accel_group, ord ("r"),
-                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.restart_cmd_mi.connect ("activate", self.cmds_tv._restart_selected_commands)
-        self.restart_cmd_mi.set_sensitive (False)
-        commands_menu.append (self.restart_cmd_mi)
-
-        self.remove_cmd_mi = gtk.MenuItem ("Remo_ve")
-        self.remove_cmd_mi.add_accelerator ("activate", self.accel_group,
-                gtk.gdk.keyval_from_name ("Delete"), 0, gtk.ACCEL_VISIBLE)
-        self.remove_cmd_mi.connect ("activate", self.cmds_tv._remove_selected_commands)
-        self.remove_cmd_mi.set_sensitive (False)
-        commands_menu.append (self.remove_cmd_mi)
-
-        commands_menu.append (gtk.SeparatorMenuItem ())
-
-        self.edit_cmd_mi = gtk.MenuItem("_Edit command")
-        self.edit_cmd_mi.add_accelerator ("activate",
-                self.accel_group, ord ("e"),
-                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.edit_cmd_mi.connect("activate", self.cmds_tv._edit_selected_command)
-        self.edit_cmd_mi.set_sensitive(False)
-        commands_menu.append(self.edit_cmd_mi)
-
-        self.new_cmd_mi = gtk.MenuItem ("_New command")
-        self.new_cmd_mi.add_accelerator ("activate", self.accel_group, ord("n"),
-                gtk.gdk.CONTROL_MASK, gtk.ACCEL_VISIBLE)
-        self.new_cmd_mi.connect ("activate",
-                lambda *s: sd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.window))
-        commands_menu.append (self.new_cmd_mi)
-
         # options menu
-        options_menu = gtk.Menu ()
-        options_mi.set_submenu (options_menu)
-
-        self.is_observer_cmi = gtk.CheckMenuItem ("_Observer")
-        self.is_observer_cmi.connect ("activate", self.on_observer_mi_activate)
-        options_menu.append (self.is_observer_cmi)
-
-        self.spawn_deputy_cmi = gtk.MenuItem("Spawn Local _Deputy")
-        self.spawn_deputy_cmi.connect("activate", self.on_spawn_deputy_activate)
-        options_menu.append(self.spawn_deputy_cmi)
-
-        self.terminate_spawned_deputy_cmi = gtk.MenuItem("_Terminate local deputy")
-        self.terminate_spawned_deputy_cmi.connect("activate", self.on_terminate_spawned_deputy_activate)
-        options_menu.append(self.terminate_spawned_deputy_cmi)
-        self.terminate_spawned_deputy_cmi.set_sensitive(False)
+        self.is_observer_cmi = self.builder.get_object("is_observer_cmi")
+        self.spawn_deputy_mi = self.builder.get_object("spawn_deputy_mi")
+        self.terminate_spawned_deputy_mi = self.builder.get_object("terminate_spawned_deputy_mi")
 
         self.bot_procman_deputy_cmd = find_bot_procman_deputy_cmd()
         if not self.bot_procman_deputy_cmd:
             sys.stderr.write("Can't find bot-procman-deputy.  Spawn Deputy disabled")
-            self.spawn_deputy_cmi.set_sensitive(False)
+            self.spawn_deputy_mi.set_sensitive(False)
 
-        # view menu
-        view_menu = gtk.Menu ()
-        view_mi.set_submenu (view_menu)
+        # commands menu
+        self.start_cmd_mi = self.builder.get_object("start_cmd_mi")
+        self.stop_cmd_mi = self.builder.get_object("stop_cmd_mi")
+        self.restart_cmd_mi = self.builder.get_object("restart_cmd_mi")
+        self.remove_cmd_mi = self.builder.get_object("remove_cmd_mi")
+        self.edit_cmd_mi = self.builder.get_object("edit_cmd_mi")
+        self.new_cmd_mi = self.builder.get_object("new_cmd_mi")
 
         # scripts menu
-        self.scripts_menu = gtk.Menu()
-        scripts_mi.set_submenu(self.scripts_menu)
-        self.scripts_menu.append (gtk.SeparatorMenuItem ())
+        self.abort_script_mi = self.builder.get_object("abort_script_mi")
+        self.edit_script_mi = self.builder.get_object("edit_script_mi")
+        self.remove_script_mi = self.builder.get_object("remove_script_mi")
+        self.scripts_menu = self.builder.get_object("scripts_menu")
+        self.edit_scripts_menu = self.builder.get_object("edit_scripts_menu")
+        self.remove_scripts_menu = self.builder.get_object("remove_scripts_menu")
 
-        new_scripts_mi = gtk.MenuItem("New script")
-        new_scripts_mi.connect("activate", self._on_add_script_activate)
-        self.scripts_menu.append(new_scripts_mi)
+        vpane = self.builder.get_object("vpaned")
 
-        self.edit_scripts_mi = gtk.MenuItem("Edit script")
-        self.scripts_menu.append(self.edit_scripts_mi)
-        self.edit_scripts_menu = gtk.Menu()
-        self.edit_scripts_mi.set_submenu(self.edit_scripts_menu)
-        self.edit_scripts_mi.set_sensitive(False)
-
-        self.remove_scripts_mi = gtk.MenuItem("Remove script")
-        self.scripts_menu.append(self.remove_scripts_mi)
-        self.remove_scripts_menu = gtk.Menu()
-        self.remove_scripts_mi.set_submenu(self.remove_scripts_menu)
-        self.remove_scripts_mi.set_sensitive(False)
-
-        self.scripts_menu.append(gtk.SeparatorMenuItem())
-
-        self.abort_script_mi = gtk.MenuItem("Abort script")
-        self.abort_script_mi.connect("activate", self._on_abort_script_activate)
-        self.abort_script_mi.set_sensitive(False)
-        self.scripts_menu.append(self.abort_script_mi)
-
-        menu_bar.append (file_mi)
-        menu_bar.append (options_mi)
-        menu_bar.append (commands_mi)
-        menu_bar.append (view_mi)
-        menu_bar.append (scripts_mi)
-
-        vpane = gtk.VPaned ()
-        vbox.pack_start (vpane, True, True, 0)
-
-
-        # setup the command treeview
-        hpane = gtk.HPaned ()
-        vpane.add1 (hpane)
-
-        sw = gtk.ScrolledWindow ()
-        sw.set_policy (gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        hpane.pack1 (sw, resize = True)
-        sw.add (self.cmds_tv)
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        hpane = self.builder.get_object("hpaned")
+        hpane.pack1(sw, resize = True)
+        sw.add(self.cmds_tv)
 
         cmds_sel = self.cmds_tv.get_selection()
         cmds_sel.connect ("changed", self._on_cmds_selection_changed)
 
         # create a checkable item in the View menu for each column to toggle
         # its visibility in the treeview
+        view_menu = self.builder.get_object("view_menu")
         for col in self.cmds_tv.get_columns():
             name = col.get_title ()
             col_cmi = gtk.CheckMenuItem(name)
@@ -308,18 +178,14 @@ class SheriffGtk(object):
         hpane.pack2 (sw, resize = False)
         sw.add (self.hosts_tv)
 
-        hpane.set_position (500)
-
         gobject.timeout_add (1000, lambda *s: self.hosts_ts.update() or True)
 
         # stdout textview
         self.cmd_console = cc.SheriffCommandConsole(self.sheriff, self.lc)
         vpane.add2(self.cmd_console)
-        vpane.set_position (300)
 
         # status bar
-        self.statusbar = gtk.Statusbar ()
-        vbox.pack_start (self.statusbar, False, False, 0)
+        self.statusbar = self.builder.get_object("statusbar")
         self.statusbar_context_script = self.statusbar.get_context_id("script")
         self.statusbar_context_main = self.statusbar.get_context_id("main")
         self.statusbar_context_script_msg = None
@@ -330,8 +196,28 @@ class SheriffGtk(object):
         self.config_fname = os.path.join(config_dir, "config")
         self.load_settings()
 
-        vbox.show_all ()
-        self.window.show ()
+        self.window.show_all()
+
+    def on_quit_requested(self, *args):
+        gtk.main_quit()
+
+    def on_start_cmd_mi_activate(self, *args):
+        self.cmds_tv._start_selected_commands()
+
+    def on_stop_cmd_mi_activate(self, *args):
+        self.cmds_tv._stop_selected_commands()
+
+    def on_restart_cmd_mi_activate(self, *args):
+        self.cmds_tv._restart_selected_commands()
+
+    def on_remove_cmd_mi_activate(self, *args):
+        self.cmds_tv._remove_selected_commands()
+
+    def on_edit_cmd_mi_activate(self, *args):
+        self.cmds_tv._edit_selected_command()
+
+    def on_new_cmd_mi_activate(self, *args):
+        sd.do_add_command_dialog(self.sheriff, self.cmds_ts, self.window)
 
     def cleanup(self):
         self._terminate_spawned_deputy()
@@ -347,6 +233,7 @@ class SheriffGtk(object):
             return
 
         self.cmds_tv.load_settings(d)
+        self.cmd_console.load_settings(d)
 
     def save_settings(self):
         config_dir = os.path.join(glib.get_user_config_dir(), "procman-sheriff")
@@ -356,6 +243,7 @@ class SheriffGtk(object):
         d = {}
 
         self.cmds_tv.save_settings(d)
+        self.cmd_console.save_settings(d)
 
         try:
             pickle.dump(d, open(self.config_fname, "w"))
@@ -431,10 +319,10 @@ class SheriffGtk(object):
         elif self.script_done_action == "observe":
             self._set_observer(True)
 
-    def _on_abort_script_activate(self, menuitem):
+    def on_abort_script_mi_activate(self, menuitem):
         self.sheriff.abort_script()
 
-    def _on_add_script_activate(self, menuitem):
+    def on_new_script_mi_activate(self, menuitem):
         sd.do_add_script_dialog(self.sheriff, self.window)
 
     def _maybe_add_script_menu_item(self, script):
@@ -469,8 +357,8 @@ class SheriffGtk(object):
         self.remove_scripts_menu.insert(remove_mi, insert_point)
         remove_mi.show()
 
-        self.edit_scripts_mi.set_sensitive(True)
-        self.remove_scripts_mi.set_sensitive(True)
+        self.edit_script_mi.set_sensitive(True)
+        self.remove_script_mi.set_sensitive(True)
 
     def _on_script_added(self, sheriff, script):
         self._maybe_add_script_menu_item(script)
@@ -482,14 +370,14 @@ class SheriffGtk(object):
                     menu.remove(mi)
                     break
         if not sheriff.get_scripts():
-            self.edit_scripts_mi.set_sensitive(False)
-            self.remove_scripts_mi.set_sensitive(False)
+            self.edit_script_mi.set_sensitive(False)
+            self.remove_script_mi.set_sensitive(False)
 
     def load_config(self, cfg):
         self.sheriff.load_config(cfg, False)
 
     # GTK signal handlers
-    def _do_load_config_dialog (self, *args):
+    def on_load_cfg_mi_activate(self, *args):
         if not self.load_dlg:
             self.load_dlg = gtk.FileChooserDialog ("Load Config", self.window,
                     buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT,
@@ -514,7 +402,7 @@ class SheriffGtk(object):
         self.load_dlg.destroy()
         self.load_dlg = None
 
-    def _do_save_config_dialog (self, *args):
+    def on_save_cfg_mi_activate(self, *args):
         if not self.save_dlg:
             self.save_dlg = gtk.FileChooserDialog ("Save Config", self.window,
                     action = gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -539,21 +427,23 @@ class SheriffGtk(object):
         self.save_dlg.destroy()
         self.save_dlg = None
 
-    def on_observer_mi_activate (self, menu_item):
-        self._set_observer (menu_item.get_active ())
+    def on_is_observer_cmi_toggled(self, menu_item):
+        self._set_observer(menu_item.get_active ())
 
-    def on_spawn_deputy_activate(self, *args):
+    def on_spawn_deputy_mi_activate(self, *args):
+        print("Spawn deputy!")
         self._terminate_spawned_deputy()
         args = [ self.bot_procman_deputy_cmd, "-n", "localhost" ]
         self.spawned_deputy = subprocess.Popen(args)
         # TODO disable
-        self.spawn_deputy_cmi.set_sensitive(False)
-        self.terminate_spawned_deputy_cmi.set_sensitive(True)
+        self.spawn_deputy_mi.set_sensitive(False)
+        self.terminate_spawned_deputy_mi.set_sensitive(True)
 
-    def on_terminate_spawned_deputy_activate(self, *args):
+    def on_terminate_spawned_deputy_mi_activate(self, *args):
+        print("Terminate!")
         self._terminate_spawned_deputy()
-        self.spawn_deputy_cmi.set_sensitive(True)
-        self.terminate_spawned_deputy_cmi.set_sensitive(False)
+        self.spawn_deputy_mi.set_sensitive(True)
+        self.terminate_spawned_deputy_mi.set_sensitive(False)
 
     def _update_menu_item_sensitivities (self):
         # enable/disable menu options based on sheriff state and user selection

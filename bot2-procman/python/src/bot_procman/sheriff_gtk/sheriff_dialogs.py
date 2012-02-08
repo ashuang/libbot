@@ -263,3 +263,6 @@ def do_edit_script_dialog(sheriff, window, script):
         sheriff.add_script(new_script)
         break
     dlg.destroy ()
+
+def do_preferences_dialog(sheriff, window):
+    pass

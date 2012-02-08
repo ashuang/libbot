@@ -13,3 +13,5 @@ pods_install_python_packages(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # executable scripts:  script-name  python-module
 pods_install_python_script(bot-procman-sheriff bot_procman.sheriff_gtk.sheriff_gtk)
+
+install(FILES procman-sheriff.glade DESTINATION share/bot_procman)
