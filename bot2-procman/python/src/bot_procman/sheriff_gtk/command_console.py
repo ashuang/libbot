@@ -6,7 +6,7 @@ import pango
 
 from bot_procman.printf_t import printf_t
 
-DEFAULT_MAX_CHARS_PER_SECOND = 4000
+DEFAULT_MAX_KB_PER_SECOND = 4
 
 ANSI_CODES_TO_TEXT_TAG_PROPERTIES = { \
         "1" : ("weight", pango.WEIGHT_BOLD),
@@ -43,6 +43,8 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         super(SheriffCommandConsole, self).__init__()
 
         self.stdout_maxlines = 2000
+        self.max_kb_per_sec = 0
+        self.max_chars_per_2500_ms = 0
 
         self.sheriff = _sheriff
 
@@ -60,8 +62,13 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         # add callback so we can add a clear option to the default right click popup
         self.stdout_textview.connect ("populate-popup", self.on_tb_populate_menu)
 
-        font_desc = pango.FontDescription ("Monospace")
-        self.stdout_textview.modify_font (font_desc)
+        # set some default appearance parameters
+        self.font_str = "Monospace"
+        self.set_font(self.font_str)
+        self.base_color = gtk.gdk.Color(65535, 65535, 65535)
+        self.text_color = gtk.gdk.Color(0, 0, 0)
+        self.set_background_color(self.base_color)
+        self.set_text_color(self.text_color)
 
         # stdout rate limit maintenance events
         gobject.timeout_add (500, self._stdout_rate_limit_upkeep)
@@ -76,7 +83,32 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         for tt in self.text_tags.values():
             self.sheriff_tb.get_tag_table().add(tt)
 
-        self.set_output_rate_limit(DEFAULT_MAX_CHARS_PER_SECOND)
+        self.set_output_rate_limit(DEFAULT_MAX_KB_PER_SECOND)
+
+    def get_background_color(self):
+        return self.base_color
+
+    def get_text_color(self):
+        return self.text_color
+
+    def get_font(self):
+        return self.font_str
+
+    def set_background_color(self, color):
+        self.base_color = color
+        self.stdout_textview.modify_base(gtk.STATE_NORMAL, color)
+        self.stdout_textview.modify_base(gtk.STATE_ACTIVE, color)
+        self.stdout_textview.modify_base(gtk.STATE_PRELIGHT, color)
+
+    def set_text_color(self, color):
+        self.text_color = color
+        self.stdout_textview.modify_text(gtk.STATE_NORMAL, color)
+        self.stdout_textview.modify_text(gtk.STATE_ACTIVE, color)
+        self.stdout_textview.modify_text(gtk.STATE_PRELIGHT, color)
+
+    def set_font(self, font_str):
+        self.font_str = font_str
+        self.stdout_textview.modify_font(pango.FontDescription(font_str))
 
     def _stdout_rate_limit_upkeep (self):
         for cmd in self.sheriff.get_all_commands ():
@@ -171,16 +203,31 @@ class SheriffCommandConsole(gtk.ScrolledWindow):
         end_iter = tb.get_end_iter ()
         tb.delete (start_iter, end_iter)
 
-    def set_output_rate_limit(self, max_chars_per_second):
-        self.max_chars_per_2500_ms = int(max_chars_per_second * 2.5)
+    def set_output_rate_limit(self, max_kb_per_sec):
+        self.max_kb_per_sec = max_kb_per_sec
+        self.max_chars_per_2500_ms = int(max_kb_per_sec * 1000 * 2.5)
+
+    def get_output_rate_limit(self):
+        return self.max_kb_per_sec
 
     def load_settings(self, save_map):
-        # TODO
-        pass
+        if "console_rate_limit" in save_map:
+            self.set_output_rate_limit(save_map["console_rate_limit"])
+
+        if "console_background_color" in save_map:
+            self.set_background_color(gtk.gdk.Color(save_map["console_background_color"]))
+
+        if "console_text_color" in save_map:
+            self.set_text_color(gtk.gdk.Color(save_map["console_text_color"]))
+
+        if "console_font" in save_map:
+            self.set_font(save_map["console_font"])
 
     def save_settings(self, save_map):
-        # TODO
-        pass
+        save_map["console_rate_limit"] = self.max_kb_per_sec
+        save_map["console_background_color"] = self.base_color.to_string()
+        save_map["console_text_color"] = self.text_color.to_string()
+        save_map["console_font"] = self.font_str
 
     def on_adj_changed (self, adj):
         if adj.get_data ("scrolled-to-end"):

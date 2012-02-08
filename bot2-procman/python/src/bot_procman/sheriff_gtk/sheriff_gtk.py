@@ -198,6 +198,9 @@ class SheriffGtk(object):
 
         self.window.show_all()
 
+    def on_preferences_mi_activate(self, *args):
+        sd.do_preferences_dialog(self, self.window)
+
     def on_quit_requested(self, *args):
         gtk.main_quit()
 

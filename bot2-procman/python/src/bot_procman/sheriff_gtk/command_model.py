@@ -32,6 +32,8 @@ class SheriffCommandModel(gtk.TreeStore):
         self.group_row_references = {}
         self.populate_exec_with_group_name = False
 
+        self.set_sort_column_id(COL_CMDS_TV_DISPLAY_NAME, gtk.SORT_ASCENDING)
+
     def _find_or_make_group_row_reference(self, group_name):
         if not group_name:
             return None

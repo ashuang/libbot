@@ -53,6 +53,16 @@
                       </object>
                     </child>
                     <child>
+                      <object class="GtkMenuItem" id="preferences_mi">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_action_appearance">False</property>
+                        <property name="label" translatable="yes">_Preferences</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_preferences_mi_activate" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkSeparatorMenuItem" id="separatormenuitem1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>

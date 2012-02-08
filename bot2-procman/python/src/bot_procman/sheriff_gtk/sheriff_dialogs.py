@@ -16,7 +16,7 @@ class AddModifyCommandDialog (gtk.Dialog):
                 gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
                 (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,
                  gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
-        table = gtk.Table (4, 2)
+        table = gtk.Table(5, 2)
 
         # deputy
         table.attach (gtk.Label ("Host"), 0, 1, 0, 1, 0, 0)
@@ -77,6 +77,53 @@ class AddModifyCommandDialog (gtk.Dialog):
         self.auto_respawn_cb = gtk.CheckButton ()
         self.auto_respawn_cb.set_active (initial_auto_respawn)
         table.attach (self.auto_respawn_cb, 1, 2, 4, 5)
+
+        self.vbox.pack_start (table, False, False, 0)
+        table.show_all ()
+
+    def get_deputy (self):
+        host_iter = self.host_cb.get_active_iter ()
+        if host_iter is None: return None
+        return self.deputy_ls.get_value (host_iter, 0)
+
+    def get_command (self): return self.name_te.get_text ()
+    def get_nickname (self): return self.nickname_te.get_text ()
+    def get_group (self): return self.group_cbe.child.get_text ()
+    def get_auto_respawn (self): return self.auto_respawn_cb.get_active ()
+
+class PreferencesDialog(gtk.Dialog):
+    def __init__ (self, sheriff_gtk, parent):
+        # add command dialog
+        gtk.Dialog.__init__ (self, "Preferences", parent,
+                gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,
+                 gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
+        table = gtk.Table(4, 2)
+
+        # console rate limit
+        table.attach(gtk.Label("Console rate limit (kB/s)"), 0, 1, 0, 1, 0, 0)
+        self.rate_limit_sb = gtk.SpinButton()
+        self.rate_limit_sb.set_digits(0)
+        self.rate_limit_sb.set_increments(1, 1000)
+        self.rate_limit_sb.set_range(0, 999999)
+        self.rate_limit_sb.set_value(sheriff_gtk.cmd_console.get_output_rate_limit())
+
+        table.attach(self.rate_limit_sb, 1, 2, 0, 1)
+
+        # background color
+        table.attach(gtk.Label("Console background"), 0, 1, 1, 2, 0, 0)
+        self.bg_color_bt = gtk.ColorButton(sheriff_gtk.cmd_console.get_background_color())
+        table.attach(self.bg_color_bt, 1, 2, 1, 2)
+
+        # foreground color
+        table.attach(gtk.Label("Console text color"), 0, 1, 2, 3, 0, 0)
+        self.text_color_bt = gtk.ColorButton(sheriff_gtk.cmd_console.get_text_color())
+        table.attach(self.text_color_bt, 1, 2, 2, 3)
+
+        # font
+        table.attach(gtk.Label("Console font"), 0, 1, 3, 4, 0, 0)
+        self.font_bt = gtk.FontButton(sheriff_gtk.cmd_console.get_font())
+        table.attach(self.font_bt, 1, 2, 3, 4)
 
         self.vbox.pack_start (table, False, False, 0)
         table.show_all ()
@@ -264,5 +311,13 @@ def do_edit_script_dialog(sheriff, window, script):
         break
     dlg.destroy ()
 
-def do_preferences_dialog(sheriff, window):
-    pass
+def do_preferences_dialog(sheriff_gtk, window):
+    dlg = PreferencesDialog(sheriff_gtk, window)
+
+    if dlg.run() == gtk.RESPONSE_ACCEPT:
+        sheriff_gtk.cmd_console.set_background_color(dlg.bg_color_bt.get_color())
+        sheriff_gtk.cmd_console.set_text_color(dlg.text_color_bt.get_color())
+        sheriff_gtk.cmd_console.set_output_rate_limit(dlg.rate_limit_sb.get_value_as_int() * 1000)
+        sheriff_gtk.cmd_console.set_font(dlg.font_bt.get_font_name())
+
+    dlg.destroy()
