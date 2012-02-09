@@ -1564,7 +1564,11 @@ int bot_param_override_local_param(BotParam * param, const char * key, const cha
     return -1;
   }
   g_mutex_unlock(param->lock);
-  fprintf(stderr, "BotParam overriding key:%s with value %s\n", key, val);
+
+  if (bot_param_has_key(param, key))
+    fprintf(stderr, "BotParam overriding param key:%s with value %s\n", key, val);
+  else
+    fprintf(stderr, "BotParam Adding param key:%s with value %s\n", key, val);
   return bot_param_set_str(param, key, val);
 }
 
