@@ -103,6 +103,10 @@ class SheriffCommandModel(gtk.TreeStore):
                 COL_CMDS_TV_MEM_VSIZE, mem_usage,
                 COL_CMDS_TV_AUTO_RESPAWN, cmd.auto_respawn)
 
+        # get a row reference to the model since
+        # adding a group may invalidate the iterators
+        model_rr = gtk.TreeRowReference(model, path)
+
         # check that the command is in the correct group in the
         # treemodel
         correct_grr = self._find_or_make_group_row_reference(cmd.group)
@@ -111,7 +115,7 @@ class SheriffCommandModel(gtk.TreeStore):
         actual_parent_path = None
         if correct_grr and correct_grr.get_path() is not None:
             correct_parent_iter = model.get_iter(correct_grr.get_path())
-        actual_parent_iter = model.iter_parent(model_iter)
+        actual_parent_iter = model.iter_parent(model.get_iter(model_rr.get_path())) #use the model_rr in case model_iter was invalidated
 
         if correct_parent_iter:
             correct_parent_path = model.get_path(correct_parent_iter)
@@ -120,7 +124,7 @@ class SheriffCommandModel(gtk.TreeStore):
 
         if correct_parent_path != actual_parent_path:
             # schedule the command to be moved
-            to_reparent.append((gtk.TreeRowReference(model, path), correct_grr))
+            to_reparent.append((model_rr, correct_grr))
 #                print "moving %s (%s) (%s)" % (cmd.name,
 #                        correct_parent_path, actual_parent_path)
 
