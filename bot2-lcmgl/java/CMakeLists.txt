@@ -14,7 +14,7 @@ set(jar_fname bot2-lcmgl.jar)
 # where is lcm.jar?
 execute_process(COMMAND pkg-config --variable=classpath lcm-java 
     OUTPUT_VARIABLE LCM_JAR_FILE)
-if (NOT LCM_JAR)
+if (NOT LCM_JAR_FILE)
 	message(STATUS "\n\n----- ERROR: lcm-java not found. Not building bot-spy plugins")
 	return()
 endif()
