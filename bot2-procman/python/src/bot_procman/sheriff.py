@@ -517,9 +517,9 @@ class Sheriff (gobject.GObject):
         self._maybe_emit_status_change_signals (deputy, status_changes)
         self.send_orders ()
 
-    def move_command_to_deputy(self, cmd, newdeputy):
+    def move_command_to_deputy(self, cmd, newdeputy_name):
         self.schedule_command_for_removal (cmd)
-        self.add_command (newdeputy.name, cmd.name, cmd.nickname, cmd.group, cmd.auto_respawn)
+        self.add_command (newdeputy_name, cmd.name, cmd.nickname, cmd.group, cmd.auto_respawn)
 
     def set_observer (self, is_observer): self._is_observer = is_observer
     def is_observer (self): return self._is_observer

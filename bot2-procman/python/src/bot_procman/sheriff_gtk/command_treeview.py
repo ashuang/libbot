@@ -83,9 +83,6 @@ class SheriffCommandTreeView(gtk.TreeView):
         self.edit_cmd_ctxt_mi.connect ("activate",
                 self._edit_selected_command)
 
-        self.change_deputy_ctxt_mi = gtk.MenuItem ("_Change Host")
-        self.cmd_ctxt_menu.append (self.change_deputy_ctxt_mi)
-
         self.new_cmd_ctxt_mi = gtk.MenuItem ("_New Command")
         self.cmd_ctxt_menu.append (self.new_cmd_ctxt_mi)
         self.new_cmd_ctxt_mi.connect ("activate",
@@ -188,9 +185,7 @@ class SheriffCommandTreeView(gtk.TreeView):
 
     def _edit_selected_command(self, *args):
         cmds = self.get_selected_commands()
-        if len(cmds) != 1:
-            return
-        self._do_edit_command_dialog(list(cmds)[0])
+        self._do_edit_command_dialog(cmds)
 
     def _on_cmds_tv_key_press_event (self, widget, event):
         if event.keyval == gtk.gdk.keyval_from_name ("Right"):
@@ -239,25 +234,6 @@ class SheriffCommandTreeView(gtk.TreeView):
 #                can_start_stop_remove = len(selected_cmds) > 0 and \
 #                        not self.sheriff.is_observer ()
 
-                deputy_submenu = gtk.Menu ()
-                deps = [ (d.name, d) for d in self.sheriff.get_deputies () ]
-                deps.sort ()
-                for name, deputy in deps:
-                    dmi = gtk.MenuItem (name)
-                    deputy_submenu.append (dmi)
-                    dmi.show ()
-
-                    def _onclick (mi, newdeputy):
-                        for cmd in self.get_selected_commands ():
-                            old_dep = self.sheriff.get_command_deputy (cmd)
-
-                            if old_dep == newdeputy: continue
-
-                            self.sheriff.move_command_to_deputy(cmd, newdeputy)
-
-                    dmi.connect ("activate", _onclick, deputy)
-
-                self.change_deputy_ctxt_mi.set_submenu (deputy_submenu)
             else:
                 sel.unselect_all ()
 
@@ -273,8 +249,7 @@ class SheriffCommandTreeView(gtk.TreeView):
             self.stop_cmd_ctxt_mi.set_sensitive (can_modify)
             self.restart_cmd_ctxt_mi.set_sensitive (can_modify)
             self.remove_cmd_ctxt_mi.set_sensitive (can_modify)
-            self.change_deputy_ctxt_mi.set_sensitive (can_modify)
-            self.edit_cmd_ctxt_mi.set_sensitive (can_modify and len(selected_cmds) == 1)
+            self.edit_cmd_ctxt_mi.set_sensitive (can_modify)
             self.new_cmd_ctxt_mi.set_sensitive (can_add_load)
 
             self.cmd_ctxt_menu.popup (None, None, None, event.button, time)
@@ -299,41 +274,90 @@ class SheriffCommandTreeView(gtk.TreeView):
             if pathinfo is None:
                 self.get_selection ().unselect_all ()
 
-    def _do_edit_command_dialog(self, cmd):
-        old_deputy = self.sheriff.get_command_deputy (cmd)
+
+    def _do_edit_command_dialog(self, cmds):
+        unchanged_val = "[Unchanged]"
+
+        old_deputies = [self.sheriff.get_command_deputy(cmd).name for cmd in cmds]
+        old_names = [cmd.name for cmd in cmds]
+        old_nicknames = [cmd.nickname for cmd in cmds]
+        old_groups = [cmd.group for cmd in cmds]
+        old_auto_respawns = [cmd.auto_respawn for cmd in cmds]
+
+        # handle all same/different deputies
+        if all(x == old_deputies[0] for x in old_deputies):
+            deputies_list = [deputy.name for deputy in self.sheriff.get_deputies()]
+            cur_deputy = old_deputies[0]
+        else:
+            deputies_list = [unchanged_val]
+            deputies_list.extend([deputy.name for deputy in self.sheriff.get_deputies()])
+            cur_deputy = unchanged_val
+
+        # handle all same/different groups
+        if all(x == old_groups[0] for x in old_groups):
+            groups_list = self.cmds_ts.get_known_group_names ()
+            cur_group = old_groups[0]
+        else:
+            groups_list = [unchanged_val]
+            groups_list.extend(self.cmds_ts.get_known_group_names ())
+            cur_group = unchanged_val
+
+        # name and nickname
+        if all(x == old_names[0] for x in old_names):
+            cur_name = old_names[0]
+        else:
+            cur_name = unchanged_val
+        if all(x == old_nicknames[0] for x in old_nicknames):
+            cur_nickname = old_nicknames[0]
+        else:
+            cur_nickname = unchanged_val
+
+        if all(x == old_auto_respawns[0] for x in old_auto_respawns):
+            if (old_auto_respawns[0]):
+                cur_auto_respawn = 1
+            else:
+                cur_auto_respawn = 0
+        else:
+            cur_auto_respawn = -1
+
+
+        # create the dialog box
         dlg = sd.AddModifyCommandDialog (self.get_toplevel(),
-                self.sheriff.get_deputies (),
-                self.cmds_ts.get_known_group_names (),
-                cmd.name, cmd.nickname, old_deputy,
-                cmd.group, cmd.auto_respawn)
+                                         deputies_list,
+                                         groups_list,
+                                         cur_name, cur_nickname, cur_deputy,
+                                         cur_group, cur_auto_respawn)
+
         if dlg.run () == gtk.RESPONSE_ACCEPT:
             newname = dlg.get_command ()
             newnickname = dlg.get_nickname ()
             newdeputy = dlg.get_deputy ()
             newgroup = dlg.get_group ().strip ()
             newauto_respawn = dlg.get_auto_respawn ()
+            cmd_ind = 0
+            for cmd in cmds:
+                if newname != cmd.name and newname != unchanged_val:
+                    self.sheriff.set_command_name (cmd, newname)
 
-            if newname != cmd.name:
-                self.sheriff.set_command_name (cmd, newname)
+                if newnickname != cmd.nickname and newnickname != unchanged_val:
+                    self.sheriff.set_command_nickname (cmd, newnickname)
 
-            if newnickname != cmd.nickname:
-                self.sheriff.set_command_nickname (cmd, newnickname)
+                if newauto_respawn != cmd.auto_respawn and newauto_respawn >=0:
+                    self.sheriff.set_auto_respawn (cmd, newauto_respawn)
 
-            if newauto_respawn != cmd.auto_respawn:
-                self.sheriff.set_auto_respawn (cmd, newauto_respawn)
+                if newdeputy != old_deputies[cmd_ind] and newdeputy != unchanged_val:
+                    self.sheriff.move_command_to_deputy(cmd, newdeputy)
 
-            if newdeputy != old_deputy:
-                self.sheriff.move_command_to_deputy(cmd, newdeputy)
-
-            if newgroup != cmd.group:
-                self.sheriff.set_command_group (cmd, newgroup)
+                if newgroup != cmd.group and newgroup != unchanged_val:
+                    self.sheriff.set_command_group (cmd, newgroup)
+                cmd_ind = cmd_ind+1
         dlg.destroy ()
 
     def _on_cmds_tv_row_activated (self, treeview, path, column):
         cmd = self.cmds_ts.path_to_command(path)
         if not cmd:
             return
-        self._do_edit_command_dialog(cmd)
+        self._do_edit_command_dialog([cmd])
 
     def _status_cell_data_func (self, column, cell, model, model_iter):
         color_map = {

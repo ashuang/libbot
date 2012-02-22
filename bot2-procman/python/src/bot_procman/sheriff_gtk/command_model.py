@@ -115,7 +115,7 @@ class SheriffCommandModel(gtk.TreeStore):
         actual_parent_path = None
         if correct_grr and correct_grr.get_path() is not None:
             correct_parent_iter = model.get_iter(correct_grr.get_path())
-        actual_parent_iter = model.iter_parent(model.get_iter(model_rr.get_path())) #use the model_rr in case model_iter was invalidated
+        actual_parent_iter = model.iter_parent(model.get_iter(model_rr.get_path())) # use the model_rr in case model_iter was invalidated
 
         if correct_parent_iter:
             correct_parent_path = model.get_path(correct_parent_iter)

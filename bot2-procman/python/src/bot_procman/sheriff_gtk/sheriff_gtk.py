@@ -464,7 +464,7 @@ class SheriffGtk(object):
         self.stop_cmd_mi.set_sensitive (can_modify)
         self.restart_cmd_mi.set_sensitive (can_modify)
         self.remove_cmd_mi.set_sensitive (can_modify)
-        self.edit_cmd_mi.set_sensitive (can_modify and len(selected_cmds) == 1)
+        self.edit_cmd_mi.set_sensitive (can_modify)
 
         self.new_cmd_mi.set_sensitive (can_add_load)
         self.load_cfg_mi.set_sensitive (can_add_load)
