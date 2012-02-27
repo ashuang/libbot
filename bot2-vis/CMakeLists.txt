@@ -10,6 +10,8 @@ find_package(PkgConfig REQUIRED)
 
 set(GLUT_LIBRARIES -lglut)
 
+set(ZLIB_LIBRARIES -lz)
+
 set(LIBJPEG_CFLAGS "")
 set(LIBJPEG_LIBRARIES -ljpeg)
 
