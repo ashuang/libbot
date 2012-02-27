@@ -8,6 +8,8 @@ include(cmake/lcmtypes.cmake)
 lcmtypes_build(JAVA_DEST_DIR ${PROJECT_SOURCE_DIR}/java/src
     PY_DEST_DIR ${PROJECT_SOURCE_DIR}/python/src)
 
+set(ZLIB_LIBRARIES -lz)
+
 add_definitions(-std=gnu99)
 
 add_subdirectory(src/bot_lcmgl_client)

@@ -6,8 +6,11 @@ file(GLOB h_files *.h)
 set(libname bot2-lcmgl-client)
 
 add_library(${libname} SHARED ${c_files})
+
+#set(REQUIRED_LIBS ${LIBJPEG_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES})    
+target_link_libraries(${libname} ${ZLIB_LIBRARIES})
     
-set(REQUIRED_PACKAGES glib-2.0 lcm lcmtypes_bot2-lcmgl zlib)    
+set(REQUIRED_PACKAGES glib-2.0 lcm lcmtypes_bot2-lcmgl)    
 pods_use_pkg_config_packages(${libname} ${REQUIRED_PACKAGES})
     
 
