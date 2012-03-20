@@ -48,7 +48,7 @@ _tictoc_t_print(gpointer data, gpointer user_data)
     double maxT = (double) tt->max / 1.0e6;
     double emaT = (double) tt->ema / 1.0e6;
     printf(
-            "%30s: \t numCalls = %d \t totalT=%.2f \t avgT=%.4f \t minT=%.4f \t maxT=%.4f \t emaT=%.4f\n",
+            "%30s: numCalls = %11d   totalT=%10.2f   avgT=%8.4f   minT=%8.4f   maxT=%8.4f   emaT=%8.4f\n",
             tt->description, tt->numCalls, totalT, avgT, minT, maxT, emaT);
 
 }
