@@ -58,6 +58,12 @@ def find_bot_procman_glade():
         sys.stderr.write("    %s\n" % spath)
     sys.exit(1)
 
+def split_script_name(name):
+    name = name.strip("/")
+    while name.find("//") >= 0:
+        name = name.replace("//", "/")
+    return name.split("/")
+
 class SheriffGtk(object):
     def __init__ (self, lc):
         self.lc = lc
@@ -330,37 +336,82 @@ class SheriffGtk(object):
     def on_new_script_mi_activate(self, menuitem):
         sd.do_add_script_dialog(self.sheriff, self.window)
 
+    def _get_script_menuitem(self, menu, script, name_parts, create):
+        assert name_parts
+        partname = name_parts[0]
+        if len(name_parts) == 1:
+            insert_point = 0
+            for i, smi in enumerate(menu.get_children()):
+                other_script = smi.get_data("sheriff-script")
+                if other_script is script:
+                    return smi
+                if other_script is None:
+                    break
+                if other_script.name < script.name:
+                    insert_point += 1
+            if create:
+                mi = gtk.MenuItem(partname, use_underline=False)
+                mi.set_data("sheriff-script", script)
+                menu.insert(mi, insert_point)
+                mi.show()
+                return mi
+            return None
+        else:
+            insert_point = 0
+            for i, smi in enumerate(menu.get_children()):
+                if not smi.get_data("sheriff-script-submenu"):
+                    continue
+                submenu_name = smi.get_label()
+                if submenu_name == partname:
+                    return self._get_script_menuitem(smi.get_submenu(), script, name_parts[1:], create)
+                elif submenu_name < partname:
+                    insert_point = i
+
+            if create:
+                smi = gtk.MenuItem(partname)
+                submenu = gtk.Menu()
+                smi.set_submenu(submenu)
+                smi.set_data("sheriff-script-submenu", True)
+                menu.insert(smi, insert_point)
+                smi.show()
+                return self._get_script_menuitem(submenu, script, name_parts[1:], create)
+
+    def _remove_script_menuitems(self, menu, script, name_parts):
+        assert name_parts
+        partname = name_parts[0]
+
+        if len(name_parts) == 1:
+            for smi in menu.get_children():
+                if script == smi.get_data("sheriff-script"):
+                    menu.remove(smi)
+                    return
+        else:
+            for smi in menu.get_children():
+                if not smi.get_data("sheriff-script-submenu"):
+                    continue
+                submenu_name = smi.get_label()
+                submenu = smi.get_submenu()
+                if submenu_name == partname:
+                    self._remove_script_menuitems(submenu, script, name_parts[1:])
+                    if not submenu.get_children():
+                        smi.remove_submenu()
+                        menu.remove(smi)
+                    return
+
     def _maybe_add_script_menu_item(self, script):
-        insert_point = 0
-        for i, smi in enumerate(self.scripts_menu.get_children()):
-            other_script = smi.get_data("sheriff-script")
-            if other_script is script:
-                return
-            if other_script is None:
-                break
-            if other_script.name < script.name:
-                insert_point += 1
+        name_parts = split_script_name(script.name)
 
-        # make a submenu for every script
-        run_mi = gtk.MenuItem(script.name, use_underline=False)
-        run_mi.set_data("sheriff-script", script)
+        # make menu items for executing, editing, and removing the script
+        run_mi = self._get_script_menuitem(self.scripts_menu, script, name_parts, True)
         run_mi.connect("activate", self.run_script, script)
-        self.scripts_menu.insert(run_mi, insert_point)
-        run_mi.show()
 
-        edit_mi = gtk.MenuItem(script.name, use_underline=False)
-        edit_mi.set_data("sheriff-script", script)
+        edit_mi = self._get_script_menuitem(self.edit_scripts_menu, script, name_parts, True)
         edit_mi.connect("activate",
                 lambda mi: sd.do_edit_script_dialog(self.sheriff, self.window, script))
-        self.edit_scripts_menu.insert(edit_mi, insert_point)
-        edit_mi.show()
 
-        remove_mi = gtk.MenuItem(script.name, use_underline=False)
-        remove_mi.set_data("sheriff-script", script)
+        remove_mi = self._get_script_menuitem(self.remove_scripts_menu, script, name_parts, True)
         remove_mi.connect("activate",
                 lambda mi: self.sheriff.remove_script(mi.get_data("sheriff-script")))
-        self.remove_scripts_menu.insert(remove_mi, insert_point)
-        remove_mi.show()
 
         self.edit_script_mi.set_sensitive(True)
         self.remove_script_mi.set_sensitive(True)
@@ -369,11 +420,10 @@ class SheriffGtk(object):
         self._maybe_add_script_menu_item(script)
 
     def _on_script_removed(self, sheriff, script):
+        name_parts = split_script_name(script.name)
         for menu in [ self.scripts_menu, self.edit_scripts_menu, self.remove_scripts_menu ]:
-            for mi in menu.children():
-                if mi.get_data("sheriff-script") is script:
-                    menu.remove(mi)
-                    break
+            self._remove_script_menuitems(menu, script, name_parts)
+
         if not sheriff.get_scripts():
             self.edit_script_mi.set_sensitive(False)
             self.remove_script_mi.set_sensitive(False)
