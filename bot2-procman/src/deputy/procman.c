@@ -184,11 +184,12 @@ int procman_start_cmd (procman_t *pm, procman_cmd_t *p)
             exit(-1);
         } else if (pid < 0) {
             perror("forkpty");
+            close(stderr_backup);
             return -1;
         } else {
             p->pid = pid;
-
             p->stdout_fd = p->stdin_fd;
+            close(stderr_backup);
         }
     }
     return 0;
