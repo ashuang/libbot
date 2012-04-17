@@ -124,9 +124,9 @@ def main(args):
             sys.exit(1)
 
         bitrate = args[0]
-        framrate = args[1]
+        framerate = args[1]
         output_fname = args[2]
-        ffmpeg_execute(["-r", bitrate, "-y", "-vcodec", "ppm", 
+        ffmpeg_execute(["-r", framerate, "-y", "-vcodec", "ppm", 
             "-f", "image2pipe", "-i", "-", "-vcodec", "mpeg4", 
             "-b", bitrate, "-f", "mp4", output_fname], gzfile)
     elif fmt_name == "msmpeg4v2":
@@ -135,9 +135,9 @@ def main(args):
             sys.exit(1)
 
         bitrate = args[0]
-        framrate = args[1]
+        framerate = args[1]
         output_fname = args[2]
-        ffmpeg_execute(["-r", bitrate, "-y", "-vcodec", "ppm", 
+        ffmpeg_execute(["-r", framerate, "-y", "-vcodec", "ppm", 
             "-f", "image2pipe", "-i", "-", "-vcodec", "msmpeg4v2", 
             "-b", bitrate, "-f", "avi", output_fname], gzfile)
     else:
