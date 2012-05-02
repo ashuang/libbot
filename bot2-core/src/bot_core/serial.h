@@ -49,6 +49,11 @@ int bot_serial_set_N82 (int fd);
 
 int bot_serial_close(int fd);
 
+/**
+ * Get the number of bytes waiting to be read
+ */
+int bot_serial_bytes_available(int fd);
+
 #ifdef __cplusplus
 }
 #endif

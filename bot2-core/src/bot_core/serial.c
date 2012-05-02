@@ -278,3 +278,15 @@ int bot_serial_close(int fd)
 {
 	return close(fd);
 }
+
+
+int bot_serial_bytes_available(int fd)
+{
+  //get number of bytes available
+  int available = 0;
+  if (ioctl(fd, FIONREAD, &available) != 0) {
+    perror("Problem getting num bytes available.");
+    return -1;
+  }
+  return available;
+}
