@@ -4,26 +4,33 @@
 #include <stdio.h>
 
 #include "ringbuf.h"
+#include "serial.h"
 
 #ifndef MIN
 #define MIN(a,b)((a < b) ? a : b)
 #endif
 
 struct _BotRingBuf{
-        char * buf;
+        uint8_t * buf;
         int readOffset;
         int writeOffset;
         int numBytes;
         int maxSize;
+        uint8_t * read_buf;
+        int read_buf_sz;
 };
 
 BotRingBuf * bot_ringbuf_create(int size)
 {
   //create buffer, and allocate space for size bytes
   BotRingBuf * cbuf = (BotRingBuf *) calloc(1,sizeof(BotRingBuf));
-  cbuf->buf = (char *) malloc(size * sizeof(char));
+  cbuf->buf = (uint8_t *) malloc(size * sizeof(uint8_t));
   cbuf->readOffset = cbuf->writeOffset = cbuf->numBytes = 0;
   cbuf->maxSize = size;
+
+  cbuf->read_buf_sz = 256;
+  cbuf->read_buf = (uint8_t *) malloc(cbuf->read_buf_sz * sizeof(uint8_t));
+
   return cbuf;
 }
 
@@ -35,22 +42,18 @@ void bot_ringbuf_destroy(BotRingBuf * cbuf)
   free(cbuf);
 }
 
-int bot_ringbuf_read(BotRingBuf * cbuf, int numBytes, char * buf)
+int bot_ringbuf_read(BotRingBuf * cbuf, int numBytes, uint8_t * buf)
 {
   //read numBytes
   int bytes_read = bot_ringbuf_peek(cbuf, numBytes, buf);
 
-  if (bytes_read > 0){
-    //move readPtr
-    cbuf->numBytes -= bytes_read;
-    cbuf->readOffset = (cbuf->readOffset + bytes_read) % cbuf->maxSize;
-  }
+  bot_ringbuf_flush(cbuf,bytes_read);
 
   return bytes_read;
 
 }
 
-int bot_ringbuf_write(BotRingBuf * cbuf, int numBytes, char * buf)
+int bot_ringbuf_write(BotRingBuf * cbuf, int numBytes, uint8_t * buf)
 {
 
   //check if there is enough space... maybe this should just wrap around??
@@ -78,7 +81,7 @@ int bot_ringbuf_write(BotRingBuf * cbuf, int numBytes, char * buf)
 
 }
 
-int bot_ringbuf_peek(BotRingBuf * cbuf, int numBytes, char * buf)
+int bot_ringbuf_peek(BotRingBuf * cbuf, int numBytes, uint8_t * buf)
 {
   //read numBytes from start of buffer, but don't move readPtr
   if (numBytes > cbuf->numBytes || numBytes > cbuf->maxSize) {
@@ -99,24 +102,89 @@ int bot_ringbuf_peek(BotRingBuf * cbuf, int numBytes, char * buf)
   return bytes_read;
 }
 
-int bot_ringbuf_flush(BotRingBuf * cbuf)
+int bot_ringbuf_flush(BotRingBuf * cbuf, int numBytes)
 {
   //move pointers to "empty" the read buffer
-  cbuf->readOffset = cbuf->writeOffset = cbuf->numBytes = 0;
+  if (numBytes<0)
+    cbuf->readOffset = cbuf->writeOffset = cbuf->numBytes = 0;
+  else{
+    //move readPtr
+    cbuf->numBytes -= numBytes;
+    cbuf->readOffset = (cbuf->readOffset + numBytes) % cbuf->maxSize;
+  }
   return 0;
-
 }
 
 int bot_ringbuf_available(BotRingBuf * cbuf) {
         return cbuf->numBytes;
 }
 
+int bot_ringbuf_fill_from_fd(BotRingBuf * cbuf, int fd, int numBytes)
+{
+  if (numBytes < 0) {
+    numBytes = bot_serial_bytes_available(fd);
+    if (numBytes <= 0)
+      return numBytes;
+  }
+
+  //check if there is enough space... maybe this should just wrap around??
+  if (numBytes + cbuf->numBytes > cbuf->maxSize) {
+    numBytes = cbuf->maxSize - cbuf->numBytes;
+  }
+  //write to wrap around point.
+  int bytes_written = MIN(cbuf->maxSize - cbuf->writeOffset, numBytes);
+  int num_read = read(fd, cbuf->buf + cbuf->writeOffset, bytes_written);
+  if (num_read != bytes_written) {
+    fprintf(stderr, "warning, read %d of %d available bytes\n", num_read, bytes_written);
+  }
+  numBytes -= bytes_written;
+
+  //write the rest from start of buffer
+  if (numBytes > 0) {
+    int num_read = read(fd, cbuf->buf, numBytes);
+    if (num_read != numBytes) {
+      fprintf(stderr, "warning, read %d of %d available bytes\n", num_read, numBytes);
+    }
+    bytes_written += numBytes;
+  }
+
+  //move writePtr
+  cbuf->numBytes += bytes_written;
+  cbuf->writeOffset = (cbuf->writeOffset + bytes_written) % cbuf->maxSize;
+
+  return bytes_written;
+}
+
+const uint8_t * bot_ringbuf_peek_buf(BotRingBuf * cbuf, int numBytes)
+{
+  if (numBytes > cbuf->maxSize) {
+    fprintf(stderr, "ERROR: can't read %d bytes from ringbuf, maxsize is %d\n", numBytes, cbuf->maxSize);
+    return NULL;
+  }
+  else if (numBytes > cbuf->numBytes) {
+    fprintf(stderr, "ERROR: can't read %d bytes from ringbuf, currently containts is %d\n", numBytes, cbuf->numBytes);
+    return NULL;
+  }
+
+  int contiguous_bytes = cbuf->maxSize - cbuf->readOffset;
+  if (numBytes < contiguous_bytes)
+    return cbuf->buf + cbuf->readOffset;
+
+  if (numBytes > cbuf->read_buf_sz) {
+    cbuf->read_buf_sz = numBytes;
+    cbuf->read_buf = (uint8_t *) realloc(cbuf->read_buf, cbuf->read_buf_sz * sizeof(uint8_t));
+  }
+
+  bot_ringbuf_peek(cbuf, numBytes, cbuf->read_buf);
+  return cbuf->read_buf;
+}
+
 #if 0
 void bot_ringbuf_unit_test()
 {
-  char * testString = "iuerrlfkladbytes_writtenbytes_writte";
+  uint8_t * testString = "iuerrlfkladbytes_writtenbytes_writte";
   char comp[1000];
-  char * comp_p = comp;
+  uint8_t * comp_p = comp;
   BotRingBuf cbuf;
   bot_ringbuf_create(&cbuf, 13);
 
