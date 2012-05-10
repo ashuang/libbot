@@ -13,4 +13,5 @@ struct sensor_status_t
     const int16_t KINECT = 4;                     
     const int16_t IMU = 5;                     
     const int16_t ORC = 6;                          
+    const int16_t DYNAMIXEL_SERVO = 7;
 }
