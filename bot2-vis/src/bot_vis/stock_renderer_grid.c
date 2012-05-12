@@ -81,7 +81,7 @@ grid_draw (BotViewer *viewer, BotRenderer *renderer)
 
     double grid_ox = ceil (look[0] / meters_per_grid) * meters_per_grid;
     double grid_oy = ceil (look[1] / meters_per_grid) * meters_per_grid;
-    double grid_oz = look[2];
+    double grid_oz = 0;//look[2]; //always want the grid at 0
 
     int num_lines = 300;
     if(0 == meters_per_grid)
