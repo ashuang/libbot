@@ -83,6 +83,17 @@ int bot_glib_mainloop_attach_lcm_full(GMainLoop * mainloop, lcm_t *lcm,
 lcm_t *bot_lcm_get_global(const char *provider);
 
 
+/**
+ * bot_lcm_handle_or_timeout:
+ * @lcm: The lcm_t object.
+ * @timeout max time to wait in microseconds
+ *
+ *  Waits for up to @timeout seconds for an LCM message to arrive.
+ *  It handles the first message if one arrives.
+ *
+ */
+void bot_lcm_handle_or_timeout(lcm_t * lcm, int64_t timeout);
+
 #ifdef __cplusplus
 }
 #endif

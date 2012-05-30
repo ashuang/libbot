@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "lcm_util.h"
+#include "timestamp.h"
 
 //#define dbg(...) fprintf (stderr, __VA_ARGS__)
 #define dbg(...)
@@ -114,4 +115,27 @@ bot_lcm_get_global(const char *provider)
         global_lcm = lcm_create(provider);
     g_static_mutex_unlock (&lcm_glib_sources_mutex);
     return global_lcm;
+}
+
+
+void bot_lcm_handle_or_timeout(lcm_t * lcm, int64_t timeout)
+{
+  int lcm_fileno = lcm_get_fileno(lcm);
+
+  fd_set rfds;
+  int retval;
+  FD_ZERO(&rfds);
+  FD_SET(lcm_fileno, &rfds);
+  struct timeval tv;
+  bot_timestamp_to_timeval(timeout,&tv);
+  retval = select(lcm_fileno + 1, &rfds, NULL, NULL, &tv);
+  if (retval == -1) {
+    fprintf(stderr, "bot_lcm_handle_or_timeout: select() failed!\n");
+    return;
+  }
+  if (retval) {
+    if (FD_ISSET(lcm_fileno, &rfds)) {
+      lcm_handle(lcm);
+    }
+  }
 }
