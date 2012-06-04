@@ -19,7 +19,7 @@ class AddModifyCommandDialog (gtk.Dialog):
         table = gtk.Table(5, 2)
 
         # deputy
-        table.attach (gtk.Label ("Host"), 0, 1, 0, 1, 0, 0)
+        table.attach (gtk.Label ("Deputy"), 0, 1, 0, 1, 0, 0)
         self.host_cb = gtk.combo_box_new_text()
 
         dep_ind = 0

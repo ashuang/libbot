@@ -19,7 +19,7 @@ class SheriffCommandTreeView(gtk.TreeView):
         cols_to_make = [ \
             ("Name",     cmds_tr,   cm.COL_CMDS_TV_DISPLAY_NAME,  None),
             ("Command",  cmds_tr,   cm.COL_CMDS_TV_EXEC,  None),
-            ("Host",     plain_tr,  cm.COL_CMDS_TV_HOST, None),
+            ("Deputy",   plain_tr,  cm.COL_CMDS_TV_HOST, None),
             ("Status",   status_tr, cm.COL_CMDS_TV_STATUS_ACTUAL, self._status_cell_data_func),
             ("CPU %",    plain_tr,  cm.COL_CMDS_TV_CPU_USAGE, None),
             ("Mem (kB)", plain_tr,  cm.COL_CMDS_TV_MEM_VSIZE, None),

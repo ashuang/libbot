@@ -65,7 +65,7 @@ class SheriffHostTreeView(gtk.TreeView):
         self.hosts_ts = hosts_ts
 
         plain_tr = gtk.CellRendererText ()
-        col = gtk.TreeViewColumn ("Host", plain_tr, text=SheriffHostModel.COL_NAME)
+        col = gtk.TreeViewColumn ("Deputy", plain_tr, text=SheriffHostModel.COL_NAME)
         col.set_sort_column_id (1)
         col.set_resizable (True)
         self.append_column (col)
