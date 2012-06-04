@@ -337,7 +337,7 @@ class SheriffCommandTreeView(gtk.TreeView):
             cmd_ind = 0
             for cmd in cmds:
                 if newname != cmd.name and newname != unchanged_val:
-                    self.sheriff.set_command_name (cmd, newname)
+                    self.sheriff.set_command_exec (cmd, newname)
 
                 if newnickname != cmd.nickname and newnickname != unchanged_val:
                     self.sheriff.set_command_nickname (cmd, newnickname)

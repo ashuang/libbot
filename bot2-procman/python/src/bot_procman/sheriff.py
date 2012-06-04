@@ -322,6 +322,10 @@ class ScriptExecutionContext(object):
         else:
             return action
 
+## Controls deputies and processes.
+#
+# The Sheriff class provides the primary interface for controlling processes
+# using the Procman Python API.
 class Sheriff (gobject.GObject):
 
     __gsignals__ = {
@@ -441,6 +445,13 @@ class Sheriff (gobject.GObject):
                 return result
         raise RuntimeError ("no available sheriff id")
 
+    ## Transmit orders to all deputies.
+    #
+    # Call this method for the sheriff to send updated orders to its deputies.
+    # This method is automatically called when you call other sheriff methods
+    # such as add_command, start_command, etc.  In general, you should only
+    # need to explicitly call this method for a periodic transmission to be
+    # robust against network failures and dropped messages.
     def send_orders (self):
         if self._is_observer:
             raise ValueError ("Can't send orders in Observer mode")
@@ -448,13 +459,23 @@ class Sheriff (gobject.GObject):
             msg = deputy._make_orders_message (self.name)
             self.lc.publish ("PMD_ORDERS", msg.encode ())
 
-    def add_command (self, deputy_name, cmd_name, cmd_nickname, group, auto_respawn):
+    ## Add a new command.
+    #
+    # @param deputy_name the name of the deputy that will manage this command.
+    # @param cmd_exec the actual command string to execute.
+    # @param cmd_nickname an identifier string for this command.
+    # @param group the command group name, or the empty string for no group.
+    # @param auto_respawn True if the deputy should automatically restart the
+    # command when it exits.  Auto respawning only happens when the desired
+    # state of the command is running.
+    # @return a SheriffDeputyCommand object representing the command.
+    def add_command (self, deputy_name, cmd_exec, cmd_nickname, group, auto_respawn):
         if self._is_observer:
             raise ValueError ("Can't add commands in Observer mode")
         dep = self._get_or_make_deputy (deputy_name)
         newcmd = SheriffDeputyCommand()
-        newcmd.name = cmd_name
-        newcmd.nickname = cmd_nickname
+        newcmd.name = cmd_exec
+        newcmd.nickname = cmd_id
         newcmd.group = group
         newcmd.sheriff_id = self.__get_free_sheriff_id ()
         newcmd.auto_respawn = auto_respawn
@@ -463,6 +484,13 @@ class Sheriff (gobject.GObject):
         self.send_orders ()
         return newcmd
 
+    ## Sets a command's desired status to running.
+    #
+    # If the command is not running, then the deputy will start it.
+    # If the command is already running, then no action is taken.
+    # This method calls send_orders().
+    #
+    # @param cmd a SheriffDeputyCommand object specifying the command to run.
     def start_command (self, cmd):
         if self._is_observer:
             raise ValueError ("Can't modify commands in Observer mode")
@@ -474,6 +502,15 @@ class Sheriff (gobject.GObject):
                 ((cmd, old_status, new_status),))
         self.send_orders ()
 
+    ## Starts a command if it's not running, or stop and then start it if it's
+    # already running.
+    #
+    # If the command is not running, then the deputy will start it.
+    # If the command is already running, then the deputy will terminate it and
+    # then start it again.
+    # This method calls send_orders().
+    #
+    # @param cmd a SheriffDeputyCommand object specifying the command to restart.
     def restart_command (self, cmd):
         if self._is_observer:
             raise ValueError ("Can't modify commands in Observer mode")
@@ -485,6 +522,13 @@ class Sheriff (gobject.GObject):
                 ((cmd, old_status, new_status),))
         self.send_orders ()
 
+    ## Sets a command's desired status to stopped.
+    #
+    # If the command is running, then the deputy will stop it.
+    # If the command is not running, then no action is taken.
+    # This method calls send_orders().
+    #
+    # @param cmd a SheriffDeputyCommand object specifying the command to stop.
     def stop_command (self, cmd):
         if self._is_observer:
             raise ValueError ("Can't modify commands in Observer mode")
@@ -496,12 +540,30 @@ class Sheriff (gobject.GObject):
                 ((cmd, old_status, new_status),))
         self.send_orders ()
 
-    def set_command_name (self, cmd, newname):
-        cmd.name = newname
+    ## Set the actual command to be executed when running a command.
+    #
+    # Calling this will not terminate the command if it's already running, and
+    # the new execution command will not take effect until the next time the
+    # command is run by the deputy.
+    #
+    # This method does not call send_orders()
+    #
+    # @param cmd a SheriffDeputyCommand object.
+    # @param new_exec the actual command string to execute.
+    def set_command_exec (self, cmd, new_exec):
+        cmd.name = new_exec
 
-    def set_command_nickname (self, cmd, newnickname):
-        cmd.nickname = newnickname
+    ## Set the command nickname.
+    #
+    # @param cmd a SheriffDeputyCommand object.
+    # @param new_nickname the new nickname to identify a command with.
+    def set_command_nickname (self, cmd, new_nickname):
+        cmd.nickname = new_nickname
 
+    ## Set the command group.
+    #
+    # @param cmd a SheriffDeputyCommand object.
+    # @param group_name the new group name for the command.
     def set_command_group (self, cmd, group_name):
         group_name = group_name.strip("/")
         while group_name.find("//") >= 0:
@@ -514,9 +576,24 @@ class Sheriff (gobject.GObject):
             cmd._set_group (group_name)
             self.emit ("command-group-changed", cmd)
 
+    ## Set if a deputy should auto-respawn the command when the command
+    # terminates.
+    #
+    # @param cmd a SheriffDeputyCommand object.
+    # @param newauto_respawn True if the command should be automatically
+    # restarted.
     def set_auto_respawn (self, cmd, newauto_respawn):
         cmd.auto_respawn = newauto_respawn
 
+    ## Remove a command.
+    #
+    # This starts the process of purging a command from the sheriff and
+    # deputies.  It is not instantaneous, because the sheriff needs to wait for
+    # removal confirmation from the deputy.
+    #
+    # This method calls send_orders()
+    #
+    # @param cmd a SheriffDeputyCommand object to remove.
     def schedule_command_for_removal (self, command):
         if self._is_observer:
             raise ValueError ("Can't remove commands in Observer mode")
@@ -525,19 +602,47 @@ class Sheriff (gobject.GObject):
         self._maybe_emit_status_change_signals (deputy, status_changes)
         self.send_orders ()
 
+    ## Move a command from one deputy to another.
+    #
+    # This removes the command from one deputy, and creates it in another.
+    # This method calls send_orders()
+    #
+    # @param cmd a SheriffDeputyCommand object to move.
+    # @newdeputy_name the name of the new deputy for the command.
     def move_command_to_deputy(self, cmd, newdeputy_name):
         self.schedule_command_for_removal (cmd)
         self.add_command (newdeputy_name, cmd.name, cmd.nickname, cmd.group, cmd.auto_respawn)
 
+    ## Set the sheriff into observation mode, or remove it from observation mode.
+    #
+    # @param is_observer True if the sheriff should enter observation mode,
+    # False if it should leave it.
     def set_observer (self, is_observer): self._is_observer = is_observer
+
+    ## Check if the sheriff is in observer mode.
+    #
+    # @return True if the sheriff is in observer mode, False if not.
     def is_observer (self): return self._is_observer
 
+    ## Retrieve a list of known deputies.
+    #
+    # @return a list of SheriffDeputy objects.
     def get_deputies (self):
         return self.deputies.values ()
 
+    ## Retrieve the SheriffDeputy object by deputy name.
+    #
+    # @param name the name of the desired deputy.
+    #
+    # @return a SheriffDeputy object.
     def find_deputy (self, name):
         return self.deputies[name]
 
+    ## Clean up the Sheriff internal state.
+    #
+    # This method is meant to be called when a deputy process has no more
+    # commands and terminates.  It purges the Sheriff's internal representation
+    # of deputies that don't have any commands.
     def purge_useless_deputies(self):
         for deputy_name, deputy in self.deputies.items():
             cmds = deputy.commands.values()
@@ -551,12 +656,21 @@ class Sheriff (gobject.GObject):
                 return deputy.commands[command_id]
         raise KeyError ("No such command")
 
+    ## Retrieve the SheriffDeputy that manages the specified command.
+    #
+    # @param command a SheriffDeputyCommand object
+    #
+    # @return a SheriffDeputy object corresponding to the deputy that manages
+    # the specified command.
     def get_command_deputy (self, command):
         for deputy in self.deputies.values ():
             if command.sheriff_id in deputy.commands:
                 return deputy
         raise KeyError ("No such command")
 
+    ## Retrieve all commands managed by all deputies.
+    #
+    # @return a list of SheriffDeputyCommand objects.
     def get_all_commands (self):
         cmds = []
         for dep in self.deputies.values ():
