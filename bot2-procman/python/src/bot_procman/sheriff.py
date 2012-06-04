@@ -494,13 +494,13 @@ class Sheriff (gobject.GObject):
     #
     # @param deputy_name the name of the deputy that will manage this command.
     # @param cmd_exec the actual command string to execute.
-    # @param cmd_nickname an identifier string for this command.
+    # @param cmd_id an identifier string for this command.
     # @param group the command group name, or the empty string for no group.
     # @param auto_respawn True if the deputy should automatically restart the
     # command when it exits.  Auto respawning only happens when the desired
     # state of the command is running.
     # @return a SheriffDeputyCommand object representing the command.
-    def add_command (self, deputy_name, cmd_exec, cmd_nickname, group, auto_respawn):
+    def add_command (self, deputy_name, cmd_exec, cmd_id, group, auto_respawn):
         if self._is_observer:
             raise ValueError ("Can't add commands in Observer mode")
         dep = self._get_or_make_deputy (deputy_name)
