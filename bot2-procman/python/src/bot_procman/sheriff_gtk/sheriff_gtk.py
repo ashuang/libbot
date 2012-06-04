@@ -697,7 +697,7 @@ named script once the config file is loaded.
 
 def main():
     try:
-        opts, args = getopt.getopt( sys.argv[1:], 'hln',
+        opts, args = getopt.getopt( sys.argv[1:], 'hlon',
                 ['help','lone-ranger', 'on-script-complete=', 'no-gui', 'observer'] )
     except getopt.GetoptError:
         usage()
@@ -713,7 +713,7 @@ def main():
             spawn_deputy = True
         elif optval in [ '-n', '--no-gui' ]:
             use_gui = False
-        elif optval in [ '--observer' ]:
+        elif optval in [ '-o', '--observer' ]:
             observer = True
         elif optval in [ '--on-script-complete' ]:
             script_done_action = argval
