@@ -279,7 +279,7 @@ class SheriffGtk(object):
                 self.spawned_deputy.wait()
         self.spawned_deputy = None
 
-    def _set_observer (self, is_observer):
+    def set_observer (self, is_observer):
         self.sheriff.set_observer (is_observer)
 
         self._update_menu_item_sensitivities ()
@@ -328,7 +328,7 @@ class SheriffGtk(object):
         if self.script_done_action == "exit":
             gtk.main_quit()
         elif self.script_done_action == "observe":
-            self._set_observer(True)
+            self.set_observer(True)
 
     def on_abort_script_mi_activate(self, menuitem):
         self.sheriff.abort_script()
@@ -483,7 +483,7 @@ class SheriffGtk(object):
         self.save_dlg = None
 
     def on_is_observer_cmi_toggled(self, menu_item):
-        self._set_observer(menu_item.get_active ())
+        self.set_observer(menu_item.get_active ())
 
     def on_spawn_deputy_mi_activate(self, *args):
         print("Spawn deputy!")
@@ -541,7 +541,7 @@ class SheriffGtk(object):
                 self.sheriff.name != msg.sheriff_name:
             # detected the presence of another sheriff that is not this one.
             # self-demote to prevent command thrashing
-            self._set_observer (True)
+            self.set_observer (True)
 
             self.statusbar.push (self.statusbar.get_context_id ("main"),
                     "WARNING: multiple sheriffs detected!  Switching to observer mode");
@@ -664,7 +664,7 @@ def usage():
     sys.stdout.write(
 """usage: %s [options] [<procman_config_file> [<script_name>]]
 
-Process Management operating console.
+Process management operating console.
 
 Options:
   -l, --lone-ranger   Automatically run a deputy within the sheriff process
@@ -672,6 +672,11 @@ Options:
                       all the commands it hosts.
 
   -n, --no-gui        Runs in headless mode (no GUI).
+
+  -o, --observer      Runs in observer mode on startup.  This prevents the
+                      sheriff from sending any commands, and is useful for
+                      monitoring existing procman sheriff and/or deputy
+                      instances.
 
   --on-script-complete <exit|observe>
                       Only valid if a script is specified.  If set to "exit",
@@ -693,7 +698,7 @@ named script once the config file is loaded.
 def main():
     try:
         opts, args = getopt.getopt( sys.argv[1:], 'hln',
-                ['help','lone-ranger', 'on-script-complete=', 'no-gui'] )
+                ['help','lone-ranger', 'on-script-complete=', 'no-gui', 'observer'] )
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -701,12 +706,15 @@ def main():
     spawn_deputy = False
     use_gui = True
     script_done_action = None
+    observer = False
 
     for optval, argval in opts:
         if optval in [ '-l', '--lone-ranger' ]:
             spawn_deputy = True
         elif optval in [ '-n', '--no-gui' ]:
             use_gui = False
+        elif optval in [ '--observer' ]:
+            observer = True
         elif optval in [ '--on-script-complete' ]:
             script_done_action = argval
             if argval not in [ "exit", "observe" ]:
@@ -726,6 +734,17 @@ def main():
     if len(args) > 1:
         script_name = args[1]
 
+    if observer:
+        if cfg:
+            print "Loading a config file is not allowed when starting in observer mode."
+            sys.exit(1)
+        if not use_gui:
+            print "Refusing to start an observer without a gui -- that would be useless."
+            sys.exit(1)
+        if spawn_deputy:
+            print "Lone ranger mode and observer mode are mutually exclusive."
+            sys.exit(1)
+
     lc = LCM()
     def handle(*a):
         try:
@@ -737,6 +756,8 @@ def main():
 
     if use_gui:
         gui = SheriffGtk(lc)
+        if observer:
+            gui.set_observer(True)
         if spawn_deputy:
             gui.on_spawn_deputy_mi_activate()
         if cfg is not None:
