@@ -1,3 +1,8 @@
+"""@package sheriff
+
+\defgroup python_api Python API
+@{
+"""
 import os
 import platform
 import sys
@@ -31,6 +36,8 @@ UNKNOWN = "Unknown"
 RESTARTING = "Command Sent"
 
 class SheriffDeputyCommand(gobject.GObject):
+    """Sheriff view of a command managed by a deputy
+    """
 
     def __init__ (self):
         gobject.GObject.__init__ (self)
@@ -130,10 +137,11 @@ class SheriffDeputyCommand(gobject.GObject):
    mem_rss:      %(mem_rss_bytes)d
    actual_runid: %(actual_runid)d""" % self.__dict__
 
+## %Sheriff view of a deputy
+#
+# TODO
+#
 class SheriffDeputy (gobject.GObject):
-    """
-    Represents a procman sheriff's view of a remote deputy.
-    """
     def __init__ (self, name):
         gobject.GObject.__init__ (self)
         self.name = name
@@ -890,3 +898,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+@}
+"""
