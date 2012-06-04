@@ -8,7 +8,7 @@ with a deputy and a sheriff.
 There are two types of programs in Procman - the deputy (\p bot-procman-deputy)
 and the sheriff (\p bot-procman-sheriff).
 
-\li Deputies directly control processes, and there must be at least one deputy.
+\li Deputies control processes, and there must be at least one deputy.
 \li Sheriffs control deputies, and there can be at most one sheriff.
 
 To get started, we'll show you how to run the deputy and the sheriff, and create

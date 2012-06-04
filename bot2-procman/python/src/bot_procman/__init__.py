@@ -8,3 +8,6 @@ from info_t import info_t
 from printf_t import printf_t
 from sheriff_cmd_t import sheriff_cmd_t
 from deputy_cmd_t import deputy_cmd_t
+
+from sheriff import Sheriff
+from sheriff_script import SheriffScript

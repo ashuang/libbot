@@ -65,6 +65,7 @@ class RunScriptAction(object):
     def __str__(self):
         return "run_script \"%s\";" % escape_str(self.script_name)
 
+## A simple script that can be executed by the Sheriff.
 class SheriffScript(object):
     def __init__(self, name):
         self.name = name

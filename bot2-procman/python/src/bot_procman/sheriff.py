@@ -35,6 +35,12 @@ STOPPED_ERROR = "Stopped (Error)"
 UNKNOWN = "Unknown"
 RESTARTING = "Command Sent"
 
+## A command managed by a deputy, which is in turn managed by the %Sheriff.
+#
+# Represents an executable command that can be run as a child process of a
+# Procman deputy process.
+#
+# Use this class to  TODO
 class SheriffDeputyCommand(gobject.GObject):
     """Sheriff view of a command managed by a deputy
     """
@@ -139,7 +145,7 @@ class SheriffDeputyCommand(gobject.GObject):
 
 ## %Sheriff view of a deputy
 #
-# TODO
+# You shouldn't need to use this class directly.
 #
 class SheriffDeputy (gobject.GObject):
     def __init__ (self, name):
@@ -152,9 +158,17 @@ class SheriffDeputy (gobject.GObject):
         self.phys_mem_free_bytes = 0
         self.variables = {}
 
+    ## Retrieve a list of all commands managed by the deputy
+    #
+    # @return a list of SheriffDeputyCommand objects
     def get_commands (self):
         return self.commands.values ()
 
+    ## Check to see if this deputy manages the specified command
+    #
+    # @param command a SheriffDeputyCommand object.
+    #
+    # @return True if this deputy object manages \p command, False if not.
     def owns_command (self, command):
         return command.sheriff_id in self.commands and \
                 self.commands [command.sheriff_id] is command
@@ -325,7 +339,24 @@ class ScriptExecutionContext(object):
 ## Controls deputies and processes.
 #
 # The Sheriff class provides the primary interface for controlling processes
-# using the Procman Python API.
+# using the Procman Python API.  It requires a GLib event loop to run.
+#
+#
+# example usage:
+# \code
+# import bot_procman
+# import gobject
+#
+# lc = lcm.LCM()
+# sheriff = bot_procman.Sheriff(lc)
+#
+# # add commands or load a config file
+#
+# mainloop = gobject.MainLoop()
+# gobject.io_add_watch(lc, gobject.IO_IN, lambda *s: lc.handle() or True)
+# gobject.timeout_add(1000, lambda *s: sheriff.send_orders() or True)
+# mainloop.run()
+# \endcode
 class Sheriff (gobject.GObject):
 
     __gsignals__ = {
@@ -677,6 +708,12 @@ class Sheriff (gobject.GObject):
             cmds.extend (dep.commands.values ())
         return cmds
 
+    ## Retrieve all commands with the specified nickname.
+    #
+    # @param nickname the user-assigned name of the desired command.
+    #
+    # @return a list of SheriffDeputyCommand objects matching the query, or an
+    # empty list if none are found.
     def get_commands_by_nickname(self, nickname):
         result = []
         for deputy in self.deputies.values():
@@ -685,6 +722,14 @@ class Sheriff (gobject.GObject):
                     result.append(cmd)
         return result
 
+    ## Retrieve a list of all commands in the specified group.
+    #
+    # Use this method to find out what commands are in a group.  Commands in
+    # subgroups of the specified group are also included.
+    #
+    # @param group_name the name of the desired group
+    #
+    # @return a list of SheriffDeputyCommand objects.
     def get_commands_by_group(self, group_name):
         result = []
         group_name = group_name.strip("/")
@@ -699,26 +744,44 @@ class Sheriff (gobject.GObject):
                     result.append(cmd)
         return result
 
+    ## Retrieve the currently executing script
+    #
+    # @return the SheriffScript object corresponding to the active script, or
+    # None if there is no active script.
     def get_active_script(self):
         if self.active_script_context:
             return self.active_script_context.script
         return None
 
+    ## Look up a script by name
+    #
+    # @param name the name of the script
+    #
+    # @return a SheriffScript object, or None if no such script is found.
     def get_script(self, name):
         for script in self.scripts:
             if script.name == name:
                 return script
         return None
 
+    ## Retrieve a list of all scripts
+    #
+    # @return a list of SheriffScript objects
     def get_scripts(self):
         return self.scripts
 
+    ## Add a new script to the sheriff.
+    #
+    # @param script a SheriffScript object.
     def add_script(self, script):
         if self.get_script(script.name) is not None:
             raise ValueError("Script [%s] already exists", script.name)
         self.scripts.append(script)
         self.emit("script-added", script)
 
+    ## Remove a script.
+    #
+    # @param script the SheriffScript object to remove.
     def remove_script(self, script):
         if self.active_script_context is not None:
             raise RuntimeError("Script removal is not allowed while a script is running.")
@@ -739,6 +802,16 @@ class Sheriff (gobject.GObject):
         else:
             raise ValueError("Invalid ident_type %s" % ident_type)
 
+    ## Check a script object for errors that would prevent its execution
+    #
+    # Possible errors include a command or group mentioned in the script not
+    # being found by the sheriff.
+    #
+    # @param script a SheriffScript object to inspect
+    #
+    # @return a list of error messages.  If the list is not empty, then each
+    # error message indicates a problem with the script.  Otherwise, the script
+    # can be executed.
     def check_script_for_errors(self, script, path_to_root=None):
         if path_to_root is None:
             path_to_root = []
@@ -866,6 +939,19 @@ class Sheriff (gobject.GObject):
 
         return False
 
+    ## Starts executing a script
+    #
+    # If another script is executing, then that script is aborted first.
+    # Calling this method executes the first action in the script.  Other
+    # actions will be invoked during LCM message handling and by the GLib event
+    # loop (e.g., timers).
+    #
+    # @param script a sheriff_script.SheriffScript object to execute
+    # @sa get_script()
+    #
+    # @return a list of error messages.  If the list is not empty, then each
+    # error message indicates a problem with the script.  Otherwise, the script
+    # has successfully started execution if the returned list is empty.
     def execute_script(self, script):
         if self.active_script_context:
             self.abort_script()
@@ -878,6 +964,7 @@ class Sheriff (gobject.GObject):
         self.emit("script-started", script)
         self._execute_next_script_action()
 
+    ## Cancels execution of the active script
     def abort_script(self):
         self._finish_script_execution()
 
@@ -946,6 +1033,14 @@ class Sheriff (gobject.GObject):
         for script_node in config_node.scripts.values():
             self.add_script(SheriffScript.from_script_node(script_node))
 
+    ## Write the current sheriff configuration to the specified file object.
+    #
+    # The current sheriff configuration consists of all commands managed by all
+    # deputies along with their settings, and all scripts as well.  This
+    # information is written out to the specified file object, which can then
+    # be loaded into the sheriff again at a later point in time.
+    #
+    # @param file_obj a file object for saving the current sheriff configuration
     def save_config (self, file_obj):
         config_node = sheriff_config.ConfigNode ()
         for deputy in self.deputies.values ():
