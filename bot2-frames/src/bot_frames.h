@@ -100,6 +100,27 @@ void bot_frames_destroy(BotFrames * bot_frames);
  */
 BotFrames * bot_frames_get_global(lcm_t *lcm, BotParam *bot_param);
 
+
+/**
+ * bot_frames_get_latest_timestamp
+ * bot_frames: pointer to a BotFrames structure that is to be modified
+ * 	frames
+ * from_frame: source coordinate frame
+ * to_frame: destination coordinate frame
+ * timestamp: output parameter
+ *
+ * Retrieves the timestamp of the most recent rigid body transformation 
+ * relating two coordinate frames.
+ *
+ * Since there may be many links relating two coordinate frames, this 
+ * retrieves the timestamp of the most recently updated link.  For information
+ * about a specific link, use bot_ctrans_link_get_nth_trans()
+ * 
+ * Returns: 1 on success, 0 on failure.
+ */
+int bot_frames_get_latest_timestamp(BotFrames * bot_frames, 
+                                        const char *from_frame, const char *to_frame, int64_t *timestamp);
+
 /**
  * bot_frames_update_frame
  *
@@ -112,6 +133,7 @@ BotFrames * bot_frames_get_global(lcm_t *lcm, BotParam *bot_param);
  *
  * Publish a frame update message
  */
+
 void bot_frames_update_frame(BotFrames * bot_frames, const char * frame_name,
     const char * relative_to, const BotTrans * trans, int64_t utime);
 

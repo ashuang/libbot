@@ -361,6 +361,15 @@ void bot_frames_add_update_subscriber(BotFrames *bot_frames, bot_frames_link_upd
 
 }
 
+int bot_frames_get_latest_timestamp(BotFrames * bot_frames, 
+                                    const char *from_frame, const char *to_frame, int64_t *timestamp){
+
+    g_mutex_lock(bot_frames->mutex);
+    int status = bot_ctrans_get_trans_latest_timestamp(bot_frames->ctrans, from_frame, to_frame, timestamp);
+    g_mutex_unlock(bot_frames->mutex);
+    return status;
+}
+
 int bot_frames_get_trans_with_utime(BotFrames *bot_frames, const char *from_frame, const char *to_frame, int64_t utime,
     BotTrans *result)
 {
