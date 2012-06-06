@@ -421,6 +421,12 @@ bot_camtrans_get_name(const BotCamTrans *self)
 }
 
 double
+bot_camtrans_get_skew (const BotCamTrans *self)
+{
+    return self->skew;
+}
+
+double
 bot_camtrans_get_focal_length_x (const BotCamTrans *self)
 {
     return self->fx;
