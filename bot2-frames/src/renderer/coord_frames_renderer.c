@@ -34,7 +34,6 @@
 #define PARAM_PATH_COLOR "Path Color"
 
 #define MAX_HIST   10000
-#define MAX_DIST_CONNECT 1.0
 
 typedef struct _RendererFrames {
 
@@ -160,9 +159,6 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
 
   float * path_color = bot_color_util_jet(bot_gtk_param_widget_get_double(self->pw, PARAM_PATH_COLOR));
 
-  BotTrans last_trans;
-  bot_trans_copy(&last_trans, last_coord);
-
   switch (bot_gtk_param_widget_get_enum(self->pw, PARAM_PATH_RENDER_MODE)) {
   case PATH_MODE_AXES:
     {
@@ -181,12 +177,7 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
       glVertex3f(last_coord->trans_vec[0], last_coord->trans_vec[1], 0);
       for (unsigned int i = 0; i < MIN(bot_ptr_circular_size(self->path), max_draw_poses); i++) {
         BotTrans * t = (BotTrans *) bot_ptr_circular_index(self->path, i);
-        if (bot_vector_dist_3d(last_trans.trans_vec, t->trans_vec) > MAX_DIST_CONNECT) {
-          glEnd();
-          glBegin(GL_LINE_STRIP);
-        }
         glVertex3f(t->trans_vec[0], t->trans_vec[1], 0);
-        bot_trans_copy(&last_trans, t);
       }
       glEnd();
       break;
@@ -207,13 +198,8 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
       for (unsigned int i = 0; i < nposes; i++) {
         double *pos = (double *) bot_ptr_circular_index(self->path, i);
         BotTrans * t = (BotTrans *) bot_ptr_circular_index(self->path, i);
-        if (bot_vector_dist_3d(last_trans.trans_vec, t->trans_vec) > MAX_DIST_CONNECT) {
-          glEnd();
-          glBegin(GL_QUAD_STRIP);
-        }
         glVertex3dv(t->trans_vec);
         glVertex3f(t->trans_vec[0], t->trans_vec[1], 0);
-        bot_trans_copy(&last_trans, t);
       }
       glEnd();
 
@@ -228,12 +214,7 @@ static void draw_path(RendererFrames *self, BotTrans *last_coord)
       glVertex3dv(last_coord->trans_vec);
       for (unsigned int i = 0; i < MIN(bot_ptr_circular_size(self->path), max_draw_poses); i++) {
         BotTrans * t = (BotTrans *) bot_ptr_circular_index(self->path, i);
-        if (bot_vector_dist_3d(last_trans.trans_vec, t->trans_vec) > MAX_DIST_CONNECT) {
-          glEnd();
-          glBegin(GL_LINE_STRIP);
-        }
         glVertex3dv(t->trans_vec);
-        bot_trans_copy(&last_trans, t);
       }
       glEnd();
       break;
