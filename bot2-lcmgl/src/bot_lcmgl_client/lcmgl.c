@@ -284,7 +284,7 @@ void bot_lcmgl_pop_matrix (bot_lcmgl_t * lcmgl)
     bot_lcmgl_encode_u8 (lcmgl, BOT_LCMGL_POP_MATRIX);
 }
 
-void bot_lcmgl_mult_matrixf(bot_lcmgl_t *lcmgl, float m[16])
+void bot_lcmgl_mult_matrixf(bot_lcmgl_t *lcmgl, const float m[16])
 {
     bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_MULT_MATRIXF);
 
@@ -292,7 +292,7 @@ void bot_lcmgl_mult_matrixf(bot_lcmgl_t *lcmgl, float m[16])
         bot_lcmgl_encode_float(lcmgl, m[i]);
 }
 
-void bot_lcmgl_mult_matrixd(bot_lcmgl_t *lcmgl, double m[16])
+void bot_lcmgl_mult_matrixd(bot_lcmgl_t *lcmgl, const double m[16])
 {
     bot_lcmgl_encode_u8(lcmgl, BOT_LCMGL_MULT_MATRIXD);
 
@@ -540,6 +540,31 @@ bot_lcmgl_draw_ortho_circles_3d(bot_lcmgl_t * lcmgl)
   bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
   lcmglPopMatrix();
 }
+
+void
+bot_lcmgl_draw_arrow_3d (bot_lcmgl_t * lcmgl, double length, double head_width, double head_length,
+        double body_width)
+{
+    int slices = 20;
+    int stacks = 20;
+
+    double xyz[3] = {0,0,0};
+
+    //apply translations so the drawing is centered at origin along the x axis per bot_gl_draw_arrow_2d
+    lcmglPushMatrix();
+    lcmglTranslated(-length / 2, 0, 0);
+    lcmglRotated(90, 0, 1, 0);
+
+    //draw body
+    lcmglCylinder(xyz, body_width, body_width, length - head_length, slices, stacks);
+
+    //draw head
+    lcmglTranslated(0, 0, length - head_length);
+    lcmglCylinder(xyz, head_width, 0, head_length, slices, stacks);
+
+    lcmglPopMatrix();
+}
+
 
 ////////// vertex buffer
 //bot_lcmgl_vertex_buffer_t *bot_lcmgl_vertex_buffer_create(int capacity,

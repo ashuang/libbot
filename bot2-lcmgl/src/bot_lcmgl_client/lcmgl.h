@@ -78,8 +78,8 @@ void bot_lcmgl_rotated(bot_lcmgl_t *lcmgl,
 void bot_lcmgl_push_matrix(bot_lcmgl_t * lcmgl);
 void bot_lcmgl_pop_matrix(bot_lcmgl_t * lcmgl);
 void bot_lcmgl_load_identity(bot_lcmgl_t *lcmgl);
-void bot_lcmgl_mult_matrixf(bot_lcmgl_t * lcmgl, float m[16]);
-void bot_lcmgl_mult_matrixd(bot_lcmgl_t * lcmgl, double m[16]);
+void bot_lcmgl_mult_matrixf(bot_lcmgl_t * lcmgl, const float m[16]);
+void bot_lcmgl_mult_matrixd(bot_lcmgl_t * lcmgl, const double m[16]);
 void bot_lcmgl_matrix_mode(bot_lcmgl_t * lcmgl, unsigned int mode);
 void bot_lcmgl_ortho(bot_lcmgl_t *lcmgl, double left, double right,
     double bottom, double top, double nearVal, double farVal);
@@ -236,9 +236,19 @@ void bot_lcmgl_draw_axes(bot_lcmgl_t * lcmgl);
 void bot_lcmgl_draw_ortho_circles_3d(bot_lcmgl_t * lcmgl);
 
 
+/**
+ * bot_lcmgl_draw_arrow_3d():
+ *
+ * draw arrow along x axis starting at origin
+ */
+void bot_lcmgl_draw_arrow_3d (bot_lcmgl_t * lcmgl, double length, double head_width, double head_length,
+        double body_width);
+
+
 #define lcmglBox(xyz, dim) bot_lcmgl_box(lcmgl, xyz, dim)
 #define lcmglCircle(xyz, radius) bot_lcmgl_circle(lcmgl, xyz, radius)
 #define lcmglDisk(xyz, r_in, r_out) bot_lcmgl_disk(lcmgl, xyz, r_in, r_out)
+#define lcmglCylinder(xyz, base_radius, top_radius, height, slices, stacks) bot_lcmgl_cylinder(lcmgl, xyz, base_radius, top_radius, height, slices, stacks)
 
 
 /**
