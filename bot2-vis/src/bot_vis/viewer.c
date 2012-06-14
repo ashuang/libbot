@@ -169,7 +169,7 @@ stop_recording (BotViewer *self)
     free(self->movie_buffer);
     self->movie_buffer = NULL;
 
-    dbg ("\nRecording stopped\n");
+    printf("\nRecording stopped\n");
     bot_viewer_set_status_bar_message (self, "Recording stopped");
 
     gzclose(self->movie_gzf);
