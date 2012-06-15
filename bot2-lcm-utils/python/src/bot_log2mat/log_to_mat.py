@@ -150,8 +150,8 @@ def make_lcmtype_string(msg, base=True):
             subStr, subCount = make_lcmtype_string(m, False);
             if base:
                 for s in subStr:
-                    count = count + 1
-                    typeStr.append("%d- %s.%s" % (count, fieldname , s))
+                    typeStr.append("%d- %s.%s" % (count+1, fieldname , s))
+                    count = count + subCount
             else:
                 count = count + subCount
                 for s in subStr:
