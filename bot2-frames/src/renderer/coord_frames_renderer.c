@@ -450,7 +450,7 @@ void bot_frames_add_named_renderer_to_viewer(BotViewer *viewer, int render_prior
   bot_gtk_param_widget_add_double(self->pw, PARAM_PATH_COLOR, BOT_GTK_PARAM_WIDGET_SLIDER, 0, 1, .01, .3);
   bot_gtk_param_widget_add_double(self->pw, PARAM_DECIMATE_PATH, BOT_GTK_PARAM_WIDGET_SPINBOX, 0, 100, .01, .1);
 
-  bot_gtk_param_widget_add_int(self->pw, PARAM_MAXPOSES, BOT_GTK_PARAM_WIDGET_SLIDER, 0, MAX_HIST, 100, 1000);
+  bot_gtk_param_widget_add_int(self->pw, PARAM_MAXPOSES, BOT_GTK_PARAM_WIDGET_SPINBOX, 0, MAX_HIST, 1, 1000);
 
   GtkWidget *find_button = gtk_button_new_with_label("Find");
   gtk_box_pack_start(GTK_BOX(renderer->widget), find_button, FALSE, FALSE, 0);
