@@ -246,9 +246,9 @@ void bot_frames_add_frame_modifier_to_viewer(BotViewer *viewer, int render_prior
 
   gtk_box_pack_start(GTK_BOX(renderer->widget), GTK_WIDGET(self->pw), TRUE, TRUE, 0);
 
-  bot_gtk_param_widget_add_double(self->pw, PARAM_X, BOT_GTK_PARAM_WIDGET_SPINBOX, -8, 8, 0.001, 0);
-  bot_gtk_param_widget_add_double(self->pw, PARAM_Y, BOT_GTK_PARAM_WIDGET_SPINBOX, -8, 8, 0.001, 0);
-  bot_gtk_param_widget_add_double(self->pw, PARAM_Z, BOT_GTK_PARAM_WIDGET_SPINBOX, -8, 8, 0.001, 0);
+  bot_gtk_param_widget_add_double(self->pw, PARAM_X, BOT_GTK_PARAM_WIDGET_SPINBOX, -1000, 1000, 0.001, 0);
+  bot_gtk_param_widget_add_double(self->pw, PARAM_Y, BOT_GTK_PARAM_WIDGET_SPINBOX, -1000, 1000, 0.001, 0);
+  bot_gtk_param_widget_add_double(self->pw, PARAM_Z, BOT_GTK_PARAM_WIDGET_SPINBOX, -1000, 1000, 0.001, 0);
   bot_gtk_param_widget_add_double(self->pw, PARAM_ROLL, BOT_GTK_PARAM_WIDGET_SPINBOX, -181, 181, 0.1, 0);
   bot_gtk_param_widget_add_double(self->pw, PARAM_PITCH, BOT_GTK_PARAM_WIDGET_SPINBOX, -181, 181, 0.1, 0);
   bot_gtk_param_widget_add_double(self->pw, PARAM_YAW, BOT_GTK_PARAM_WIDGET_SPINBOX, -181, 181, 0.1, 0);
