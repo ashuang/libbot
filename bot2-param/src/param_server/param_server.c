@@ -21,6 +21,10 @@ typedef struct {
   lcm_t * lcm;
   int64_t id;
   int32_t seqNo;
+
+  gchar *update_channel;
+  gchar *request_channel;
+  gchar *set_channel;
 } param_server_t;
 
 void publish_params(param_server_t *self)
@@ -38,7 +42,7 @@ void publish_params(param_server_t *self)
   update_msg->server_id = self->id;
   update_msg->sequence_number = self->seqNo;
 
-  bot_param_update_t_publish(self->lcm, BOT_PARAM_UPDATE_CHANNEL, update_msg);
+  bot_param_update_t_publish(self->lcm, self->update_channel, update_msg);
   bot_param_update_t_destroy(update_msg);
 
   fprintf(stderr, ".");
@@ -91,7 +95,8 @@ static void usage(int argc, char ** argv)
             "Parameter Server: Maintains and publishes params initially read from param_file config file\n"
             "\n"
             "Options:\n"
-            "   -h, --help   print this help and exit\n"
+            "   -h, --help          print this help and exit\n"
+            "   -s, --server-name   publishes params from named server\n"
             "\n"
             , argv[0]);
 }
@@ -99,7 +104,7 @@ static void usage(int argc, char ** argv)
 int main(int argc, char ** argv)
 {
 
-  if (argc != 2) {
+  if (argc < 2) {
       usage (argc, argv);
       exit(1);
   }
@@ -114,15 +119,20 @@ int main(int argc, char ** argv)
   self->lcm = lcm_create(NULL); //TODO: provider options?
   lcmu_glib_mainloop_attach_lcm(self->lcm);
 
-  char *optstring = "h";
+  char *optstring = "hs:";
   struct option long_opts[] = {
       { "help", no_argument, NULL, 'h' },
+      { "server-name", required_argument, NULL, 's' },
       { 0, 0, 0, 0 }
   };
   int c=-1;
+  char *param_prefix = NULL;
   while ((c = getopt_long (argc, argv, optstring, long_opts, 0)) >= 0)
   {
       switch (c) {
+      case 's':
+          param_prefix = optarg;
+          break;
       case 'h':
       default:
           usage (argc, argv);
@@ -130,21 +140,28 @@ int main(int argc, char ** argv)
       }
   }
 
-
-
   self->seqNo = 0;
   self->id = _timestamp_now();
-  self->params = bot_param_new_from_file(argv[1]);
+  self->params = bot_param_new_from_file(argv[optind]);
   if (self->params==NULL){
-    fprintf(stderr, "Could not load params from %s\n", argv[1]);
+    fprintf(stderr, "Could not load params from %s\n", argv[optind]);
     exit(1);
   }
   else
-    fprintf(stderr, "Loaded params from %s\n", argv[1]);
+    fprintf(stderr, "Loaded params from %s\n", argv[optind]);
 
-  bot_param_update_t_subscribe(self->lcm, BOT_PARAM_UPDATE_CHANNEL, on_param_update, (void *) self);
-  bot_param_request_t_subscribe(self->lcm, BOT_PARAM_REQUEST_CHANNEL, on_param_request, (void *) self);
-  bot_param_set_t_subscribe(self->lcm, BOT_PARAM_SET_CHANNEL, on_param_set, (void *) self);
+  // set channels here
+  if (!param_prefix) param_prefix = getenv ("BOT_PARAM_SERVER_NAME");
+  self->update_channel = g_strconcat (param_prefix ? : "", 
+          BOT_PARAM_UPDATE_CHANNEL, NULL);
+  self->request_channel = g_strconcat (param_prefix ? : "", 
+          BOT_PARAM_REQUEST_CHANNEL, NULL);
+  self->set_channel = g_strconcat (param_prefix ? : "", 
+          BOT_PARAM_SET_CHANNEL, NULL);
+
+  bot_param_update_t_subscribe(self->lcm, self->update_channel, on_param_update, (void *) self);
+  bot_param_request_t_subscribe(self->lcm, self->request_channel, on_param_request, (void *) self);
+  bot_param_set_t_subscribe(self->lcm, self->set_channel, on_param_set, (void *) self);
 
   //timer to always publish params every 5sec
   g_timeout_add_full(G_PRIORITY_HIGH, (guint) 5.0 * 1000, on_timer, (gpointer) self, NULL);

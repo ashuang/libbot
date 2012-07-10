@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <glib.h>
 #include <lcm/lcm.h>
 #include <bot_param/param_client.h>
 #include <sys/time.h>
@@ -37,7 +38,12 @@ int main(int argc, char ** argv)
   entry.value = argv[2];
   msg.numEntries = 1;
   msg.entries = &entry;
-  bot_param_set_t_publish(lcm, BOT_PARAM_SET_CHANNEL, &msg);
+
+  char *param_prefix = getenv ("BOT_PARAM_SERVER_NAME");
+  gchar *set_channel = g_strconcat (param_prefix ? : "",
+          BOT_PARAM_SET_CHANNEL, NULL);
+  bot_param_set_t_publish(lcm, set_channel, &msg);
+  g_free (param_prefix);
 
   return 0;
 }

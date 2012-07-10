@@ -27,7 +27,8 @@ typedef struct _BotParam BotParam;
  * @param keep_update Keep listening for parameter updates.
  *
  * Gets the params for the param-server, and parse them. Returns a handle to the contents.
- * If no parameters are received within 5seconds, returns with an error.
+ * Checks the environment variable BOT_PARAM_SERVER_NAME. If no parameters are received within 
+ * 5seconds, returns with an error.
  *
  * WARNING: This calls lcm_handle internally, so make sure that you create the param_client
  * BEFORE you subscribe with handlers that may use it!
@@ -36,6 +37,25 @@ typedef struct _BotParam BotParam;
  */
 BotParam *
 bot_param_new_from_server (lcm_t * lcm, int keep_updated);
+
+
+/**
+ * bot_param_new_from_named_server:
+ * @param lcm         Handle to the lcm object to be used.
+ * @param server_name Name of param server
+ * @param keep_update Keep listening for parameter updates.
+ *
+ * Gets the params for the named param-server, and parse them. Returns a handle to the contents.  
+ * If server_name is NULL, checks for environment variable BOT_PARAM_SERVER_NAME. If no parameters 
+ * are received within 5seconds, returns with an error.
+ *
+ * WARNING: This calls lcm_handle internally, so make sure that you create the param_client
+ * BEFORE you subscribe with handlers that may use it!
+ *
+ * @return A handle to a newly-allocated %BotParam or %NULL on error.
+ */
+BotParam *
+bot_param_new_from_named_server (lcm_t * lcm, const char * server_name, int keep_updated);
 
 
 /**

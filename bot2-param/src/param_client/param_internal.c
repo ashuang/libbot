@@ -764,17 +764,32 @@ static void _on_param_update(const lcm_recv_buf_t *rbuf, const char * channel, c
 
 BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
 {
+  BotParam * param = bot_param_new_from_named_server (lcm, NULL, keep_updated);
+  return param;
+}
+
+BotParam * bot_param_new_from_named_server (lcm_t * lcm, const char * server_name, int keep_updated)
+{
   BotParam * param = _bot_param_new();
 
-  //TODO: is there a way to be sure nothing else is subscribed???
-  bot_param_update_t_subscription_t * sub = bot_param_update_t_subscribe(lcm, BOT_PARAM_UPDATE_CHANNEL, _on_param_update,
+  const char *param_prefix = server_name; 
+  if (!param_prefix) param_prefix = getenv ("BOT_PARAM_SERVER_NAME");
+  gchar *update_channel = update_channel = g_strconcat (param_prefix ? : "", 
+          BOT_PARAM_UPDATE_CHANNEL, NULL); 
+  gchar *request_channel = request_channel = g_strconcat (param_prefix ? : "", 
+          BOT_PARAM_REQUEST_CHANNEL, NULL); 
+
+  bot_param_update_t_subscription_t * sub = bot_param_update_t_subscribe(lcm, update_channel, _on_param_update,
       (void *) param);
+
+  //TODO: is there a way to be sure nothing else is subscribed???
   int64_t utime_start = _timestamp_now();
   int64_t last_print_utime = -1;
   while ((_timestamp_now() - utime_start) < 1.5e6) {
     bot_param_request_t req;
     req.utime = _timestamp_now();
-    bot_param_request_t_publish(lcm, BOT_PARAM_REQUEST_CHANNEL, &req);
+    bot_param_request_t_publish(lcm, request_channel, &req);
+
     lcm_sleep(lcm, .25);
     if (param->root->children != NULL)
       break;
@@ -790,6 +805,9 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
       }
     }
   }
+  g_free (update_channel);
+  g_free (request_channel);
+
   if (last_print_utime > 0) {
     fprintf(stderr, "\n");
   }
@@ -804,7 +822,6 @@ BotParam * bot_param_new_from_server(lcm_t * lcm, int keep_updated)
     param->server_id = -1;
   }
   return param;
-
 }
 
 static BotParam * _new_from_file(const char * filename)
