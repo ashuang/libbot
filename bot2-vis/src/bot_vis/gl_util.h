@@ -17,6 +17,7 @@
 #include "scrollplot2d.h"
 #include "console.h"
 #include "batch_gl.h"
+#include <bot_core/bot_core.h>
 
 /**
  * @defgroup BotGlUtil Miscellaneous OpenGL utility functions
@@ -156,6 +157,14 @@ bot_glutBitmapString(void* font, const unsigned char* text);
  */
 void
 bot_gl_draw_axes();
+
+/**
+ * bot_gl_multTrans():
+ *
+ * apply the BotTrans transform to the matrix stack
+ *
+ */
+void bot_gl_multTrans(BotTrans * trans);
 
 
 #ifdef __cplusplus

@@ -693,3 +693,12 @@ void bot_gl_draw_axes()
   glEnd();
 
 }
+
+void bot_gl_multTrans(BotTrans * trans){
+  double trans_m[16];
+  bot_trans_get_mat_4x4(trans, trans_m);
+  // opengl expects column-major matrices
+  double trans_m_opengl[16];
+  bot_matrix_transpose_4x4d(trans_m, trans_m_opengl);
+  glMultMatrixd(trans_m_opengl);
+}
