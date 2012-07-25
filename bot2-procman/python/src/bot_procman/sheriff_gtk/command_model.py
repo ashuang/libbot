@@ -85,7 +85,10 @@ class SheriffCommandModel(gtk.TreeStore):
     def _is_group_row(self, model_iter):
         return self.iter_to_command(model_iter) is None
 
-    def _update_cmd_row(self, model, path, model_iter, cmd, cmd_deps, to_reparent):
+    def _update_cmd_row(self, model_rr, cmd_deps, to_reparent):
+        path = model_rr.get_path()
+        model_iter = self.get_iter(path)
+        cmd = self.iter_to_command(model_iter)
         cpu_str = "%.2f" % (cmd.cpu_usage * 100)
         mem_usage = int(cmd.mem_vsize_bytes / 1024)
 
@@ -94,7 +97,7 @@ class SheriffCommandModel(gtk.TreeStore):
         else:
             display_name = "<unnamed>"
 
-        model.set(model_iter,
+        self.set(model_iter,
                 COL_CMDS_TV_EXEC, cmd.name,
                 COL_CMDS_TV_DISPLAY_NAME, display_name,
                 COL_CMDS_TV_STATUS_ACTUAL, cmd.status (),
@@ -105,7 +108,7 @@ class SheriffCommandModel(gtk.TreeStore):
 
         # get a row reference to the model since
         # adding a group may invalidate the iterators
-        model_rr = gtk.TreeRowReference(model, path)
+        model_rr = gtk.TreeRowReference(self, path)
 
         # check that the command is in the correct group in the
         # treemodel
@@ -114,13 +117,13 @@ class SheriffCommandModel(gtk.TreeStore):
         correct_parent_path = None
         actual_parent_path = None
         if correct_grr and correct_grr.get_path() is not None:
-            correct_parent_iter = model.get_iter(correct_grr.get_path())
-        actual_parent_iter = model.iter_parent(model.get_iter(model_rr.get_path())) # use the model_rr in case model_iter was invalidated
+            correct_parent_iter = self.get_iter(correct_grr.get_path())
+        actual_parent_iter = self.iter_parent(self.get_iter(model_rr.get_path())) # use the model_rr in case model_iter was invalidated
 
         if correct_parent_iter:
-            correct_parent_path = model.get_path(correct_parent_iter)
+            correct_parent_path = self.get_path(correct_parent_iter)
         if actual_parent_iter:
-            actual_parent_path = model.get_path(actual_parent_iter)
+            actual_parent_path = self.get_path(actual_parent_iter)
 
         if correct_parent_path != actual_parent_path:
             # schedule the command to be moved
@@ -128,7 +131,8 @@ class SheriffCommandModel(gtk.TreeStore):
 #                print "moving %s (%s) (%s)" % (cmd.name,
 #                        correct_parent_path, actual_parent_path)
 
-    def _update_group_row(self, model, path, model_iter, cmd_deps):
+    def _update_group_row(self, group_rr, cmd_deps):
+        model_iter = self.get_iter(group_rr.get_path())
         # row represents a procman group
         children = self.get_group_row_child_commands_recursive(model_iter)
         if not children:
@@ -164,43 +168,55 @@ class SheriffCommandModel(gtk.TreeStore):
         else:
             exec_val = ""
 
-        model.set (model_iter,
+        self.set (model_iter,
                 COL_CMDS_TV_STATUS_ACTUAL, status_str,
                 COL_CMDS_TV_EXEC, exec_val,
                 COL_CMDS_TV_HOST, dep_str,
                 COL_CMDS_TV_CPU_USAGE, cpu_str,
                 COL_CMDS_TV_MEM_VSIZE, mem_total)
 
-    def _update_row(self, model, path, model_iter, user_data):
-        cmds, cmd_deps, cmd_rows_to_remove, to_reparent = user_data
+    def _dispatch_row_changes(self, model, path, model_iter, user_data):
+        cmds_to_add, cmd_rows_to_remove, cmds_rows_to_update, group_rows_to_update = user_data
         cmd = self.iter_to_command(model_iter)
         if cmd:
-            if cmd in cmds:
-                self._update_cmd_row(model, path, model_iter, cmd, cmd_deps, to_reparent)
-                cmds.remove(cmd)
+            if cmd in cmds_to_add:
+                cmds_rows_to_update.append(gtk.TreeRowReference(model, path))
+                cmds_to_add.remove(cmd)
             else:
                 cmd_rows_to_remove.append(gtk.TreeRowReference(model, path))
         else:
-            self._update_group_row(model, path, model_iter, cmd_deps)
+            group_rows_to_update.append(gtk.TreeRowReference(model, path))
 
     def repopulate(self):
-        cmds = set()
+        cmds_to_add = set()
         cmd_deps = {}
         for deputy in self.sheriff.get_deputies ():
             for cmd in deputy.get_commands ():
                 cmd_deps [cmd] = deputy
-                cmds.add (cmd)
+                cmds_to_add.add (cmd)
         cmd_rows_to_remove = []
-        to_reparent = []
+        cmd_rows_to_reparent = []
+        cmds_rows_to_update = []
+        group_rows_to_update = []
 
-        # update every command and group row.  On return, the cmds set will
+        # Figure out which rows should be added/updated/removed etc... 
+        # On return, the cmds_to_add set will
         # contain commands that were not updated (i.e., commands that need to
         # be added into the model)
-        self.foreach(self._update_row,
-                (cmds, cmd_deps, cmd_rows_to_remove, to_reparent))
+        self.foreach(self._dispatch_row_changes,
+                (cmds_to_add, cmd_rows_to_remove, cmds_rows_to_update, group_rows_to_update))
+        
+        # update the command rows that should be updated
+        for trr in cmds_rows_to_update:
+            self._update_cmd_row(trr, cmd_deps, cmd_rows_to_reparent)
+        
+        # update the group rows that should be updated
+        for trr in group_rows_to_update:
+            self._update_group_row(trr, cmd_deps)
+        
 
         # reparent rows that are in the wrong group
-        for trr, newparent_rr in to_reparent:
+        for trr, newparent_rr in cmd_rows_to_reparent:
             orig_iter = self.get_iter(trr.get_path ())
             rowdata = self.get (orig_iter, *range(NUM_CMDS_ROWS))
             self.remove (orig_iter)
@@ -225,7 +241,7 @@ class SheriffCommandModel(gtk.TreeStore):
             self._delete_group_row_reference(trr)
 
         # create new rows for new commands
-        for cmd in cmds:
+        for cmd in cmds_to_add:
             deputy = cmd_deps[cmd]
             parent = self._find_or_make_group_row_reference(cmd.group)
 
