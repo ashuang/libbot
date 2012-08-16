@@ -112,6 +112,9 @@ void bot_gtk_param_widget_save_to_key_file (BotGtkParamWidget *pw,
 int bot_gtk_param_widget_modify_int(BotGtkParamWidget *pw,
         const char *name, int min, int max, int increment, int value);
 
+int bot_gtk_param_widget_modify_double(BotGtkParamWidget *pw,
+        const char *name, double min, double max, double increment, double value);
+
 G_END_DECLS
 
 /**

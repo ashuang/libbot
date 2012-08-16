@@ -920,3 +920,33 @@ bot_gtk_param_widget_modify_int(BotGtkParamWidget *pw,
     return 0;
 }
 
+int
+bot_gtk_param_widget_modify_double(BotGtkParamWidget *pw,
+        const char *name, double min, double max, double increment, double value)
+{
+    if (! have_parameter_key (pw, name)) {
+        fprintf(stderr, "param_widget: invalid parameter [%s]\n", name);
+        return -1;
+    }
+    GtkWidget *w = g_hash_table_lookup (pw->params, name);
+
+    GType type = G_OBJECT_TYPE (w);
+
+    if (GTK_TYPE_HSCALE == type) {
+        gtk_range_set_range(GTK_RANGE(w), min, max);
+        gtk_range_set_increments(GTK_RANGE(w), increment, increment * 10);
+        gtk_range_set_value(GTK_RANGE(w), value);
+    } else if (GTK_TYPE_SPIN_BUTTON == type) {
+        GtkSpinButton *sb = GTK_SPIN_BUTTON(w);
+        gtk_spin_button_set_range(sb, min, max);
+        gtk_spin_button_set_increments(sb, increment, increment * 10);
+        gtk_spin_button_set_value(sb, value);
+    } else {
+        fprintf(stderr, "param_widget:  can't modify parameter [%s] "
+                "as double.\n", name);
+        return -1;
+    }
+
+    return 0;
+}
+
