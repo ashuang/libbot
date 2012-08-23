@@ -279,6 +279,29 @@ int bot_gtk_param_widget_add_double (BotGtkParamWidget *pw,
     return 0;
 }
 
+int bot_gtk_param_widget_add_text_entry (BotGtkParamWidget *pw,
+        const char *name, BotGtkParamWidgetUIHint ui_hints,
+        const char *initial_value)
+{
+    if (have_parameter_key (pw, name)) return -1;
+    
+    
+    GtkWidget *w = NULL;
+    switch(ui_hints) {
+        case BOT_GTK_PARAM_WIDGET_ENTRY:
+            w = gtk_entry_new ();
+            gtk_entry_set_text (GTK_SPIN_BUTTON(w), initial_value);
+            break;
+        default:
+            err("ERROR: param_widget_add_text_entry - bad ui_hints\n");
+            return -1;
+    } 
+    param_data_t * pdata = add_row (pw, name, w, "value-changed", 
+            G_TYPE_STRING);
+    g_object_set_data (G_OBJECT(w), "data-type", "string");
+    return 0;
+}
+
 static int
 add_checkboxes_helper (BotGtkParamWidget *pw, GtkBox *box, const char *name, 
         int checked)
@@ -605,6 +628,27 @@ double bot_gtk_param_widget_get_double (BotGtkParamWidget *pw, const char *name)
     } else {
         fprintf(stderr, "param_widget:  can't retrieve parameter [%s] "
                 "as double.\n", name);
+        return 0;
+    }
+
+    return 0;
+}
+
+const gchar * bot_gtk_param_widget_get_text_entry (BotGtkParamWidget *pw, const char *name)
+{
+    if (! have_parameter_key (pw, name)) {
+        fprintf(stderr, "param_widget: invalid parameter [%s]\n", name);
+        return 0;
+    }
+    GtkWidget *w = g_hash_table_lookup (pw->params, name);
+
+    GType type = G_OBJECT_TYPE (w);
+
+    if ( GTK_TYPE_ENTRY == type) {
+        return gtk_entry_get_text (GTK_ENTRY (w));
+    } else {
+        fprintf(stderr, "param_widget:  can't retrieve parameter [%s] "
+                "as text.\n", name);
         return 0;
     }
 
@@ -949,4 +993,3 @@ bot_gtk_param_widget_modify_double(BotGtkParamWidget *pw,
 
     return 0;
 }
-

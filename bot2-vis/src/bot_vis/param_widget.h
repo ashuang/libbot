@@ -31,6 +31,8 @@ typedef struct _BotGtkParamWidgetClass BotGtkParamWidgetClass;
 typedef enum 
 {
     BOT_GTK_PARAM_WIDGET_DEFAULTS = 0,
+    
+    BOT_GTK_PARAM_WIDGET_ENTRY,
 
     // ui hints for integers
     BOT_GTK_PARAM_WIDGET_SLIDER = 1,
@@ -60,6 +62,10 @@ int bot_gtk_param_widget_add_enumv (BotGtkParamWidget *pw,
 int bot_gtk_param_widget_add_int (BotGtkParamWidget *pw,
         const char *name, BotGtkParamWidgetUIHint ui_hints, 
         int min, int max, int increment, int initial_value);
+        
+int bot_gtk_param_widget_add_text_entry (BotGtkParamWidget *pw,
+        const char *name, BotGtkParamWidgetUIHint ui_hints,
+        const char *initial_value);
 
 int bot_gtk_param_widget_add_double (BotGtkParamWidget *pw,
         const char *name, BotGtkParamWidgetUIHint ui_hints,
@@ -80,6 +86,8 @@ void bot_gtk_param_widget_add_separator (BotGtkParamWidget *pw,
 int bot_gtk_param_widget_get_int (BotGtkParamWidget *pw, const char *name);
 
 double bot_gtk_param_widget_get_double (BotGtkParamWidget *pw, const char *name);
+
+const gchar * bot_gtk_param_widget_get_text_entry (BotGtkParamWidget *pw, const char *name);
 
 int bot_gtk_param_widget_get_bool (BotGtkParamWidget *pw, const char *name);
 
