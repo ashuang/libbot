@@ -123,6 +123,11 @@ int bot_gtk_param_widget_modify_int(BotGtkParamWidget *pw,
 int bot_gtk_param_widget_modify_double(BotGtkParamWidget *pw,
         const char *name, double min, double max, double increment, double value);
 
+int bot_gtk_param_widget_modify_enum(BotGtkParamWidget *pw, 
+        const char *name, const char *label, const int value);
+
+void bot_gtk_param_widget_clear_enum(BotGtkParamWidget *pw, const char *name);
+
 G_END_DECLS
 
 /**

@@ -964,6 +964,7 @@ bot_gtk_param_widget_modify_int(BotGtkParamWidget *pw,
     return 0;
 }
 
+
 int
 bot_gtk_param_widget_modify_double(BotGtkParamWidget *pw,
         const char *name, double min, double max, double increment, double value)
@@ -993,3 +994,51 @@ bot_gtk_param_widget_modify_double(BotGtkParamWidget *pw,
 
     return 0;
 }
+
+
+
+int bot_gtk_param_widget_modify_enum(BotGtkParamWidget *pw, const char *name,
+        const char *label, const int value)
+{
+    if (! have_parameter_key (pw, name)) {
+        fprintf(stderr, "param_widget: invalid parameter [%s]\n", name);
+        return -1;
+    }
+    GtkWidget *w = g_hash_table_lookup (pw->params, name);
+
+    GType type = G_OBJECT_TYPE (w);
+
+    if (GTK_TYPE_COMBO_BOX == type) {
+        GtkTreeIter iter;
+        gtk_combo_box_get_active_iter (GTK_COMBO_BOX(w), &iter);
+    	GtkListStore * store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_INT);
+        store = (GtkListStore *) gtk_combo_box_get_model (GTK_COMBO_BOX(w));
+	gtk_list_store_append(store, &iter);
+	gtk_list_store_set(store, &iter, 0, label, 1, value, -1);
+	gtk_combo_box_set_model(GTK_COMBO_BOX(w), GTK_TREE_MODEL(store));
+    	gtk_combo_box_set_active_iter (GTK_COMBO_BOX(w), &iter);
+    }
+    return 0;
+}
+
+void bot_gtk_param_widget_clear_enum(BotGtkParamWidget *pw, const char *name)
+{
+    if (! have_parameter_key (pw, name)) {
+        fprintf(stderr, "param_widget: invalid parameter [%s]\n", name);
+        return;
+    }
+    GtkWidget *w = g_hash_table_lookup (pw->params, name);
+
+    GType type = G_OBJECT_TYPE (w);
+
+    if (GTK_TYPE_COMBO_BOX == type) {
+    	GtkListStore * store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_INT);
+	gtk_combo_box_set_model(GTK_COMBO_BOX(w), GTK_TREE_MODEL(store));
+        GtkTreeIter iter;
+	gtk_list_store_append(store, &iter);
+	gtk_list_store_set(store, &iter, 0, "None", 1, 0, -1);
+    	gtk_combo_box_set_active_iter (GTK_COMBO_BOX(w), &iter);
+    }
+    return;
+}
+
