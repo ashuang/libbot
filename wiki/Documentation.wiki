@@ -1,0 +1,4 @@
+#summary libbot Documentation
+
+
+  * [http://lcm.googlecode.com/svn/www/doc/bot2-procman/index.html bot2-procman documentation]
