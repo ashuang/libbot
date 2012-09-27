@@ -13,10 +13,10 @@ and the sheriff (\p bot-procman-sheriff).
 To get started, we'll show you how to run the deputy and the sheriff, and create
 and manage commands.
 
-- \ref tut_starting
-- \ref tut_command_creation
-- \ref tut_command_managing
-- \ref tut_config
+- \ref procman_tutorial_starting
+- \ref procman_tutorial_command_creation
+- \ref procman_tutorial_command_managing
+- \ref procman_tutorial_config
 
 Starting a deputy and a sheriff {#procman_tutorial_starting}
 -------------------------------
@@ -24,13 +24,13 @@ Starting a deputy and a sheriff {#procman_tutorial_starting}
 First, open up your favorite terminal program and run the deputy command:
 
 \code
-$ bot-procman-deputy
+bot-procman-deputy
 \endcode
 
 Then, in another terminal, launch the sheriff GUI.
 
 \code
-$ bot-procman-sheriff
+bot-procman-sheriff
 \endcode
 
 When you run the sheriff, you should see a GUI that looks something like this:
