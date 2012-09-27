@@ -1,6 +1,5 @@
-/**
-
-\page tutorial Quick Start Tutorial
+Quick Start Tutorial {#procman_tutorial}
+====================
 
 This section provides a brief introduction to Procman and controlling processes
 with a deputy and a sheriff.
@@ -8,52 +7,54 @@ with a deputy and a sheriff.
 There are two types of programs in Procman - the deputy (\p bot-procman-deputy)
 and the sheriff (\p bot-procman-sheriff).
 
-\li Deputies control processes, and there must be at least one deputy.
-\li Sheriffs control deputies, and there can be at most one sheriff.
+- Deputies control processes, and there must be at least one deputy.
+- Sheriffs control deputies, and there can be at most one sheriff.
 
 To get started, we'll show you how to run the deputy and the sheriff, and create
 and manage commands.
 
-\li \ref tut_starting
-\li \ref tut_command_creation
-\li \ref tut_command_managing
-\li \ref tut_config
+- \ref tut_starting
+- \ref tut_command_creation
+- \ref tut_command_managing
+- \ref tut_config
 
-\section tut_starting Starting a deputy and a sheriff
+Starting a deputy and a sheriff {#procman_tutorial_starting}
+-------------------------------
 
 First, open up your favorite terminal program and run the deputy command:
 
-\verbatim
-bot-procman-deputy
-\endverbatim
+\code
+$ bot-procman-deputy
+\endcode
 
 Then, in another terminal, launch the sheriff GUI.
 
-\verbatim
-bot-procman-sheriff
-\endverbatim
+\code
+$ bot-procman-sheriff
+\endcode
 
 When you run the sheriff, you should see a GUI that looks something like this:
 
 \image html sheriff-gui-empty.png "bot-procman-sheriff with one deputy and no commands."
 
 There are three panes in the sheriff GUI:
-\li Top left: the command pane
-\li Top right: the deputy pane
-\li Bottom: the console pane
+- Top left: the command pane
+- Top right: the deputy pane
+- Bottom: the console pane
 
-The <em>command pane</em> shows all the commands managed by Procman.  Since we haven't
+The _command pane_ shows all the commands managed by Procman.  Since we haven't
 created any commands, there isn't anything to see there yet.
 
-The <em>deputy pane</em> shows all the deputies detected by the sheriff.  We've started
+The _deputy pane_ shows all the deputies detected by the sheriff.  We've started
 one deputy, so it shows up in the top right.  Deputies are always named, and
 the default name is the computer hostname where the deputy process is running.
 In this case, the hostname is "contact", so the deputy is named "contact" as well.
 
-The <em>console pane</em> shows console output (stdout and stderr) from running
+The _console pane_ shows console output (stdout and stderr) from running
 commands, and also status information from the sheriff.
 
-\section tut_command_creation Creating a command.
+Creating a command {#procman_tutorial_command_creation}
+------------------
 
 To create a command, select the menu item "Commands -> New command".
 
@@ -64,19 +65,19 @@ Following that, a dialog box should appear with several options to fill out.
 \image html sheriff-gui-add-command.png "Add command dialog."
 
 The options are:
-\li \c Deputy - which deputy should manage the command.
-\li \c Command - the command to execute and any command-line arguments.
-\li \c Name - a name for the command, used for display purposes and to identify the command.
-\li \c Group - commands can be grouped together, or not.
-\li \c Auto-restart - if checked, deputies will automatically restart commands when they terminate.
+- \c Deputy - which deputy should manage the command.
+- \c Command - the command to execute and any command-line arguments.
+- \c Name - a name for the command, used for display purposes and to identify the command.
+- \c Group - commands can be grouped together, or not.
+- \c Auto-restart - if checked, deputies will automatically restart commands when they terminate.
 
 In the image above, we've set the command to \c xterm, a fairly common terminal
 emulator.  If you don't have \c xterm installed, replace the command with
 something you do have on your system.  We've also named the command "terminal
 emulator".
 
-\section tut_command_managing Managing commands
-
+Managing commands {#procman_tutorial_command_managing}
+-----------------
 Now that we have a command, we can run it.  Click on the command in the command
 pane so that it is highlighted.  Once the command is selected, click on the menu
 bar item "Commands -> Start".
@@ -96,7 +97,8 @@ You can stop, restart, move, and edit the selected command using the
 There are a bunch more features to Procman, but creating, starting, and
 stopping processes is its core functionality.
 
-\section tut_config Saving and loading configurations
+Saving and loading configurations {#procman_tutorial_config}
+---------------------------------
 
 It's often useful to save the commands you've created so that you can easily
 load them and run them again later on.  To do this, select "File -> Save config
@@ -118,5 +120,3 @@ the configuration files directly with a text editor.  For more information on
 the configuration file format, see the section \ref config_file.
 
 To load a configuration, click on the menu bar item "File -> load config".
-
-**/

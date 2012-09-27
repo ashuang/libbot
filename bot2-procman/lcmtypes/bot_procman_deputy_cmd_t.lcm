@@ -5,10 +5,10 @@ package bot_procman;
 
 struct deputy_cmd_t {
 
-    // name of the command
+    // The command to execute.
     string  name;
 
-    // nickname of the command
+    // nickname of the command.  This is also used as the display name.
     string nickname;
 
     // command group.  Used only for UI purposes
