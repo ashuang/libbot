@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['is_5fobserver',['is_observer',['../group__python__api.html#ga139e78621d71d9552e79d7cfe7834591',1,'bot_procman::sheriff::Sheriff']]]
+  ['is_5fobserver',['is_observer',['../classbot__procman_1_1sheriff_1_1Sheriff.html#ab4d9beef725d401bc100d85b17820156',1,'bot_procman::sheriff::Sheriff']]]
 ];

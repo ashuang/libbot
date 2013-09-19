@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['owns_5fcommand',['owns_command',['../group__python__api.html#ga0598b47797a73f137c28cf26748ce0a7',1,'bot_procman::sheriff::SheriffDeputy']]]
+  ['owns_5fcommand',['owns_command',['../classbot__procman_1_1sheriff_1_1SheriffDeputy.html#a807ea4b6c3bf28f306bf3f7918b1ed7e',1,'bot_procman::sheriff::SheriffDeputy']]]
 ];
