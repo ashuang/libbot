@@ -77,11 +77,279 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">Configuration files </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>TODO </p>
-</div></div><!-- contents -->
+<div class="toc"><h3>Table of Contents</h3>
+<ul><li class="level1"><a href="#procman_config_file_overview">Overview</a></li>
+<li class="level1"><a href="#procman_config_file_loading">Loading a configuration file</a></li>
+<li class="level1"><a href="#procman_config_file_structure">Configuration file structure</a></li>
+<li class="level1"><a href="#procman_config_file_commands">Commands</a><ul><li class="level2"><a href="#procman_config_file_commands_environment_variables">Environment variables.</a></li>
+</ul>
+</li>
+<li class="level1"><a href="#procman_config_file_groups">Groups</a></li>
+<li class="level1"><a href="#procman_config_file_scripts">Scripts</a><ul><li class="level2"><a href="#procman_config_file_script_actions">Script actions</a></li>
+<li class="level2"><a href="#procman_config_file_script_running">Running scripts</a></li>
+<li class="level2"><a href="#procman_config_file_script_nested_groups">Referencing nested groups</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="textblock"><h1><a class="anchor" id="procman_config_file_overview"></a>
+Overview</h1>
+<p>When working within a single project, you'll typically want to load the same set of commands into procman for managing. The sheriff configuration files provide a mechanism for:</p>
+<ul>
+<li>storing a set of commands that can be loaded into procman sheriff.</li>
+<li>writing simple scripts to sequence starting and stopping commands.</li>
+</ul>
+<p>A simple configuration file might look like:</p>
+<div class="fragment"><div class="line"><span class="preprocessor"># a hash mark indicates a comment.</span></div>
+<div class="line"><span class="preprocessor"></span></div>
+<div class="line"><span class="preprocessor"># commands can be listed individually.  This command will have ID &quot;web-browser&quot;.</span></div>
+<div class="line"><span class="preprocessor"></span>cmd <span class="stringliteral">&quot;web-browser&quot;</span> {</div>
+<div class="line"><span class="preprocessor">    # When started from procman, the executable named &quot;firefox&quot; is invoked.</span></div>
+<div class="line"><span class="preprocessor"></span>    exec = <span class="stringliteral">&quot;firefox&quot;</span>;</div>
+<div class="line"><span class="preprocessor">    # The command is assigned to the deputy specified by the &quot;host&quot; attribute.</span></div>
+<div class="line"><span class="preprocessor"></span>    host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor"># Commands can be grouped.  This group is named &quot;shells&quot;</span></div>
+<div class="line"><span class="preprocessor"></span>group <span class="stringliteral">&quot;shells&quot;</span> {</div>
+<div class="line">    cmd <span class="stringliteral">&quot;terminal 1&quot;</span> {</div>
+<div class="line">        exec = <span class="stringliteral">&quot;xterm&quot;</span>;</div>
+<div class="line">        host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line">    }</div>
+<div class="line">    cmd <span class="stringliteral">&quot;terminal 2&quot;</span> {</div>
+<div class="line">        exec = <span class="stringliteral">&quot;rxvt&quot;</span>;</div>
+<div class="line">        host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line">    }</div>
+<div class="line"><span class="preprocessor">    # more commands in &quot;group_name_0&quot; here.</span></div>
+<div class="line"><span class="preprocessor"></span>}</div>
+<div class="line"><span class="preprocessor"># more groups...</span></div>
+</div><!-- fragment --><p> <code>simple_config.procman</code></p>
+<h1><a class="anchor" id="procman_config_file_loading"></a>
+Loading a configuration file</h1>
+<p>You can load this configuration file into procman by passing it as a command line argument: </p>
+<div class="fragment"><div class="line">$ bot-procman-sheriff simple_config.procman</div>
+</div><!-- fragment --><p>Additionally, the procman sheriff GUI provides a menu option to save and load configuration files.</p>
+<dl class="section note"><dt>Note</dt><dd>The procman sheriff GUI config file save operation does not preserve comments. So if you load a config file that you manually entered comments into, and then save it out again, you will lose the comments. If you want to preserve comments, then you need to stick with hand-edited config files.</dd></dl>
+<h1><a class="anchor" id="procman_config_file_structure"></a>
+Configuration file structure</h1>
+<p>The general structure of a configuration file takes the form of a list of elements. Each element can be:</p>
+<ul>
+<li>A command, indicated by "cmd".</li>
+<li>A group, indicated by "group".</li>
+<li>A script, indicated by "script".</li>
+</ul>
+<h1><a class="anchor" id="procman_config_file_commands"></a>
+Commands</h1>
+<p>Commands are the central concept in procman, and correspond to what you might type into a shell to start a process running. A command starts with the keyword "cmd" followed by the command ID, and is described using a list of attributes surrounded by curly braces. Each attribute be expressed as a separate line of the form: </p>
+<div class="fragment"><div class="line">attribute = value;</div>
+</div><!-- fragment --><p>Values are either quoted strings, or integers.</p>
+<ul>
+<li>"exec"<ul>
+<li>String. The name of the command that will be run when the command is started. This should follow bash-style shell syntax. This attribute is <b>required</b>.</li>
+</ul>
+</li>
+<li>"host"<ul>
+<li>String. The name of the deputy that the command will be assigned to. This attribute is <b>required</b>.</li>
+</ul>
+</li>
+<li>"auto_respawn"<ul>
+<li>String. Must be either "true" or "false". If true, then a deputy will automatically try to restart the command if it stops, as long as the desired command status is set to running. In other words, if you order the command to stop via the sheriff, then it will not be automatically restarted. If not specified, defaults to "false".</li>
+</ul>
+</li>
+<li>"stop_signal"<ul>
+<li>Integer. When ordering a command to stop, this specifies the numerical OS-level signal to send the command to request a clean exit. Most of the time, this should be either 2 or 15 (corresponding to SIGINT and SIGTERM on POSIX systems). If the command does not exit after an alloted amount of time passes, then it is sent a SIGKILL. If not specified, this defaults to 2 (SIGINT).</li>
+</ul>
+</li>
+<li>"stop_time_allowed"<ul>
+<li>Integer. When ordering a command to stop, a deputy first sends <code>stop_signal</code> and waits <code>stop_time_allowed</code> seconds for the command to exit. If it is still running after <code>stop_time_allowed</code> seconds elapses, then the command is immediately sent a SIGNKILL. If not specified, this defaults to 7.</li>
+</ul>
+</li>
+</ul>
+<p>Some examples: </p>
+<div class="fragment"><div class="line">cmd <span class="stringliteral">&quot;MATLAB&quot;</span> {</div>
+<div class="line"><span class="preprocessor">    # Start MATLAB and have it run the script &#39;run_my_robot.m&#39;</span></div>
+<div class="line"><span class="preprocessor"></span>    exec = <span class="stringliteral">&quot;matlab -nodisplay -r run_my_robot&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">    # Run it on deputy name</span></div>
+<div class="line"><span class="preprocessor"></span>    host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">    # MATLAB may not exit on SIGINT, but does respond to SIGTERM.</span></div>
+<div class="line"><span class="preprocessor"></span>    stop_signal = 15;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">    # may need a little extra time to exit cleanly..</span></div>
+<div class="line"><span class="preprocessor"></span>    stop_time_allowed = 20;</div>
+<div class="line">}</div>
+<div class="line">cmd <span class="stringliteral">&quot;hardware interface&quot;</span> {</div>
+<div class="line">    exec = <span class="stringliteral">&quot;hardware_driver&quot;</span>;</div>
+<div class="line">    host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line"><span class="preprocessor">    # Automatically restart this command if it crashes.</span></div>
+<div class="line"><span class="preprocessor"></span>    auto_respawn = <span class="stringliteral">&quot;true&quot;</span>;</div>
+<div class="line">}</div>
+</div><!-- fragment --><h2><a class="anchor" id="procman_config_file_commands_environment_variables"></a>
+Environment variables.</h2>
+<p>Procman supports setting and using environment variables in the executable specification for a command. Procman generally follows bash-style syntax. In particular, environment variables can be set by prefixing the command with "NAME=VALUE" pairs. There cannot be any spaces surrounding the "=" symbol in the environment variable specifications. For example:</p>
+<div class="fragment"><div class="line">cmd <span class="stringliteral">&quot;terminal&quot;</span> {</div>
+<div class="line"><span class="preprocessor">    # runs &#39;xterm&#39; and set the environment variable &#39;DISPLAY&#39; to the value &#39;:1.0&#39;</span></div>
+<div class="line"><span class="preprocessor"></span>    exec = <span class="stringliteral">&quot;DISPLAY=:1.0  xterm&quot;</span>;</div>
+<div class="line">    host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>In addition, environment variables can be referenced from an executable specification. Note that environment variables are always evaluated in the deputy process at the time a command is started, and not on the sheriff. For example:</p>
+<div class="fragment"><div class="line">cmd <span class="stringliteral">&quot;list home directory {</span></div>
+<div class="line"><span class="stringliteral">    exec = &quot;</span>ls ${HOME}<span class="stringliteral">&quot;;</span></div>
+<div class="line"><span class="stringliteral">    host = &quot;</span>deputy_name<span class="stringliteral">&quot;;</span></div>
+<div class="line"><span class="stringliteral">}</span></div>
+</div><!-- fragment --><h1><a class="anchor" id="procman_config_file_groups"></a>
+Groups</h1>
+<p>In the same way that commands can be grouped together in the procman sheriff GUI, they can also be grouped together in configuration files using the 'group' specifier. This generally takes the form of:</p>
+<div class="fragment"><div class="line">group <span class="stringliteral">&quot;group_name&quot;</span> {</div>
+<div class="line"><span class="preprocessor">    # Command specifiers...</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor">    # Every command enclosed by the surrounding curly braces will be treated as</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor">    # part of this group.</span></div>
+<div class="line"><span class="preprocessor">}</span></div>
+</div><!-- fragment --><p>Groups can also be nested: </p>
+<div class="fragment"><div class="line">group <span class="stringliteral">&quot;group_name&quot;</span> {</div>
+<div class="line">    group <span class="stringliteral">&quot;subgroup_a&quot;</span> {</div>
+<div class="line">        group <span class="stringliteral">&quot;subsubgroup_0&quot;</span> {</div>
+<div class="line"><span class="preprocessor">            # Command specifiers...</span></div>
+<div class="line"><span class="preprocessor"></span>            cmd <span class="stringliteral">&quot;terminal&quot;</span> {</div>
+<div class="line">                exec = <span class="stringliteral">&quot;xterm&quot;</span>;</div>
+<div class="line">                host = <span class="stringliteral">&quot;deputy_name&quot;</span>;</div>
+<div class="line">            }</div>
+<div class="line">        }</div>
+<div class="line">        cmd <span class="stringliteral">&quot;web browser&quot;</span> {</div>
+<div class="line">            exec = <span class="stringliteral">&quot;firefox&quot;</span>;</div>
+<div class="line">            host = <span class="stringliteral">&quot;other_deputy&quot;</span>;</div>
+<div class="line">        }</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="procman_config_file_scripts"></a>
+Scripts</h1>
+<p>Procman sheriff supports a very simple scripting language that can be useful for sequencing the starting and stopping of commands. The scripting language allows you to specify a deterministic sequence of actions that are run one after the other.</p>
+<p>A configuration file with a simple script might look like: </p>
+<div class="fragment"><div class="line">cmd <span class="stringliteral">&quot;load configuration&quot;</span> {</div>
+<div class="line"><span class="preprocessor">    # This command loads the robot configuration, and then exits.</span></div>
+<div class="line"><span class="preprocessor"></span>    exec = <span class="stringliteral">&quot;configure_robot&quot;</span>;</div>
+<div class="line">    host = <span class="stringliteral">&quot;robot&quot;</span>;</div>
+<div class="line">}</div>
+<div class="line">cmd <span class="stringliteral">&quot;hardware interface&quot;</span> {</div>
+<div class="line">    exec = <span class="stringliteral">&quot;hw_interface&quot;</span>;</div>
+<div class="line">    host = <span class="stringliteral">&quot;robot&quot;</span>;</div>
+<div class="line">}</div>
+<div class="line">group <span class="stringliteral">&quot;planning and perception&quot;</span> {</div>
+<div class="line">    cmd <span class="stringliteral">&quot;planner&quot;</span> {</div>
+<div class="line">        exec = <span class="stringliteral">&quot;planner&quot;</span>;</div>
+<div class="line">        host = <span class="stringliteral">&quot;robot&quot;</span>;</div>
+<div class="line">    }</div>
+<div class="line">    cmd <span class="stringliteral">&quot;perception&quot;</span> {</div>
+<div class="line">        exec = <span class="stringliteral">&quot;perception&quot;</span>;</div>
+<div class="line">        host = <span class="stringliteral">&quot;robot&quot;</span>;</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line">script <span class="stringliteral">&quot;go&quot;</span> {</div>
+<div class="line"><span class="preprocessor">    # Start the &#39;load configuration&#39; command, and then pause the script until</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor">    # the command exits.</span></div>
+<div class="line"><span class="preprocessor"></span>    start cmd <span class="stringliteral">&quot;load configuration&quot;</span> wait <span class="stringliteral">&quot;stopped&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">    # Now start the hardware interface processes</span></div>
+<div class="line"><span class="preprocessor"></span>    start cmd <span class="stringliteral">&quot;hardware interface&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">    # wait 1000 milliseconds</span></div>
+<div class="line"><span class="preprocessor"></span>    wait ms 1000;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">    # Start all of the commands in the group &#39;planning and perception&#39;</span></div>
+<div class="line"><span class="preprocessor"></span>    start group <span class="stringliteral">&quot;planning and perception&quot;</span>;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>This configuration file has a single script named "go". If you load the config file into the procman sheriff GUI, then you'll see "go" listed under the scripts menu, which you can then use to run the script.</p>
+<h2><a class="anchor" id="procman_config_file_script_actions"></a>
+Script actions</h2>
+<p>A script is composed of a sequence of actions. The valid actions are: </p>
+<h3>"start"</h3>
+<p>Usage: <code>start {cmd|group} TARGET_ID [ wait {"running","stopped"} ]</code></p>
+<p>Orders a command or a group to start running. Examples: </p>
+<div class="fragment"><div class="line"><span class="preprocessor"># Orders the command &quot;planner&quot; to start running.</span></div>
+<div class="line"><span class="preprocessor"></span>start cmd <span class="stringliteral">&quot;planner&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor"># Orders the command &quot;load configuration&quot; to start running and then waits for</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor"># it to exit.  Essentially, run it once through to completion.</span></div>
+<div class="line"><span class="preprocessor"></span>start cmd <span class="stringliteral">&quot;load configuration&quot;</span> wait <span class="stringliteral">&quot;stopped&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor"># Order the entire group &quot;planning and perception&quot; to start running</span></div>
+<div class="line"><span class="preprocessor"></span>start group <span class="stringliteral">&quot;planning and perception&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor"># order the command &quot;hw_interface&quot; to start running and waits for it to</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor"># have actually started running (i.e., for the deputy to report that it has</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor"># started the child process).</span></div>
+<div class="line"><span class="preprocessor"></span>start cmd <span class="stringliteral">&quot;hw_interface&quot;</span> wait <span class="stringliteral">&quot;running&quot;</span>;</div>
+<div class="line"><span class="preprocessor">#</span></div>
+</div><!-- fragment --><p>If "wait" is used on a group, then script execution only continues when all commands in the group achieve the specified status. A script can wait indefinitely, and does not timeout or fail.</p>
+<p>If "wait" is not specified, then script execution continues immediately. This way, it is possible to effectively order many commands and groups to start running all at once.</p>
+<h3>"stop"</h3>
+<p>Usage: <code>stop {cmd|group} TARGET_ID [ wait "stopped" ]</code></p>
+<p>This is the opposite of "start", and orders a single command or a group of commands to stop execution. Commands that have the "auto_respawn" attribute will also be stopped and they will not be automatically respawned.</p>
+<p>Some example: </p>
+<div class="fragment"><div class="line"><span class="preprocessor"># Order a single command to stop.</span></div>
+<div class="line"><span class="preprocessor"></span>stop cmd <span class="stringliteral">&quot;hw_interface&quot;</span>;</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor"># Order an entire group to stop, and wait for all commands in the group to stop</span></div>
+<div class="line"><span class="preprocessor"></span><span class="preprocessor"># before continuing.</span></div>
+<div class="line"><span class="preprocessor"></span>stop group <span class="stringliteral">&quot;planning and perception&quot;</span> wait <span class="stringliteral">&quot;stopped&quot;</span>;</div>
+<div class="line"><span class="preprocessor">#</span></div>
+</div><!-- fragment --><h3>"restart"</h3>
+<p>Usage: <code>restart {cmd|group} TARGET_ID [ wait {"running", "stopped"} ]</code></p>
+<p>The restart action first stops a command or group of commands, and then orders them to start. Using this script action is usually faster than using a "stop" followed by a "start", as the restart action is executed entirely by the deputy.</p>
+<p>Otherwise, the usage is similar to "start" and "stop".</p>
+<h3>"wait ms"</h3>
+<p>Usage: <code>wait ms MILLISECONDS</code></p>
+<p>This action simply pauses script execution for the specified number of milliseconds. This can be useful if you need a quick and dirty way to wait for an external device to settle, or do not have another way of synchronizing script execution.</p>
+<p>Use this script action with caution, as it's almost always better to find a more robust way of sequencing script execution than by inserting arbitrary delays.</p>
+<h3>"wait status"</h3>
+<p>Usage: <code>wait {cmd|group} status {"running", "stopped"}</code></p>
+<p>Waits for a single command, or a group of commands to all achieve the specified status. For example:</p>
+<div class="fragment"><div class="line"><span class="preprocessor"># Order a bunch of commands to stop.</span></div>
+<div class="line"><span class="preprocessor"></span>stop cmd <span class="stringliteral">&quot;abc&quot;</span>;</div>
+<div class="line">stop cmd <span class="stringliteral">&quot;def&quot;</span>;</div>
+<div class="line">stop cmd <span class="stringliteral">&quot;ghi&quot;</span>;</div>
+<div class="line"><span class="preprocessor"># Now wait for them all to actually stop.</span></div>
+<div class="line"><span class="preprocessor"></span>wait cmd <span class="stringliteral">&quot;abc&quot;</span> status <span class="stringliteral">&quot;stopped&quot;</span>;</div>
+<div class="line">wait cmd <span class="stringliteral">&quot;def&quot;</span> status <span class="stringliteral">&quot;stopped&quot;</span>;</div>
+<div class="line">wait cmd <span class="stringliteral">&quot;ghi&quot;</span> status <span class="stringliteral">&quot;stopped&quot;</span>;</div>
+</div><!-- fragment --><h3>"run_script"</h3>
+<p>Usage: <code>run_script OTHER_SCRIPT_NAME</code></p>
+<p>A configuration file can have multiple scripts. This script action invokes another script listed in the configuration file and waits the other script to finish execution before continuing.</p>
+<h2><a class="anchor" id="procman_config_file_script_running"></a>
+Running scripts</h2>
+<p>Scripts can be generally be run in one of several ways:</p>
+<ul>
+<li>load a configuration file into the procman sheriff GUI, and select the script from the "script" menu.</li>
+<li>pass the configuration file and script name as command line arguments to <code>bot-procman-sheriff</code>. For example: <div class="fragment"><div class="line">$ bot-procman-sheriff config_file.procman go</div>
+</div><!-- fragment --></li>
+</ul>
+<h2><a class="anchor" id="procman_config_file_script_nested_groups"></a>
+Referencing nested groups</h2>
+<p>The syntax for identifying subgroups (i.e., groups nested within another group) is to join the group names with slashes. For example, if group "cameras" is a subgroup of group "hardware drivers", then a script would refer to the inner group by the name "hardware drivers/cameras".</p>
+<div class="fragment"><div class="line">group <span class="stringliteral">&quot;hardware drivers&quot;</span> {</div>
+<div class="line">    group <span class="stringliteral">&quot;cameras&quot;</span> {</div>
+<div class="line">        cmd <span class="stringliteral">&quot;left camera&quot;</span> {</div>
+<div class="line">            exec = <span class="stringliteral">&quot;left_camera&quot;</span>;</div>
+<div class="line">            host = <span class="stringliteral">&quot;robot&quot;</span>;</div>
+<div class="line">        }</div>
+<div class="line">        cmd <span class="stringliteral">&quot;right camera&quot;</span> {</div>
+<div class="line">            exec = <span class="stringliteral">&quot;right_camera&quot;</span>;</div>
+<div class="line">            host = <span class="stringliteral">&quot;robot&quot;</span>;</div>
+<div class="line">        }</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line">script <span class="stringliteral">&quot;go&quot;</span> {</div>
+<div class="line">    start group <span class="stringliteral">&quot;hardware drivers/cameras&quot;</span>;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line">For <span class="keyword">this</span> reason, slashes are not allowed in group names.</div>
+</div><!-- fragment --> </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Sep 19 2013 00:01:50 for procman by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Oct 12 2013 01:14:09 for procman by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.3.1
 </small></address>
