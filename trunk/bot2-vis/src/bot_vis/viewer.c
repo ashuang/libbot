@@ -1127,6 +1127,7 @@ void bot_viewer_add_renderer_on_side (BotViewer *self, BotRenderer *renderer, in
         gtk_frame_set_label_widget (GTK_FRAME (renderer->control_frame), renderer->expander);
         gtk_container_add (GTK_CONTAINER (renderer->control_frame), renderer->widget);
         
+#ifdef CONTROLS_BOX_LEFT_ENABLED
         if (which_side==0){
            gtk_box_pack_start (GTK_BOX (self->controls_box_left), renderer->control_frame,
                             FALSE, TRUE, 0);
@@ -1137,7 +1138,14 @@ void bot_viewer_add_renderer_on_side (BotViewer *self, BotRenderer *renderer, in
                             FALSE, TRUE, 0);
            gtk_box_reorder_child (GTK_BOX (self->controls_box), renderer->control_frame, control_idx);
         }
+#else
+        if (which_side == 0)
+            fprintf (stderr, "Left-side renderer support disabled\n");
 
+        gtk_box_pack_start (GTK_BOX (self->controls_box), renderer->control_frame,
+                            FALSE, TRUE, 0);
+        gtk_box_reorder_child (GTK_BOX (self->controls_box), renderer->control_frame, control_idx);
+#endif
 
         gtk_widget_show (renderer->expander);
         gtk_widget_show (renderer->widget);
@@ -1496,7 +1504,11 @@ bot_viewer_init (BotViewer *viewer)
     viewer->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(viewer->window), "BotViewer");
     gtk_window_set_resizable(GTK_WINDOW(viewer->window), TRUE);
+#ifdef CONTROLS_BOX_LEFT_ENABLED
     gtk_window_set_default_size(GTK_WINDOW(viewer->window), 1000, 675);
+#else
+    gtk_window_set_default_size(GTK_WINDOW(viewer->window), 800, 540);
+#endif
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(viewer->window), vbox);
@@ -1510,6 +1522,8 @@ bot_viewer_init (BotViewer *viewer)
     viewer->tips = gtk_tooltips_new ();
     make_toolbar(viewer, vbox);
 
+
+#ifdef CONTROLS_BOX_LEFT_ENABLED
     // Embed the original viewing pane inside a second hpaned so as to add controls on the right:
     // GTK pan is then split like this:  [   left ctrl box        |[    gl pan  |right ctrl box]]
     GtkWidget *hpaned_main = gtk_hpaned_new();
@@ -1539,6 +1553,27 @@ bot_viewer_init (BotViewer *viewer)
     GtkWidget *controls_align = gtk_alignment_new(.5, .5, 1, 1);
     gtk_paned_pack2(GTK_PANED(hpaned_right), controls_align, FALSE, TRUE);
 
+    gtk_paned_set_position(GTK_PANED(hpaned_main), 200); // initial width of bar
+    gtk_paned_set_position(GTK_PANED(hpaned_right), 460); // initial width of bar
+
+    gtk_box_pack_start(GTK_BOX(vbox), hpaned_main, TRUE, TRUE, 0);
+
+
+#else
+
+    GtkWidget *hpaned = gtk_hpaned_new();
+
+    gtk_box_pack_start(GTK_BOX(vbox), hpaned, TRUE, TRUE, 0);
+
+    GtkWidget *gl_box = gtk_event_box_new();
+    gtk_paned_pack1(GTK_PANED(hpaned), gl_box, TRUE, TRUE);
+
+    GtkWidget *controls_align = gtk_alignment_new(.5, .5, 1, 1);
+    gtk_paned_pack2(GTK_PANED(hpaned), controls_align, FALSE, TRUE);
+
+    gtk_paned_set_position(GTK_PANED(hpaned), 560);
+
+#endif
 
     GtkWidget *controls_scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(controls_align), controls_scroll);
@@ -1549,10 +1584,6 @@ bot_viewer_init (BotViewer *viewer)
     viewer->controls_box = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(controls_view), viewer->controls_box);
 
-
-    gtk_paned_set_position(GTK_PANED(hpaned_main), 200); // initial width of bar
-    gtk_paned_set_position(GTK_PANED(hpaned_right), 460); // initial width of bar
-    gtk_box_pack_start(GTK_BOX(vbox), hpaned_main, TRUE, TRUE, 0);
 
 
 
