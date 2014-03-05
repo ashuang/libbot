@@ -50,6 +50,9 @@ typedef enum
 GType        bot_gtk_param_widget_get_type(void);
 GtkWidget *  bot_gtk_param_widget_new(void);
 
+const char *bot_gtk_param_widget_get_type_str(BotGtkParamWidget *pw,
+                                              const char *name);
+
 int bot_gtk_param_widget_add_enum (BotGtkParamWidget *pw,
         const char *name, BotGtkParamWidgetUIHint ui_hints, int initial_value,
         const char *string1, int value1, ...) 

@@ -72,6 +72,11 @@ static guint bot_gtk_param_widget_signals[LAST_SIGNAL] = { 0 };
 
 G_DEFINE_TYPE (BotGtkParamWidget, bot_gtk_param_widget, GTK_TYPE_VBOX);
 
+const char *bot_gtk_param_widget_get_type_str(BotGtkParamWidget *pw, const char *name) {
+    GtkWidget *w = g_hash_table_lookup(pw->params, name);
+    return g_object_get_data (G_OBJECT(w), "data-type");
+}
+
 static void
 bot_gtk_param_widget_class_init (BotGtkParamWidgetClass *klass)
 {
