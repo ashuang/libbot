@@ -378,8 +378,10 @@ bot_gl_draw_arrow_3d (double length, double head_width, double head_length,
     gluCylinder(q, body_width, body_width, length - head_length, slices, stacks);
 
     //draw head
-    glTranslated(0, 0, length - head_length);
-    gluCylinder(q, head_width, 0, head_length, slices, stacks);
+    if (head_length > 0) {
+        glTranslated(0, 0, length - head_length);
+        gluCylinder(q, head_width, 0, head_length, slices, stacks);
+    }
     gluDeleteQuadric(q);
 
     glPopAttrib();
