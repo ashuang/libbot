@@ -322,8 +322,8 @@ class SheriffDeputy(object):
 
         @return True if this deputy object manages \p command, False if not.
         """
-        return command.sheriff_id in self._commands and \
-                self._commands [command.sheriff_id] is command
+        return cmd_object.sheriff_id in self._commands and \
+                self._commands[cmd_object.sheriff_id] is cmd_object
 
     def _update_from_deputy_info2(self, dep_info_msg):
         """
@@ -1040,8 +1040,8 @@ class Sheriff(object):
         """
         if self._is_observer:
             raise ValueError("Can't remove commands in Observer mode")
-        deputy = self.get_command_deputy(command)
-        status_changes = deputy._schedule_for_removal(command)
+        deputy = self.get_command_deputy(cmd)
+        status_changes = deputy._schedule_for_removal(cmd)
         self._maybe_emit_status_change_signals(deputy, status_changes)
         self.send_orders()
 
