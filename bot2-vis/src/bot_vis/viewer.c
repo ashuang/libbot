@@ -848,7 +848,9 @@ take_screenshot (void *user_data, char *fname)
     if (! fp) {
         perror ("fopen");
         err ("couldn't take screenshot\n");
-    return FALSE;
+        free (bgra);
+        free (rgb);
+        return FALSE;
     } else {
         _pixel_convert_8u_bgra_to_8u_rgb (rgb, w*3, w, h, bgra, w*4);
         bot_ppm_write_bottom_up (fp, rgb, w, h, w*3);
