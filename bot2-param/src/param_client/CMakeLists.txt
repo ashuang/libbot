@@ -3,7 +3,7 @@ add_definitions(-std=gnu99)
 add_library(bot2-param-client SHARED
     param_internal.c param_util.c)
     
-set(REQUIRED_LIBS lcm bot2-core glib-2.0 lcmtypes_bot2-param)
+set(REQUIRED_LIBS lcm bot2-core glib-2.0 gthread-2.0 lcmtypes_bot2-param)
 
 pods_use_pkg_config_packages(bot2-param-client ${REQUIRED_LIBS})
 

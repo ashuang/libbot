@@ -37,4 +37,4 @@ target_link_libraries(test-viewer ${GLUT_LIBRARIES})
 pods_use_pkg_config_packages(test-viewer 
                                          bot2-vis 
                                          bot2-lcmgl-renderer 
-                                         bot2-frames-renderers)
+                                         bot2-frames-renderers glib-2.0 gthread-2.0)

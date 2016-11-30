@@ -32,7 +32,7 @@ add_executable(ldpc-wrapper-test
 set_source_files_properties(introspect.c lcm_tunnel_params_t.c ssocket.c signal_pipe.c lcm_util.c
     PROPERTIES COMPILE_FLAGS "-std=gnu99")
 
-pods_use_pkg_config_packages(bot-lcm-tunnel 
-    lcm glib-2.0)
+pods_use_pkg_config_packages(bot-lcm-tunnel  
+    lcm glib-2.0 gthread-2.0)
 
 pods_install_executables(bot-lcm-tunnel)
