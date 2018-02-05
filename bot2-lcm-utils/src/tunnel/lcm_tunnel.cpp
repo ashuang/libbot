@@ -56,7 +56,7 @@ LcmTunnel::LcmTunnel(bool verbose, const char *lcm_channel) :
   verbose(verbose), regex(NULL), buf_sz(65536), buf((char*) calloc(65536, sizeof(char))), channel_sz(65536), channel(
       (char*) calloc(65536, sizeof(char))), recFlags_sz(1024), recFlags((char*) calloc(1024, sizeof(char))), ldpc_dec(
       NULL), udp_fd(-1), server_udp_port(-1), udp_send_seqno(0), stopSendThread(false), bytesInQueue(0), cur_seqno(0),
-      errorStartTime(-1), numSuccessful(0), lastErrorPrintTime(-1)
+      errorStartTime(-1), numSuccessful(0), lastErrorPrintTime(-1), subscription(NULL)
 {
   //allocate and initialize things
 
